@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+import re
 
 def parse_if_number(s):
     try: return float(s)
@@ -12,9 +13,13 @@ def parse_if_number(s):
 
 def parse_ndarray(s):
     return np.fromstring(s, sep=' ') if s else None
+
+def parse(s):
+    return s;
     
 def getResults(file):
     resultsFile = pd.read_csv(file, converters = {
+    'module' : parse,
     'attrvalue': parse_if_number,
     'binedges': parse_ndarray,
     'binvalues': parse_ndarray,
@@ -34,7 +39,15 @@ if __name__ == "__main__":
     plt.yticks(fontsize=20)
     for result in results:
         colorNum = 0
-        lastQueue = 5
+        queueName = "simplenetwork.router1.ppp["
+        lastQueue = 0
+        moduleList = result.module.to_numpy()
+        extractedList = [s for s in moduleList if queueName in s]
+        for exWord in extractedList:
+            pppNumb = re.search(r"\[([A-Za-z0-9_]+)\]", exWord)
+            if(int(pppNumb.group(1)) > lastQueue):
+                lastQueue = int(pppNumb.group(1))
+
         yAxis = result.vecvalue.to_numpy()[lastQueue]
         #print(results.vecvalue)
         plt.plot(result.vectime.to_numpy()[lastQueue],yAxis
