@@ -1,4 +1,4 @@
-package orbtcpexperiments.simulations.dumbellExperiments.orbtcpHalfMD;
+package orbtcpexperiments.simulations.dumbellExperiments.orbtcpConservative;
 
 @namespace(inet);
 

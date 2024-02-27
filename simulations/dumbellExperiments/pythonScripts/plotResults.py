@@ -53,7 +53,7 @@ if __name__ == "__main__":
                         if os.path.exists(dir2):
                             shutil.rmtree(dir2)
                         os.makedirs(dir2)
-        currentProc = 1
+        currentProc = 0
         currProcList = []
         print("Generating python results for Run #" + str(currentProc) + ")")
         currentFolderIter = 0
@@ -65,10 +65,11 @@ if __name__ == "__main__":
                         if folderName in processFolderNameList[currentFolderIter]:
                             foldName = folderName
                     currProcList.append(subprocess.Popen(proc , shell=True, cwd='../pythonResults/' + arg + "/" + foldName + "/" + processFolderNameList[currentFolderIter]))
+                    print(proc)
                     currentProc = currentProc + 1
                 else:
                     for p in currProcList:
-                         p.wait()
+                        p.wait()
                     print("     ... Running next batch! ...\n")     
                     currProcList.clear()
                     currentProc = 0     

@@ -47,10 +47,15 @@ if __name__ == "__main__":
             pppNumb = re.search(r"\[([A-Za-z0-9_]+)\]", exWord)
             if(int(pppNumb.group(1)) > lastQueue):
                 lastQueue = int(pppNumb.group(1))
-
-        yAxis = result.vecvalue.to_numpy()[lastQueue]
+        numpyIndex = 0
+        for mod in result.module.to_numpy():
+            if(mod == "simplenetwork.router1.ppp[" + str(lastQueue) + "]"+".queue"):
+                break
+            numpyIndex = numpyIndex + 1
+            
+        yAxis = result.vecvalue.to_numpy()[numpyIndex]
         #print(results.vecvalue)
-        plt.plot(result.vectime.to_numpy()[lastQueue],yAxis
+        plt.plot(result.vectime.to_numpy()[numpyIndex],yAxis
         , drawstyle='steps-post', linewidth=1)
         colorNum += 1
         
