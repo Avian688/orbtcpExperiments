@@ -30,7 +30,6 @@ if __name__ == "__main__":
             os.makedirs(dir)
         for file in os.listdir(folderLoc):
             if(file.endswith(".csv")):
-                print(file)
                 fileName = file[:-14]
                 #make folder
                 f = os.path.join(folderLoc, file)
@@ -44,6 +43,7 @@ if __name__ == "__main__":
                 processList.append("python3 ../../../../pythonScripts/plotEstimatedRtt.py ../../../" + folderLoc + file)
                 processList.append("python3 ../../../../pythonScripts/plotThroughput.py ../../../" + folderLoc + file)
                 processList.append("python3 ../../../../pythonScripts/plotQueueLength.py ../../../" + folderLoc + file)
+                processList.append("python3 ../../../../pythonScripts/plotQueueingTime.py ../../../" + folderLoc + file)
                 processNestedList.append(processList)
                 processFolderNameList.append(fileName)
                 
@@ -59,20 +59,22 @@ if __name__ == "__main__":
         currentFolderIter = 0
         for procList in processNestedList:
             for proc in procList:
-                if(currentProc < cores):
-                    foldName = "Other"
-                    for folderName in folders:
-                        if folderName in processFolderNameList[currentFolderIter]:
-                            foldName = folderName
-                    currProcList.append(subprocess.Popen(proc , shell=True, cwd='../pythonResults/' + arg + "/" + foldName + "/" + processFolderNameList[currentFolderIter]))
-                    print(proc)
-                    currentProc = currentProc + 1
-                else:
+                foldName = "Other"
+                for folderName in folders:
+                    if folderName in processFolderNameList[currentFolderIter]:
+                        foldName = folderName
+                currProcList.append(subprocess.Popen(proc , shell=True, cwd='../pythonResults/' + arg + "/" + foldName + "/" + processFolderNameList[currentFolderIter]))
+                currentProc = currentProc + 1
+                print("Generating plot " + proc + " for CSV file " + processFolderNameList[currentFolderIter] + " ... (Run #" + str(currentProc) + ")")
+                if(currentProc == cores):
+                    procCompleteNum = 0
                     for p in currProcList:
                         p.wait()
+                        procCompleteNum = procCompleteNum + 1
+                        print("\tPlot process #" + str(procCompleteNum) + " is complete!")
                     print("     ... Running next batch! ...\n")     
-                    currProcList.clear()
-                    currentProc = 0     
+                    currentProc = 0
+                    currProcList.clear() 
             currentFolderIter = currentFolderIter + 1
         processNestedList.clear()
         processFolderNameList.clear()

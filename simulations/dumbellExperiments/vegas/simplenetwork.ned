@@ -1,4 +1,4 @@
-package orbtcpexperiments.simulations.dumbellExperiments.orbtcp23Split;
+package orbtcpexperiments.simulations.dumbellExperiments.vegas;
 
 @namespace(inet);
 

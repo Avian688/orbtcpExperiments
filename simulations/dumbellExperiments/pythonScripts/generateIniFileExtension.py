@@ -29,17 +29,17 @@ def int_to_word(num):
         return d[num]
     if (num < 100):
         if num % 10 == 0: return d[num]
-        else: return d[num // 10 * 10] + '-' + d[num % 10]
+        else: return d[num // 10 * 10] + d[num % 10]
     if (num > 100): 
         raise AssertionError('num is too large: %s' % str(num))
            
 if __name__ == "__main__":
     #numOfClients = int_to_word(len(sys.argv)-1)
     #folderName = '../scenarios/' + numOfClients + 'Flows'
-    flowList = ['twoFlows/1-100ms.xml','twoFlows/50-100ms.xml', 'twoFlows/1-50ms.xml', 'fiveFlows/1-100-100-100-100ms.xml', 'fiveFlows/1-25-50-75-100ms.xml', 'tenFlows/1-1-1-1-1-25-75-75-100-100ms.xml', 'tenFlows/1-1-25-25-50-50-75-75-100-100ms.xml']
-    flowTitle = ['TwoFlows1ms100ms', 'TwoFlows50ms100ms', 'TwoFlows1ms50ms', 'FiveFlows1ms100ms100ms100ms100ms', 'FiveFlows1ms25ms50ms75ms100ms', 'TenFlows1ms1ms1ms1ms1ms25ms75ms75ms100ms100ms', 'TenFlows1ms1ms25ms25ms50ms50ms75ms75ms100ms100ms']
-    numOfFlowsList = [2,2,2,5,5,10,10]
-    alphaValues = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09]
+    flowList = ['twoFlows/1-100ms.xml','twoFlows/50-100ms.xml', 'twoFlows/1-50ms.xml', 'fiveFlows/1-100-100-100-100ms.xml', 'fiveFlows/1-25-50-75-100ms.xml', 'tenFlows/1-1-1-1-1-25-75-75-100-100ms.xml', 'tenFlows/1-1-25-25-50-50-75-75-100-100ms.xml', 'twentyfiveFlows/5-9-13-17-21-25-29-33-37-41-45-49-53-57-61-65-69-73-77-81-85-89-93-97-100ms.xml' ]
+    flowTitle = ['TwoFlows1ms100ms', 'TwoFlows50ms100ms', 'TwoFlows1ms50ms', 'FiveFlows1ms100ms100ms100ms100ms', 'FiveFlows1ms25ms50ms75ms100ms', 'TenFlows1ms1ms1ms1ms1ms25ms75ms75ms100ms100ms', 'TenFlows1ms1ms25ms25ms50ms50ms75ms75ms100ms100ms', 'TwentyfiveFlows5ms9ms13ms17ms21ms25ms29ms33ms37ms41ms45ms49ms53ms57ms61ms65ms69ms73ms77ms81ms85ms89ms93ms97ms100ms']
+    numOfFlowsList = [2,2,2,5,5,10,10, 25]
+    alphaValues = [0.03]
     fixedAvgRTTValues = [0.0]
     for arg in sys.argv[1:]:
         flavour = arg[0].upper() + arg[1:] + "Flavour"

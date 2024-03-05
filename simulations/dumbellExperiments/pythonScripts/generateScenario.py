@@ -29,7 +29,7 @@ def int_to_word(num):
         return d[num]
     if (num < 100):
         if num % 10 == 0: return d[num]
-        else: return d[num // 10 * 10] + '-' + d[num % 10]
+        else: return d[num // 10 * 10] + d[num % 10]
     if (num > 100): 
         raise AssertionError('num is too large: %s' % str(num))
            
