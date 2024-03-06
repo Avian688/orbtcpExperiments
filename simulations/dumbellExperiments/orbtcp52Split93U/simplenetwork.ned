@@ -1,4 +1,4 @@
-package orbtcpexperiments.simulations.dumbellExperiments.hpccDataCentre;
+package orbtcpexperiments.simulations.dumbellExperiments.orbtcp52Split93U;
 
 @namespace(inet);
 
@@ -18,13 +18,13 @@ network simplenetwork
         channel standardLine extends DatarateChannel //look at 
         {
             delay = 0ms;
-            datarate = 400Gbps;
+            datarate = 1Gbps;
         }
         
         channel bottleneckLine extends DatarateChannel //look at 
         {
-            delay = 0.006ms;
-            datarate = 100Gbps;
+            delay = 0.5ms;
+            datarate = 150Mbps;
         }
     submodules:
         client[numberOfFlows]: StandardHost {
