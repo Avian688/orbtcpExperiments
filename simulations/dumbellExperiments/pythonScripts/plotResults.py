@@ -16,7 +16,7 @@ import subprocess
            
 if __name__ == "__main__":
     cores = 4
-    folders = ["OneFlow", "TwoFlows", "FiveFlows", "TenFlows"]
+    folders = ["OneFlow", "TwoFlows", "FiveFlows", "TenFlows", "TwentyfiveFlows"]
     for arg in sys.argv[1:]:
         folderLoc =  '../'+ arg +'/results/'
         print("------------ Plotting results for " + arg + "------------")
