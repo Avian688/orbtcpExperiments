@@ -103,6 +103,8 @@ if __name__ == "__main__":
             f.write('\n' + '**.ppp[*].queue.typename = "IntQueue"\n')
             f.write('\n' + '**.additiveIncreasePercent = ${0.01, 0.02, 0.03,0.04,0.05}')
             f.write('\n' + '**.eta = ${0.8, 0.85, 0.90,0.95,1.0}\n')
+            f.write('\n' + '**.alpha = ' + str(0.03))
+            f.write('\n' + '**.fixedAvgRTTVal = '+ str(0) + '\n')
             
             scenarioDirectoriesList = ["oneFlows", "twoFlows", "fiveFlows", "tenFlows", "twentyfiveFlows"]
             for dirName in scenarioDirectoriesList: 
@@ -136,6 +138,39 @@ if __name__ == "__main__":
                     f.write('\n' + '*.client[*].app[0].tSend = uniform(0s,5s)\n')
                     f.write('\n' + '**.ppp[*].queue.packetCapacity = ' + str(queueLength) + '\n')
                     f.write('\n' + '*.scenarioManager.script = xmldoc("../scenarios/'+ dirName +'/' + fileName + 'ms.xml")\n')
+            
+            scenarioDirectoriesList = ["oneFlows", "twoFlows", "fiveFlows", "tenFlows", "twentyfiveFlows"]
+            for dirName in scenarioDirectoriesList: 
+                dir = [f for f in os.listdir('../scenarios/tenMsPathChange/'+ dirName +'/.')]
+                for xmlFile in dir:
+                    fileName = os.path.basename(xmlFile)[:-6]
+                    flowsListString = fileName.split('-')
+                    flowsList = [ int(x) for x in flowsListString ]
+                    maxFlowSize = 0
+                    configFlowNames = ''
+                    for i in flowsList:
+                        if i > maxFlowSize:
+                            maxFlowSize = i
+                        configFlowNames = configFlowNames + str(i) + 'ms'
+                    queueLength = int((((maxFlowSize/1000)*18750000)/1460)*1.1)
+                    configName = ''
+                    if(len(flowsList) == 1):
+                        configName = (int_to_word(len(flowsList)) + 'Flow')
+                    else:
+                        configName = (int_to_word(len(flowsList)) + 'Flows')
+                    configName = (configName + configFlowNames)
+                    configName = configName[0].upper() + configName[1:] + "TenMsPathChange"
+                    f.write('\n' + '[Config ' + configName + ']')       
+                    f.write('\n' + 'extends = General\n')
+                    f.write('\n' + '**.numberOfFlows = ' + str(len(flowsList)) + '\n')  
+                    f.write('\n' + '*.client[0].app[0].connectAddress = "server[0]"')
+                    f.write('\n' + '*.client[0].app[0].tOpen = 0s')
+                    f.write('\n' + '*.client[0].app[0].tSend = 0s\n')
+                    f.write('\n' + '*.client[*].app[0].connectAddress = "server[" + string(parentIndex()) +"]"')
+                    f.write('\n' + '*.client[*].app[0].tOpen = 0s')
+                    f.write('\n' + '*.client[*].app[0].tSend = uniform(0s,5s)\n')
+                    f.write('\n' + '**.ppp[*].queue.packetCapacity = ' + str(queueLength) + '\n')
+                    f.write('\n' + '*.scenarioManager.script = xmldoc("../scenarios/tenMsPathChange/'+ dirName +'/' + fileName + 'ms.xml")\n')
     print('\nINI files generated!')            
                 
                     

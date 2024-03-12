@@ -1,4 +1,4 @@
-package orbtcpexperiments.simulations.dumbellExperiments.orbtcp52Split93U;
+package orbtcpexperiments.simulations.dumbellExperiments.reno;
 
 @namespace(inet);
 
