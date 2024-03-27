@@ -32,5 +32,8 @@ if __name__ == "__main__":
                      currentProc = 0
                      processList.clear()
                      print("     ... Running next batch! ...\n")
+    for proc in processList:
+        proc.wait()
+    subprocess.Popen("find . -depth 1 -type f -not -name '*.csv' -delete", shell=True, cwd='../' + arg + '/results')
         
         
