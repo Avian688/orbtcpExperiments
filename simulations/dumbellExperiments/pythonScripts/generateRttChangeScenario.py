@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # Generates a scenario XML file given sender->receiver base propagation delays (ms)
-# generateScenario delayNum1 delayNum2... delayNumX
+# generateRttChangeScenario delayChangeNum delayNum1 delayNum2... delayNumX
 # This will generate X flows for the use in the scenario manager
 # Aiden Valentine
 
@@ -34,18 +34,29 @@ def int_to_word(num):
         raise AssertionError('num is too large: %s' % str(num))
            
 if __name__ == "__main__":
-    numOfClients = int_to_word(len(sys.argv)-1)
-    folderName = '../scenarios/tenMsPathChange/' + numOfClients + 'Flows'
+    isMinusDelay = False
+    folderTitle = ''
+    for arg in sys.argv[2:]:
+        if((int(arg) + int(sys.argv[1])) <= 0):
+            raise AssertionError('Delay after RTT change is less than or equal to 0, please change!')
+    if(int(sys.argv[1]) < 0):
+        isMinusDelay = True
+        folderTitle = "minus" + int_to_word(int(sys.argv[1])*-1).capitalize()
+    else:
+        folderTitle = int_to_word(int(sys.argv[1]))
+        
+    numOfClients = int_to_word(len(sys.argv)-2)
+    folderName = '../scenarios/'+ folderTitle +'MsPathChange/' + numOfClients + 'Flows'
     Path(folderName).mkdir(parents=True, exist_ok=True)
     fileName = ''
-    for argName in sys.argv[1:len(sys.argv)-1]:
+    for argName in sys.argv[2:len(sys.argv)-1]:
         fileName+= str(argName) + '-'
     fileName+= str(sys.argv[len(sys.argv)-1]) + 'ms'   
     with open(folderName + '/' +  fileName + '.xml', 'w') as f:
         f.write('<scenario>')
         f.write('\n    <at t="0">')
         clientNum = 0
-        for arg in sys.argv[1:]:
+        for arg in sys.argv[2:]:
             delay = int(arg)
             channelDelay = (delay-(0.5*2))/4
             f.write('\n        <set-channel-param src-module="client['+ str(clientNum) + ']" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
@@ -58,8 +69,8 @@ if __name__ == "__main__":
         f.write('\n    </at>')
         clientNum = 0
         f.write('\n    <at t="10">')    
-        for arg in sys.argv[1:]:
-            delay = int(arg)+10
+        for arg in sys.argv[2:]:
+            delay = int(arg)+int(sys.argv[1])
             channelDelay = (delay-(0.5*2))/4
             f.write('\n        <set-channel-param src-module="client['+ str(clientNum) + ']" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
             f.write('\n        <set-channel-param src-module="router1" src-gate="pppg$o['+ str(clientNum) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
