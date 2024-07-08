@@ -2,7 +2,7 @@
 # OMNeT++/OMNEST Makefile for orbtcpExperiments
 #
 # This file was generated with the command:
-#  opp_makemake -f --deep -KINET4_4_PROJ=../../inet4.4 -KORBTCP_PROJ=../../orbtcp -DINET_IMPORT -L$$\(INET4_4_PROJ\)/src -L$$\(ORBTCP_PROJ\)/src -lINET$$\(D\) -lorbtcp$$\(D\)
+#  opp_makemake -f --deep -KBBR_PROJ=../../bbr -KINET4_4_PROJ=../../inet4.4 -KCUBIC_PROJ=../../cubic -KORBTCP_PROJ=../../orbtcp -DINET_IMPORT -L$$\(BBR_PROJ\)/src -L$$\(CUBIC_PROJ\)/src -L$$\(INET4_4_PROJ\)/src -L$$\(ORBTCP_PROJ\)/src -lbbr$$\(D\) -lcubic$$\(D\) -lINET$$\(D\) -lorbtcp$$\(D\)
 #
 
 # Name of target to be created (-o option)
@@ -25,7 +25,7 @@ INCLUDE_PATH =
 EXTRA_OBJS =
 
 # Additional libraries (-L, -l options)
-LIBS = $(LDFLAG_LIBPATH)$(INET4_4_PROJ)/src $(LDFLAG_LIBPATH)$(ORBTCP_PROJ)/src  -lINET$(D) -lorbtcp$(D)
+LIBS = $(LDFLAG_LIBPATH)$(BBR_PROJ)/src $(LDFLAG_LIBPATH)$(CUBIC_PROJ)/src $(LDFLAG_LIBPATH)$(INET4_4_PROJ)/src $(LDFLAG_LIBPATH)$(ORBTCP_PROJ)/src  -lbbr$(D) -lcubic$(D) -lINET$(D) -lorbtcp$(D)
 
 # Output directory
 PROJECT_OUTPUT_DIR = ../out
@@ -42,7 +42,9 @@ MSGFILES =
 SMFILES =
 
 # Other makefile variables (-K)
+BBR_PROJ=../../bbr
 INET4_4_PROJ=../../inet4.4
+CUBIC_PROJ=../../cubic
 ORBTCP_PROJ=../../orbtcp
 
 #------------------------------------------------------------------------------
@@ -64,7 +66,7 @@ include $(CONFIGFILE)
 # Simulation kernel and user interface libraries
 OMNETPP_LIBS = $(OPPMAIN_LIB) $(USERIF_LIBS) $(KERNEL_LIBS) $(SYS_LIBS)
 ifneq ($(PLATFORM),win32)
-LIBS += -Wl,-rpath,$(abspath $(INET4_4_PROJ)/src) -Wl,-rpath,$(abspath $(ORBTCP_PROJ)/src)
+LIBS += -Wl,-rpath,$(abspath $(BBR_PROJ)/src) -Wl,-rpath,$(abspath $(CUBIC_PROJ)/src) -Wl,-rpath,$(abspath $(INET4_4_PROJ)/src) -Wl,-rpath,$(abspath $(ORBTCP_PROJ)/src)
 endif
 
 COPTS = $(CFLAGS) $(IMPORT_DEFINES) -DINET_IMPORT $(INCLUDE_PATH) -I$(OMNETPP_INCL_DIR)

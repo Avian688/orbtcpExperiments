@@ -1,0 +1,566 @@
+<scenario>
+    <at t="0">
+        <set-channel-param src-module="constantClient[0]" src-gate="pppg$o[0]" par="delay" value="1.0ms"/>
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[0]" par="delay" value="1.0ms"/>
+
+        <set-channel-param src-module="constantServer[0]" src-gate="pppg$o[0]" par="delay" value="1.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[0]" par="delay" value="1.0ms"/>
+
+
+        <set-channel-param src-module="constantClient[1]" src-gate="pppg$o[0]" par="delay" value="6.0ms"/>
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[1]" par="delay" value="6.0ms"/>
+
+        <set-channel-param src-module="constantServer[1]" src-gate="pppg$o[0]" par="delay" value="6.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[1]" par="delay" value="6.0ms"/>
+
+
+        <set-channel-param src-module="constantClient[2]" src-gate="pppg$o[0]" par="delay" value="12.25ms"/>
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[2]" par="delay" value="12.25ms"/>
+
+        <set-channel-param src-module="constantServer[2]" src-gate="pppg$o[0]" par="delay" value="12.25ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[2]" par="delay" value="12.25ms"/>
+
+
+        <set-channel-param src-module="constantClient[3]" src-gate="pppg$o[0]" par="delay" value="18.5ms"/>
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[3]" par="delay" value="18.5ms"/>
+
+        <set-channel-param src-module="constantServer[3]" src-gate="pppg$o[0]" par="delay" value="18.5ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[3]" par="delay" value="18.5ms"/>
+
+
+        <set-channel-param src-module="constantClient[4]" src-gate="pppg$o[0]" par="delay" value="24.75ms"/>
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[4]" par="delay" value="24.75ms"/>
+
+        <set-channel-param src-module="constantServer[4]" src-gate="pppg$o[0]" par="delay" value="24.75ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[4]" par="delay" value="24.75ms"/>
+
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[0]" par="delay" value="1.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[0]" par="delay" value="1.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[6]" par="delay" value="1.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[6]" par="delay" value="1.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[1]" par="delay" value="2.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[1]" par="delay" value="2.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[7]" par="delay" value="2.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[7]" par="delay" value="2.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[2]" par="delay" value="3.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[2]" par="delay" value="3.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[8]" par="delay" value="3.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[8]" par="delay" value="3.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[3]" par="delay" value="4.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[3]" par="delay" value="4.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[9]" par="delay" value="4.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[9]" par="delay" value="4.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[4]" par="delay" value="5.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[4]" par="delay" value="5.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[10]" par="delay" value="5.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[10]" par="delay" value="5.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[5]" par="delay" value="6.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[5]" par="delay" value="6.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[11]" par="delay" value="6.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[11]" par="delay" value="6.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[6]" par="delay" value="7.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[6]" par="delay" value="7.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[12]" par="delay" value="7.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[12]" par="delay" value="7.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[7]" par="delay" value="8.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[7]" par="delay" value="8.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[13]" par="delay" value="8.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[13]" par="delay" value="8.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[8]" par="delay" value="9.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[8]" par="delay" value="9.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[14]" par="delay" value="9.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[14]" par="delay" value="9.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[9]" par="delay" value="10.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[9]" par="delay" value="10.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[15]" par="delay" value="10.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[15]" par="delay" value="10.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[10]" par="delay" value="11.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[10]" par="delay" value="11.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[16]" par="delay" value="11.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[16]" par="delay" value="11.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[11]" par="delay" value="12.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[11]" par="delay" value="12.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[17]" par="delay" value="12.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[17]" par="delay" value="12.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[12]" par="delay" value="13.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[12]" par="delay" value="13.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[18]" par="delay" value="13.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[18]" par="delay" value="13.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[13]" par="delay" value="14.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[13]" par="delay" value="14.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[19]" par="delay" value="14.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[19]" par="delay" value="14.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[14]" par="delay" value="15.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[14]" par="delay" value="15.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[20]" par="delay" value="15.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[20]" par="delay" value="15.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[15]" par="delay" value="16.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[15]" par="delay" value="16.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[21]" par="delay" value="16.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[21]" par="delay" value="16.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[16]" par="delay" value="17.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[16]" par="delay" value="17.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[22]" par="delay" value="17.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[22]" par="delay" value="17.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[17]" par="delay" value="18.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[17]" par="delay" value="18.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[23]" par="delay" value="18.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[23]" par="delay" value="18.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[18]" par="delay" value="19.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[18]" par="delay" value="19.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[24]" par="delay" value="19.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[24]" par="delay" value="19.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[19]" par="delay" value="20.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[19]" par="delay" value="20.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[25]" par="delay" value="20.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[25]" par="delay" value="20.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[20]" par="delay" value="21.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[20]" par="delay" value="21.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[26]" par="delay" value="21.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[26]" par="delay" value="21.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[21]" par="delay" value="22.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[21]" par="delay" value="22.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[27]" par="delay" value="22.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[27]" par="delay" value="22.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[22]" par="delay" value="23.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[22]" par="delay" value="23.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[28]" par="delay" value="23.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[28]" par="delay" value="23.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[23]" par="delay" value="24.0ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[23]" par="delay" value="24.0ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[29]" par="delay" value="24.0ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[29]" par="delay" value="24.0ms"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[24]" par="delay" value="24.75ms"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[24]" par="delay" value="24.75ms"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[30]" par="delay" value="24.75ms"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[30]" par="delay" value="24.75ms"/>
+
+        <set-channel-param src-module="pathChangeClient[0]" src-gate="pppg$o[0]" par="delay" value="1.0ms"/>
+        <set-channel-param src-module="pathChangeServer[0]" src-gate="pppg$o[0]" par="delay" value="1.0ms"/>
+        <set-channel-param src-module="pathChangeClient[0]" src-gate="pppg$o[1]" par="delay" value="1.0ms"/>
+        <set-channel-param src-module="pathChangeServer[0]" src-gate="pppg$o[1]" par="delay" value="1.0ms"/>
+        <set-channel-param src-module="pathChangeClient[1]" src-gate="pppg$o[0]" par="delay" value="2.0ms"/>
+        <set-channel-param src-module="pathChangeServer[1]" src-gate="pppg$o[0]" par="delay" value="2.0ms"/>
+        <set-channel-param src-module="pathChangeClient[1]" src-gate="pppg$o[1]" par="delay" value="2.0ms"/>
+        <set-channel-param src-module="pathChangeServer[1]" src-gate="pppg$o[1]" par="delay" value="2.0ms"/>
+        <set-channel-param src-module="pathChangeClient[2]" src-gate="pppg$o[0]" par="delay" value="3.0ms"/>
+        <set-channel-param src-module="pathChangeServer[2]" src-gate="pppg$o[0]" par="delay" value="3.0ms"/>
+        <set-channel-param src-module="pathChangeClient[2]" src-gate="pppg$o[1]" par="delay" value="3.0ms"/>
+        <set-channel-param src-module="pathChangeServer[2]" src-gate="pppg$o[1]" par="delay" value="3.0ms"/>
+        <set-channel-param src-module="pathChangeClient[3]" src-gate="pppg$o[0]" par="delay" value="4.0ms"/>
+        <set-channel-param src-module="pathChangeServer[3]" src-gate="pppg$o[0]" par="delay" value="4.0ms"/>
+        <set-channel-param src-module="pathChangeClient[3]" src-gate="pppg$o[1]" par="delay" value="4.0ms"/>
+        <set-channel-param src-module="pathChangeServer[3]" src-gate="pppg$o[1]" par="delay" value="4.0ms"/>
+        <set-channel-param src-module="pathChangeClient[4]" src-gate="pppg$o[0]" par="delay" value="5.0ms"/>
+        <set-channel-param src-module="pathChangeServer[4]" src-gate="pppg$o[0]" par="delay" value="5.0ms"/>
+        <set-channel-param src-module="pathChangeClient[4]" src-gate="pppg$o[1]" par="delay" value="5.0ms"/>
+        <set-channel-param src-module="pathChangeServer[4]" src-gate="pppg$o[1]" par="delay" value="5.0ms"/>
+        <set-channel-param src-module="pathChangeClient[5]" src-gate="pppg$o[0]" par="delay" value="6.0ms"/>
+        <set-channel-param src-module="pathChangeServer[5]" src-gate="pppg$o[0]" par="delay" value="6.0ms"/>
+        <set-channel-param src-module="pathChangeClient[5]" src-gate="pppg$o[1]" par="delay" value="6.0ms"/>
+        <set-channel-param src-module="pathChangeServer[5]" src-gate="pppg$o[1]" par="delay" value="6.0ms"/>
+        <set-channel-param src-module="pathChangeClient[6]" src-gate="pppg$o[0]" par="delay" value="7.0ms"/>
+        <set-channel-param src-module="pathChangeServer[6]" src-gate="pppg$o[0]" par="delay" value="7.0ms"/>
+        <set-channel-param src-module="pathChangeClient[6]" src-gate="pppg$o[1]" par="delay" value="7.0ms"/>
+        <set-channel-param src-module="pathChangeServer[6]" src-gate="pppg$o[1]" par="delay" value="7.0ms"/>
+        <set-channel-param src-module="pathChangeClient[7]" src-gate="pppg$o[0]" par="delay" value="8.0ms"/>
+        <set-channel-param src-module="pathChangeServer[7]" src-gate="pppg$o[0]" par="delay" value="8.0ms"/>
+        <set-channel-param src-module="pathChangeClient[7]" src-gate="pppg$o[1]" par="delay" value="8.0ms"/>
+        <set-channel-param src-module="pathChangeServer[7]" src-gate="pppg$o[1]" par="delay" value="8.0ms"/>
+        <set-channel-param src-module="pathChangeClient[8]" src-gate="pppg$o[0]" par="delay" value="9.0ms"/>
+        <set-channel-param src-module="pathChangeServer[8]" src-gate="pppg$o[0]" par="delay" value="9.0ms"/>
+        <set-channel-param src-module="pathChangeClient[8]" src-gate="pppg$o[1]" par="delay" value="9.0ms"/>
+        <set-channel-param src-module="pathChangeServer[8]" src-gate="pppg$o[1]" par="delay" value="9.0ms"/>
+        <set-channel-param src-module="pathChangeClient[9]" src-gate="pppg$o[0]" par="delay" value="10.0ms"/>
+        <set-channel-param src-module="pathChangeServer[9]" src-gate="pppg$o[0]" par="delay" value="10.0ms"/>
+        <set-channel-param src-module="pathChangeClient[9]" src-gate="pppg$o[1]" par="delay" value="10.0ms"/>
+        <set-channel-param src-module="pathChangeServer[9]" src-gate="pppg$o[1]" par="delay" value="10.0ms"/>
+        <set-channel-param src-module="pathChangeClient[10]" src-gate="pppg$o[0]" par="delay" value="11.0ms"/>
+        <set-channel-param src-module="pathChangeServer[10]" src-gate="pppg$o[0]" par="delay" value="11.0ms"/>
+        <set-channel-param src-module="pathChangeClient[10]" src-gate="pppg$o[1]" par="delay" value="11.0ms"/>
+        <set-channel-param src-module="pathChangeServer[10]" src-gate="pppg$o[1]" par="delay" value="11.0ms"/>
+        <set-channel-param src-module="pathChangeClient[11]" src-gate="pppg$o[0]" par="delay" value="12.0ms"/>
+        <set-channel-param src-module="pathChangeServer[11]" src-gate="pppg$o[0]" par="delay" value="12.0ms"/>
+        <set-channel-param src-module="pathChangeClient[11]" src-gate="pppg$o[1]" par="delay" value="12.0ms"/>
+        <set-channel-param src-module="pathChangeServer[11]" src-gate="pppg$o[1]" par="delay" value="12.0ms"/>
+        <set-channel-param src-module="pathChangeClient[12]" src-gate="pppg$o[0]" par="delay" value="13.0ms"/>
+        <set-channel-param src-module="pathChangeServer[12]" src-gate="pppg$o[0]" par="delay" value="13.0ms"/>
+        <set-channel-param src-module="pathChangeClient[12]" src-gate="pppg$o[1]" par="delay" value="13.0ms"/>
+        <set-channel-param src-module="pathChangeServer[12]" src-gate="pppg$o[1]" par="delay" value="13.0ms"/>
+        <set-channel-param src-module="pathChangeClient[13]" src-gate="pppg$o[0]" par="delay" value="14.0ms"/>
+        <set-channel-param src-module="pathChangeServer[13]" src-gate="pppg$o[0]" par="delay" value="14.0ms"/>
+        <set-channel-param src-module="pathChangeClient[13]" src-gate="pppg$o[1]" par="delay" value="14.0ms"/>
+        <set-channel-param src-module="pathChangeServer[13]" src-gate="pppg$o[1]" par="delay" value="14.0ms"/>
+        <set-channel-param src-module="pathChangeClient[14]" src-gate="pppg$o[0]" par="delay" value="15.0ms"/>
+        <set-channel-param src-module="pathChangeServer[14]" src-gate="pppg$o[0]" par="delay" value="15.0ms"/>
+        <set-channel-param src-module="pathChangeClient[14]" src-gate="pppg$o[1]" par="delay" value="15.0ms"/>
+        <set-channel-param src-module="pathChangeServer[14]" src-gate="pppg$o[1]" par="delay" value="15.0ms"/>
+        <set-channel-param src-module="pathChangeClient[15]" src-gate="pppg$o[0]" par="delay" value="16.0ms"/>
+        <set-channel-param src-module="pathChangeServer[15]" src-gate="pppg$o[0]" par="delay" value="16.0ms"/>
+        <set-channel-param src-module="pathChangeClient[15]" src-gate="pppg$o[1]" par="delay" value="16.0ms"/>
+        <set-channel-param src-module="pathChangeServer[15]" src-gate="pppg$o[1]" par="delay" value="16.0ms"/>
+        <set-channel-param src-module="pathChangeClient[16]" src-gate="pppg$o[0]" par="delay" value="17.0ms"/>
+        <set-channel-param src-module="pathChangeServer[16]" src-gate="pppg$o[0]" par="delay" value="17.0ms"/>
+        <set-channel-param src-module="pathChangeClient[16]" src-gate="pppg$o[1]" par="delay" value="17.0ms"/>
+        <set-channel-param src-module="pathChangeServer[16]" src-gate="pppg$o[1]" par="delay" value="17.0ms"/>
+        <set-channel-param src-module="pathChangeClient[17]" src-gate="pppg$o[0]" par="delay" value="18.0ms"/>
+        <set-channel-param src-module="pathChangeServer[17]" src-gate="pppg$o[0]" par="delay" value="18.0ms"/>
+        <set-channel-param src-module="pathChangeClient[17]" src-gate="pppg$o[1]" par="delay" value="18.0ms"/>
+        <set-channel-param src-module="pathChangeServer[17]" src-gate="pppg$o[1]" par="delay" value="18.0ms"/>
+        <set-channel-param src-module="pathChangeClient[18]" src-gate="pppg$o[0]" par="delay" value="19.0ms"/>
+        <set-channel-param src-module="pathChangeServer[18]" src-gate="pppg$o[0]" par="delay" value="19.0ms"/>
+        <set-channel-param src-module="pathChangeClient[18]" src-gate="pppg$o[1]" par="delay" value="19.0ms"/>
+        <set-channel-param src-module="pathChangeServer[18]" src-gate="pppg$o[1]" par="delay" value="19.0ms"/>
+        <set-channel-param src-module="pathChangeClient[19]" src-gate="pppg$o[0]" par="delay" value="20.0ms"/>
+        <set-channel-param src-module="pathChangeServer[19]" src-gate="pppg$o[0]" par="delay" value="20.0ms"/>
+        <set-channel-param src-module="pathChangeClient[19]" src-gate="pppg$o[1]" par="delay" value="20.0ms"/>
+        <set-channel-param src-module="pathChangeServer[19]" src-gate="pppg$o[1]" par="delay" value="20.0ms"/>
+        <set-channel-param src-module="pathChangeClient[20]" src-gate="pppg$o[0]" par="delay" value="21.0ms"/>
+        <set-channel-param src-module="pathChangeServer[20]" src-gate="pppg$o[0]" par="delay" value="21.0ms"/>
+        <set-channel-param src-module="pathChangeClient[20]" src-gate="pppg$o[1]" par="delay" value="21.0ms"/>
+        <set-channel-param src-module="pathChangeServer[20]" src-gate="pppg$o[1]" par="delay" value="21.0ms"/>
+        <set-channel-param src-module="pathChangeClient[21]" src-gate="pppg$o[0]" par="delay" value="22.0ms"/>
+        <set-channel-param src-module="pathChangeServer[21]" src-gate="pppg$o[0]" par="delay" value="22.0ms"/>
+        <set-channel-param src-module="pathChangeClient[21]" src-gate="pppg$o[1]" par="delay" value="22.0ms"/>
+        <set-channel-param src-module="pathChangeServer[21]" src-gate="pppg$o[1]" par="delay" value="22.0ms"/>
+        <set-channel-param src-module="pathChangeClient[22]" src-gate="pppg$o[0]" par="delay" value="23.0ms"/>
+        <set-channel-param src-module="pathChangeServer[22]" src-gate="pppg$o[0]" par="delay" value="23.0ms"/>
+        <set-channel-param src-module="pathChangeClient[22]" src-gate="pppg$o[1]" par="delay" value="23.0ms"/>
+        <set-channel-param src-module="pathChangeServer[22]" src-gate="pppg$o[1]" par="delay" value="23.0ms"/>
+        <set-channel-param src-module="pathChangeClient[23]" src-gate="pppg$o[0]" par="delay" value="24.0ms"/>
+        <set-channel-param src-module="pathChangeServer[23]" src-gate="pppg$o[0]" par="delay" value="24.0ms"/>
+        <set-channel-param src-module="pathChangeClient[23]" src-gate="pppg$o[1]" par="delay" value="24.0ms"/>
+        <set-channel-param src-module="pathChangeServer[23]" src-gate="pppg$o[1]" par="delay" value="24.0ms"/>
+        <set-channel-param src-module="pathChangeClient[24]" src-gate="pppg$o[0]" par="delay" value="24.75ms"/>
+        <set-channel-param src-module="pathChangeServer[24]" src-gate="pppg$o[0]" par="delay" value="24.75ms"/>
+        <set-channel-param src-module="pathChangeClient[24]" src-gate="pppg$o[1]" par="delay" value="24.75ms"/>
+        <set-channel-param src-module="pathChangeServer[24]" src-gate="pppg$o[1]" par="delay" value="24.75ms"/>
+    </at>
+    <at t="10">
+        <set-channel-param src-module="pathChangeClient[0]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[0]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[0]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[0]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[1]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[1]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[1]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[1]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[2]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[2]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[2]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[2]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[3]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[3]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[3]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[3]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[4]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[4]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[4]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[4]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[5]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[5]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[5]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[5]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[6]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[6]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[6]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[6]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[7]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[7]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[7]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[7]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[8]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[8]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[8]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[8]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[9]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[9]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[9]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[9]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[10]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[10]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[10]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[10]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[11]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[11]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[11]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[11]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[12]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[12]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[12]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[12]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[13]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[13]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[13]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[13]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[14]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[14]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[14]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[14]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[15]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[15]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[15]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[15]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[16]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[16]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[16]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[16]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[17]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[17]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[17]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[17]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[18]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[18]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[18]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[18]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[19]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[19]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[19]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[19]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[20]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[20]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[20]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[20]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[21]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[21]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[21]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[21]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[22]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[22]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[22]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[22]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[23]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[23]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[23]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[23]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeClient[24]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeServer[24]" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeClient[24]" src-gate="pppg$o[1]" par="weight" value="1"/>
+        <set-channel-param src-module="pathChangeServer[24]" src-gate="pppg$o[1]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[0]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[0]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[6]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[6]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[1]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[1]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[7]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[7]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[2]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[2]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[8]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[8]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[3]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[3]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[9]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[9]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[4]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[4]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[10]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[10]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[5]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[5]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[11]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[11]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[6]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[6]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[12]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[12]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[7]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[7]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[13]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[13]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[8]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[8]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[14]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[14]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[9]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[9]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[15]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[15]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[10]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[10]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[16]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[16]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[11]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[11]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[17]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[17]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[12]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[12]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[18]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[18]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[13]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[13]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[19]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[19]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[14]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[14]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[20]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[20]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[15]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[15]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[21]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[21]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[16]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[16]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[22]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[22]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[17]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[17]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[23]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[23]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[18]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[18]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[24]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[24]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[19]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[19]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[25]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[25]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[20]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[20]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[26]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[26]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[21]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[21]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[27]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[27]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[22]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[22]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[28]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[28]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[23]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[23]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[29]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[29]" par="weight" value="1"/>
+
+        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o[24]" par="weight" value="2"/>
+        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o[24]" par="weight" value="2"/>
+
+        <set-channel-param src-module="constantRouter1" src-gate="pppg$o[30]" par="weight" value="1"/>
+        <set-channel-param src-module="constantRouter2" src-gate="pppg$o[30]" par="weight" value="1"/>
+
+    </at>
+</scenario>

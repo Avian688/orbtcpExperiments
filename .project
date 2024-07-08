@@ -3,6 +3,8 @@
 	<name>orbtcpExperiments</name>
 	<comment></comment>
 	<projects>
+		<project>bbr</project>
+		<project>cubic</project>
 		<project>inet4.4</project>
 		<project>orbtcp</project>
 	</projects>
