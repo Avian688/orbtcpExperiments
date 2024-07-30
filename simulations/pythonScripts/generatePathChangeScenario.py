@@ -80,7 +80,7 @@ if __name__ == "__main__":
                 f.write('\n        <set-channel-param src-module="pathChangeServer['+ str(clientNum) + ']" src-gate="pppg$o['+ str(i) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
             clientNum += 1
         f.write('\n    </at>')
-        #Disconnect old paths, update rtt of new paths. This shifts traffic onto constant routers
+        #Disconnect old paths, update weights of new paths. This shifts traffic onto constant routers
         f.write('\n    <at t="100">')
         clientNum = 0
         for arg in sys.argv[1:]:

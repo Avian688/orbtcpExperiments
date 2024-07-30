@@ -1,0 +1,135 @@
+#!/usr/bin/env python
+
+import sys
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+import random
+import scienceplots
+
+def parse_if_number(s):
+    try: return float(s)
+    except: return True if s=="true" else False if s=="false" else s if s else None
+
+def parse_ndarray(s):
+    return np.fromstring(s, sep=' ') if s else None
+    
+def getResults(file, vecname):
+    resultsFile = pd.read_csv(file, converters = {
+    'attrvalue': parse_if_number,
+    'binedges': parse_ndarray,
+    'binvalues': parse_ndarray,
+    'vectime': parse_ndarray,
+    'vecvalue': parse_ndarray})
+    vectors = resultsFile[resultsFile.type=='vector']
+    vec = vectors[vectors.name == vecname + ':vector']
+    return vec;
+
+if __name__ == "__main__":
+    plt.style.use('science')
+    pd.set_option('display.max_rows', None)
+    plt.rcParams['text.usetex'] = False
+    
+    #runs = list(range(1,51))
+    BINS = 5
+    runs = list(range(1,5))
+    protocols = ["orbtcp", "cubic", "bbr"]
+    
+    # List containing each data point (each run). Values for each datapoint: protocol, run_number, average_goodput, optimal_goodput
+    data = []
+    
+    for protocol in protocols:
+        print("\nPROTOCOL: " + protocol)
+        for run in runs:
+            filePath = '../../paperExperiments/experiment1/results/'+ protocol.title() + 'Run' + str(run) + '.csv'
+            print(filePath)
+            if os.path.exists(filePath):
+                #BANDWIDTH
+                bwResults = getResults(filePath, "bandwidth")
+                optimalBandwidthY = []
+                optimalBandwidthX = []
+                optimalBandwidthVar = 0
+                for mod in range(len(bwResults.vecvalue.to_numpy())):
+                    bwYAxis = bwResults.vecvalue.to_numpy()[mod] #VALUE
+                    bwXAxis = bwResults.vectime.to_numpy()[mod] #TIME
+                    modName = bwResults.module.to_numpy()[mod] #TIME
+                    variance = np.var(bwResults.vecvalue.to_numpy()[mod])
+                    if(variance > optimalBandwidthVar):
+                        optimalBandwidthVar = variance
+                        optimalBandwidthY = bwYAxis
+                        optimalBandwidthX =  bwXAxis
+                optimalBandwidthMean = sum(optimalBandwidthY) / len(optimalBandwidthY)
+                
+                #GOODPUT
+                gpResult = getResults(filePath, "ReceiverSideThroughput")
+                gpYAxis = gpResult.vecvalue.to_numpy()[0] #VALUE
+                data.append([protocol, run, gpYAxis.mean()*0.000001, optimalBandwidthMean*0.000001])
+                print(data)
+    bw_rtt_data = pd.DataFrame(data, columns=['protocol', 'run_number', 'average_goodput', 'optimal_goodput'])
+    colours = {'cubic': '#0C5DA5', 'bbr': '#00B945', 'orbtcp': '#FF9500'}
+    
+    fig, axes = plt.subplots(nrows=1, ncols=1,figsize=(3,1.5))
+    ax = axes
+    
+    optimals = bw_rtt_data[bw_rtt_data['protocol'] == 'cubic']['optimal_goodput']
+    
+    values, base = np.histogram(optimals, bins=BINS)
+    # evaluate the cumulative
+    cumulative = np.cumsum(values)
+    # plot the cumulative function
+    ax.plot(base[:-1], cumulative/50*100, c='black')
+    
+    for protocol in protocols:
+        avg_goodputs = bw_rtt_data[bw_rtt_data['protocol'] == protocol]['average_goodput']
+        values, base = np.histogram(avg_goodputs, bins=BINS)
+        # evaluate the cumulative
+        cumulative = np.cumsum(values)
+        # plot the cumulative function
+        ax.plot(base[:-1], cumulative/50*100, label="%s-rtt" % protocol, c=colours[protocol])
+    
+        #avg_goodputs = loss_data[loss_data['protocol'] == protocol]['average_goodput']
+        #values, base = np.histogram(avg_goodputs, bins=BINS)
+        # evaluate the cumulative
+        #cumulative = np.cumsum(values)
+        # plot the cumulative function
+        #ax.plot(base[:-1], cumulative / 50 * 100, label="%s-loss" % protocol, c=colours[protocol], linestyle='dashed')
+    
+    ax.set(xlabel="Average Goodput (Mbps)", ylabel="Percentage of Trials (\%)")
+    ax.annotate('optimal', xy=(50, 50), xytext=(45, 20), arrowprops=dict(arrowstyle="->", linewidth=0.5))
+    
+    fig.legend(ncol=3, loc='upper center',bbox_to_anchor=(0.5, 1.19),columnspacing=0.5,handletextpad=0.5, handlelength=1)
+    for format in ['pdf']:
+        fig.savefig("joined_goodput_cdf.%s" % (format), dpi=720)                
+                    
+                    
+    # results = []
+    # nList = [1,2,10,40]
+    # for arg in sys.argv[1:]:
+    #     results.append(getResults(arg))
+    # i = 0
+    # plt.figure(figsize=(25,12))
+    # plt.xticks(fontsize=20)
+    # plt.yticks(fontsize=20)
+    # for result in results:
+    #     colorNum = 0
+    #     #result.index = np.arange(1, len(result) + 1)
+    #     for expNum in range(len(result.vecvalue.to_numpy())):
+    #         yAxis = result.vecvalue.to_numpy()[expNum]
+    #         #print(results.vecvalue)
+    #         plt.plot(result.vectime.to_numpy()[expNum],yAxis/150000000
+    #         , linewidth=1)
+    #         colorNum += 1
+    #
+    #     axes = plt.gca()
+    #     #axes.set_xlim([0, 40])
+    #     #axes.set_ylim([0,150])
+    #     plt.xlabel('Time (s)', fontsize=28)
+    #     plt.ylabel('Throughput (rate/B)', fontsize=28)
+    #     plt.legend(loc = "upper right")
+    #     plt.title("Throughput", fontsize=35)
+    #     #plt.xticks((np.arange(0, result["Goodput"].idxmax(), step=250)))
+    #     plt.savefig('throughput.png')
+    #     i += 1
+    
+

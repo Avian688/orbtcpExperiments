@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# Generates csv files for given orbtcp flavours
-# generateCsvFiles orbtcp ... orbTcpFlavourN
+# Generates csv files for given experiment name
+# generateCsvFiles experiment1 ... experimentN
 # Aiden Valentine
 
 import sys
@@ -18,12 +18,12 @@ if __name__ == "__main__":
     currentProc = 0
     processList = []
     for arg in sys.argv[1:]:
-        folderLoc =  '../'+ arg +'/results/'
+        folderLoc =  '../paperExperiments/'+ arg +'/results/'
         print("------------ Generating CSV Files for " + arg + "------------")
         for file in os.listdir(folderLoc):
             if(file.endswith(".vec")):
                 f = os.path.join(folderLoc, file)
-                processList.append(subprocess.Popen("opp_scavetool export -o "+ folderLoc + file[:-7] + ".csv -F CSV-R " + folderLoc + file , shell=True, cwd='../' + arg))
+                processList.append(subprocess.Popen("opp_scavetool export -o "+ "results/"+ file[:-7] + ".csv -F CSV-R " + "results/" + file , shell=True, cwd='../paperExperiments/' + arg))
                 currentProc = currentProc + 1
                 print("Generating CSV file for [" + file + "]... (Run #" + str(currentProc) + ")")
                 if(currentProc == cores):
@@ -34,6 +34,6 @@ if __name__ == "__main__":
                      print("     ... Running next batch! ...\n")
     for proc in processList:
         proc.wait()
-    subprocess.Popen("find . -depth 1 -type f -not -name '*.csv' -delete", shell=True, cwd='../' + arg + '/results')
+    #subprocess.Popen("find . -depth 1 -type f -not -name '*.csv' -delete", shell=True, cwd='../' + arg + '/results')
         
         
