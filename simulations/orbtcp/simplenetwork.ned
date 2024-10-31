@@ -24,7 +24,7 @@ network simplenetwork
         channel bottleneckLine extends DatarateChannel 
         {
             delay = 0.5ms;
-            datarate = 150Mbps;
+            datarate = 50Mbps;
         }
        
     submodules:

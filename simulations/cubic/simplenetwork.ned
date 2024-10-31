@@ -18,7 +18,7 @@ network simplenetwork
         channel standardLine extends DatarateChannel //look at 
         {
             delay = 0ms;
-            datarate = 1Gbps;
+            datarate = 100Gbps;
         }
         
         channel bottleneckLine extends DatarateChannel //look at 

@@ -36,7 +36,7 @@ def int_to_word(num):
 if __name__ == "__main__":
     #numOfClients = int_to_word(len(sys.argv)-1)
     #folderName = '../scenarios/' + numOfClients + 'Flows'
-    queueLength = 500
+    queueLength = 340 #Average BDP
     algorithms = ["orbtcp", "bbr", "cubic"]
     for alg in algorithms:
         fileName =  '../../paperExperiments/experiment1/experiment1' + alg + '.ini'
@@ -64,9 +64,11 @@ if __name__ == "__main__":
             f.write('\n' + '**.**.tcp.conn-*.cwnd:vector.vector-recording = true')
             f.write('\n' + '**.**.tcp.conn-*.U:vector.vector-recording = true')
             f.write('\n' + '**.**.tcp.conn-*.rtt:vector.vector-recording = true')
+            f.write('\n' + '**.**.tcp.conn-*.srtt:vector.vector-recording = true') 
             f.write('\n' + '**.**.tcp.conn-*.lossRecovery:vector.vector-recording = true')
             f.write('\n' + '**.**.queue.queueLength:vector.vector-recording = true')
-            f.write('\n' + '**.**.ReceiverSideThroughput:vector.vector-recording = true')
+            f.write('\n' + '**.**.goodput:vector.vector-recording = true')
+            f.write('\n' + '**.**.throughput:vector.vector-recording = true')
             f.write('\n' + '**.**.bandwidth:vector.vector-recording = true')
             f.write('\n' + '**.**.mbytesInFlight:vector.vector-recording = true')
             f.write('\n' + '**.scalar-recording=false')
@@ -75,7 +77,7 @@ if __name__ == "__main__":
             f.write('\n' + '**.server[*].app[*].*.thrMeasurementInterval = 1s')
             
             if(algFlavour == "TcpCubic"):
-                f.write('\n' + '**.tcp.typename = "PacedTcp"')
+                f.write('\n' + '**.tcp.typename = "TcpPaced"')
                 f.write('\n' + '**.tcp.tcpAlgorithmClass = "TcpCubic"')
                 f.write('\n' + '**.tcp.advertisedWindow = 200000000')
                 f.write('\n' + '**.tcp.windowScalingSupport = true')
@@ -90,16 +92,17 @@ if __name__ == "__main__":
                 f.write('\n' + '**.tcp.sackSupport = true')
                 #f.write('\n' + '**.tcp.initialSsthresh = 0\n')
                 f.write('\n' + '**.client[*].numApps = 1')
-                f.write('\n' + '**.client[*].app[*].typename  = "TcpSessionApp"')
+                f.write('\n' + '**.client[*].app[*].typename  = "TcpGoodputSessionApp"')
                 f.write('\n' + '*.client[*].app[0].tClose = -1s')
                 f.write('\n' + '*.client[*].app[0].sendBytes = 2GB')
                 f.write('\n' + '*.client[*].app[0].dataTransferMode = "bytecount"')
                 f.write('\n' + '*.client[*].app[0].statistic-recording = true\n')
                 f.write('\n' + '**.server[*].numApps = 1')
                 f.write('\n' + '**.server[*].app[*].typename  = "TcpSinkApp"')
-                f.write('\n' + '**.server[*].app[*].serverThreadModuleType = "orbtcp.applications.tcpapp.TcpThroughputSinkAppThread"\n')
+                f.write('\n' + '**.server[*].app[*].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
                 f.write('\n' + '**.ppp[*].queue.typename = "BandwidthRecorderDropTailQueue"\n')
                 f.write('\n' + '**.tcp.initialSsthresh = ' + str(400*1448) + '\n')
+                
             elif(algFlavour == "BbrFlavour"):
                 f.write('\n' + '**.tcp.typename = "Bbr"')
                 f.write('\n' + '**.tcp.tcpAlgorithmClass = "BbrFlavour"')
@@ -115,14 +118,14 @@ if __name__ == "__main__":
                 f.write('\n' + '**.tcp.mss = 1448')
                 f.write('\n' + '**.tcp.sackSupport = true')
                 f.write('\n' + '**.client[*].numApps = 1')
-                f.write('\n' + '**.client[*].app[*].typename  = "BbrSessionApp"')
+                f.write('\n' + '**.client[*].app[*].typename  = "TcpGoodputSessionApp"')
                 f.write('\n' + '*.client[*].app[0].tClose = -1s')
                 f.write('\n' + '*.client[*].app[0].sendBytes = 2GB')
                 f.write('\n' + '*.client[*].app[0].dataTransferMode = "bytecount"')
                 f.write('\n' + '*.client[*].app[0].statistic-recording = true\n')
                 f.write('\n' + '**.server[*].numApps = 1')
                 f.write('\n' + '**.server[*].app[*].typename  = "TcpSinkApp"')
-                f.write('\n' + '**.server[*].app[*].serverThreadModuleType = "orbtcp.applications.tcpapp.TcpThroughputSinkAppThread"\n')
+                f.write('\n' + '**.server[*].app[*].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
                 f.write('\n' + '**.ppp[*].queue.typename = "BandwidthRecorderDropTailQueue"\n')
                 f.write('\n' + '**.tcp.initialSsthresh = ' + str(500*1448) + '\n')
             else:
@@ -142,14 +145,14 @@ if __name__ == "__main__":
                 #f.write('\n' + '**.tcp.initialSsthresh = 0\n')
                 
                 f.write('\n' + '**.client[*].numApps = 1')
-                f.write('\n' + '**.client[*].app[*].typename  = "OrbtcpSessionApp"')
+                f.write('\n' + '**.client[*].app[*].typename  = "TcpGoodputSessionApp"')
                 f.write('\n' + '*.client[*].app[0].tClose = -1s')
                 f.write('\n' + '*.client[*].app[0].sendBytes = 2GB')
                 f.write('\n' + '*.client[*].app[0].dataTransferMode = "bytecount"')
                 f.write('\n' + '*.client[*].app[0].statistic-recording = true\n')
                 f.write('\n' + '**.server[*].numApps = 1')
                 f.write('\n' + '**.server[*].app[*].typename  = "TcpSinkApp"')
-                f.write('\n' + '**.server[*].app[*].serverThreadModuleType = "orbtcp.applications.tcpapp.TcpThroughputSinkAppThread"\n')
+                f.write('\n' + '**.server[*].app[*].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
                 f.write('\n' + '**.ppp[*].queue.typename = "IntQueue"\n')
                 f.write('\n' + '**.additiveIncreasePercent = 0.05')
                 f.write('\n' + '**.eta = 0.95\n')
@@ -167,9 +170,6 @@ if __name__ == "__main__":
                 f.write('\n' + '*.client[0].app[0].connectAddress = "server[0]"')
                 f.write('\n' + '*.client[0].app[0].tOpen = 0s')
                 f.write('\n' + '*.client[0].app[0].tSend = 0s\n')
-                f.write('\n' + '*.client[*].app[0].connectAddress = "server[" + string(parentIndex()) +"]"')
-                f.write('\n' + '*.client[*].app[0].tOpen = 0s')
-                f.write('\n' + '*.client[*].app[0].tSend = uniform(0s,100s)\n')
                 f.write('\n' + '**.ppp[*].queue.packetCapacity = ' + str(queueLength) + '\n')
                 f.write('\n' + '*.scenarioManager.script = xmldoc("../../scenarios/experiment1/run' + str(runNum) + '.xml")\n')
     print('\nINI files generated!')            

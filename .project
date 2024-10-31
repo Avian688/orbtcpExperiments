@@ -5,8 +5,10 @@
 	<projects>
 		<project>bbr</project>
 		<project>cubic</project>
-		<project>inet4.4</project>
+		<project>inet4.5</project>
 		<project>orbtcp</project>
+		<project>tcpGoodputApplications</project>
+		<project>tcpPaced</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

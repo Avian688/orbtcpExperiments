@@ -35,14 +35,24 @@ def int_to_word(num):
            
 if __name__ == "__main__":
     numOfClients = 1
+    minBw = 50 #Mb
+    maxBw = 100 #Mb
+    minRtt = 5
+    maxRtt = 100
     numOfRuns = 50
-    currentRtt = 75 #ms
-    currentBw = 75 #Mb
-    currentPer = 0
-    currentInterval = 15
     simLength = 300 #s
     simSeed = 1999
+    intervalLength = 15
+    
+    currentBw = 0
+    currentRtt = 0 
+    currentPer = 0
+    currentInterval = 0
+    
     for i in range(numOfRuns):
+        currentBw = 75 #Mb
+        currentRtt = 75 #ms
+        currentInterval = intervalLength
         random.seed(simSeed + i)
         folderName = '../../scenarios/experiment2/'
         Path(folderName).mkdir(parents=True, exist_ok=True)
@@ -63,8 +73,8 @@ if __name__ == "__main__":
             f.write('\n    </at>')
             while(currentInterval < simLength):
                 f.write('\n    <at t="' + str(currentInterval) + '">')  
-                currentRtt = random.randint(5,100) #ms
-                currentBw = random.randint(50,100) #Mbps
+                currentRtt = random.randint(minRtt,maxRtt) #ms
+                currentBw = random.randint(minBw,maxBw) #Mbps
                 currentPer = random.uniform(0,0.01) #PER
                 channelDelay = (currentRtt-(0.5*2))/4
                 f.write('\n        <set-channel-param src-module="client[0]" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
@@ -77,8 +87,5 @@ if __name__ == "__main__":
                 f.write('\n        <set-channel-param src-module="router2" src-gate="pppg$o[1]" par="datarate" value="'+ str(currentBw) +'Mbps"/>')
                 f.write('\n        <set-channel-param src-module="router1" src-gate="pppg$o[1]" par="per" value="'+ str(currentPer) +'"/>')
                 f.write('\n    </at>')
-                currentInterval += 15
+                currentInterval += intervalLength
             f.write('\n</scenario>')
-        currentInterval = 10
-        currentRtt = 110
-        currentBw = 50
