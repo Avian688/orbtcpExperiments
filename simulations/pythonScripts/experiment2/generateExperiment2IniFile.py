@@ -160,9 +160,9 @@ if __name__ == "__main__":
                 f.write('\n' + '**.fixedAvgRTTVal = '+ str(0) + '\n')
                 f.write('\n' + '**.tcp.initialSsthresh = ' + str(400*1448) + '\n')
                 
-            dir = [f for f in os.listdir('../../scenarios/experiment2/.')]
+            dir = [f for f in os.listdir('../../paperExperiments/scenarios/experiment2/.')]
             for xmlFile in dir:
-                runNum = int(os.path.basename(xmlFile)[7:-4])                          
+                runNum = int(os.path.basename(xmlFile)[3:-4])                          
                 configName = alg.title() + "LossRun" + str(runNum)
                 f.write('\n' + '[Config ' + configName + ']')       
                 f.write('\n' + 'extends = General \n')
@@ -171,7 +171,7 @@ if __name__ == "__main__":
                 f.write('\n' + '*.client[0].app[0].tOpen = 0s')
                 f.write('\n' + '*.client[0].app[0].tSend = 0s\n')
                 f.write('\n' + '**.ppp[*].queue.packetCapacity = ' + str(queueLength) + '\n')
-                f.write('\n' + '*.scenarioManager.script = xmldoc("../../scenarios/experiment2/lossRun' + str(runNum) + '.xml")\n')
+                f.write('\n' + '*.scenarioManager.script = xmldoc("../scenarios/experiment2/run' + str(runNum) + '.xml")\n')
     print('\nINI files generated!')            
                 
                     

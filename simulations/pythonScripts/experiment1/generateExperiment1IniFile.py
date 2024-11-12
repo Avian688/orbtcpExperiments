@@ -160,7 +160,7 @@ if __name__ == "__main__":
                 f.write('\n' + '**.fixedAvgRTTVal = '+ str(0) + '\n')
                 f.write('\n' + '**.tcp.initialSsthresh = ' + str(400*1448) + '\n')
                 
-            dir = [f for f in os.listdir('../../scenarios/experiment1/.')]
+            dir = [f for f in os.listdir('../../paperExperiments/scenarios/experiment1/.')]
             for xmlFile in dir:
                 runNum = int(os.path.basename(xmlFile)[3:-4])                          
                 configName = alg.title() + "Run" + str(runNum)
@@ -179,4 +179,5 @@ if __name__ == "__main__":
             
             
             
+
 

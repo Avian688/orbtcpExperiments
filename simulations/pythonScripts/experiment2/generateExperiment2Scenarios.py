@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 from pathlib import Path
+import json
 
 def int_to_word(num):
     d = { 0 : 'zero', 1 : 'one', 2 : 'two', 3 : 'three', 4 : 'four', 5 : 'five',
@@ -41,30 +42,33 @@ if __name__ == "__main__":
     maxRtt = 100
     numOfRuns = 50
     simLength = 300 #s
-    simSeed = 0
+    simSeed = 1
     intervalLength = 15
-    
     currentBw = 0
     currentRtt = 0 
-    currentPer = 0
-    currentInterval = 0
-    
     for i in range(numOfRuns):
+        baseRttDict = {}
+        bwDict = {}
         currentBw = 75 #Mb
         currentRtt = 75 #ms
+        currentInterval = 0
         random.seed(simSeed + i)
-        folderName = '../../scenarios/experiment2/'
+        folderName = '../../paperExperiments/scenarios/experiment2/'
+        folderBaseRttsName = '../../paperExperiments/baseRtts/experiment2/'
+        folderBwsName = '../../paperExperiments/bandwidths/experiment2/'
         Path(folderName).mkdir(parents=True, exist_ok=True)
-        fileName = 'lossRun' + str(i+1)
+        Path(folderBaseRttsName).mkdir(parents=True, exist_ok=True)
+        Path(folderBwsName).mkdir(parents=True, exist_ok=True)
+        fileName = 'run' + str(i+1)
         with open(folderName + '/' +  fileName + '.xml', 'w') as f:
             f.write('<scenario>')
             clientNum = 0
             channelDelay = (currentRtt-(0.5*2))/4
-            while(currentInterval < simLength):
+            while(currentInterval <= simLength):
                 f.write('\n    <at t="' + str(currentInterval) + '">')  
-                currentRtt = random.randint(minRtt,maxRtt) #ms
                 currentBw = random.randint(minBw,maxBw) #Mbps
-                currentPer = random.uniform(0,0.01) #PER
+                currentRtt = random.randint(minRtt,maxRtt) #ms
+                currentPer = random.uniform(0,0.01) #PER 
                 channelDelay = (currentRtt-(0.5*2))/4
                 f.write('\n        <set-channel-param src-module="client[0]" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
                 f.write('\n        <set-channel-param src-module="router1" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
@@ -76,5 +80,15 @@ if __name__ == "__main__":
                 f.write('\n        <set-channel-param src-module="router2" src-gate="pppg$o[1]" par="datarate" value="'+ str(currentBw) +'Mbps"/>')
                 f.write('\n        <set-channel-param src-module="router1" src-gate="pppg$o[1]" par="per" value="'+ str(currentPer) +'"/>')
                 f.write('\n    </at>')
+                baseRttDict[currentInterval] = currentRtt
+                bwDict[currentInterval] = currentBw
                 currentInterval += intervalLength
             f.write('\n</scenario>')
+            
+        rttDictObj = json.dumps(baseRttDict, indent=len(baseRttDict))
+        with open(folderBaseRttsName + fileName + ".json", "w") as o:
+            o.write(rttDictObj)
+            
+        bwDictObj = json.dumps(bwDict, indent=len(bwDict))
+        with open(folderBwsName + fileName + ".json", "w") as p:
+            p.write(bwDictObj)
