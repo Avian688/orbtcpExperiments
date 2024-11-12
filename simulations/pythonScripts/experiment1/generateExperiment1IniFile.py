@@ -171,7 +171,7 @@ if __name__ == "__main__":
                 f.write('\n' + '*.client[0].app[0].tOpen = 0s')
                 f.write('\n' + '*.client[0].app[0].tSend = 0s\n')
                 f.write('\n' + '**.ppp[*].queue.packetCapacity = ' + str(queueLength) + '\n')
-                f.write('\n' + '*.scenarioManager.script = xmldoc("../../scenarios/experiment1/run' + str(runNum) + '.xml")\n')
+                f.write('\n' + '*.scenarioManager.script = xmldoc("../scenarios/experiment1/run' + str(runNum) + '.xml")\n')
     print('\nINI files generated!')            
                 
                     

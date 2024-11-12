@@ -41,7 +41,7 @@ if __name__ == "__main__":
     maxRtt = 100
     numOfRuns = 50
     simLength = 300 #s
-    simSeed = 1999
+    simSeed = 0
     intervalLength = 15
     
     currentBw = 0
@@ -52,25 +52,14 @@ if __name__ == "__main__":
     for i in range(numOfRuns):
         currentBw = 75 #Mb
         currentRtt = 75 #ms
-        currentInterval = intervalLength
         random.seed(simSeed + i)
         folderName = '../../scenarios/experiment2/'
         Path(folderName).mkdir(parents=True, exist_ok=True)
         fileName = 'lossRun' + str(i+1)
         with open(folderName + '/' +  fileName + '.xml', 'w') as f:
             f.write('<scenario>')
-            f.write('\n    <at t="0">')
             clientNum = 0
             channelDelay = (currentRtt-(0.5*2))/4
-            f.write('\n        <set-channel-param src-module="client[0]" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
-            f.write('\n        <set-channel-param src-module="router1" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
-            f.write('\n')
-            f.write('\n        <set-channel-param src-module="server[0]" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>') 
-            f.write('\n        <set-channel-param src-module="router2" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
-            f.write('\n')
-            f.write('\n        <set-channel-param src-module="router1" src-gate="pppg$o[1]" par="datarate" value="'+ str(currentBw) +'Mbps"/>')
-            f.write('\n        <set-channel-param src-module="router2" src-gate="pppg$o[1]" par="datarate" value="'+ str(currentBw) +'Mbps"/>')
-            f.write('\n    </at>')
             while(currentInterval < simLength):
                 f.write('\n    <at t="' + str(currentInterval) + '">')  
                 currentRtt = random.randint(minRtt,maxRtt) #ms

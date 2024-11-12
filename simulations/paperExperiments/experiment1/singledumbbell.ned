@@ -16,7 +16,7 @@ network singledumbbell
     types:
         channel standardLine extends DatarateChannel //look at 
         {
-            delay = 0ms;
+            delay = 4.75ms;
             datarate = 1Gbps;
         }
         
