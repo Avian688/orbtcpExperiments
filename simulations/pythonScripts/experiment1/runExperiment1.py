@@ -16,14 +16,14 @@ import time
            
 if __name__ == "__main__":
     
-    startStep = 1 
-    endStep = 7
+    startStep = 6
+    endStep = 6
     currStep = 1
-    cores = 4
+    cores = 35
     currentProc = 0
     processList = []
     congControlList = ["cubic","orbtcp"]
-    experiments = ["experiment1","experiment2"]
+    experiments = ["experiment1", "experiment2"]
     runs = 50
     runList = list(range(1,runs+1))
     
@@ -145,16 +145,37 @@ if __name__ == "__main__":
         currentProc = 0   
     currStep += 1
     
+    print("CSVs created for experiments 1 and 2!\n")
+    
     if(currStep <= endStep and currStep >= startStep): #STEP 5
-        subprocess.Popen("mkdir plots", shell=True).communicate(timeout=10) 
-        subprocess.Popen("rm -r *", shell=True, cwd='plots/').communicate(timeout=10) 
-        
+        currentProc = 0
+        print("Extracting CSV data!!\n")
+        print("------------ Extracting CSV Files for experiment 1 + 2 ------------")
+        processListStr = []
         for exp in experiments:
-            subprocess.Popen("mkdir " + exp, shell=True, cwd='plots/').communicate(timeout=10)
-            for cc in congControlList:
-                subprocess.Popen("mkdir " + cc, shell=True, cwd='plots/' + exp + '/').communicate(timeout=10)
+            if(exp == "experiment1"):
+                runNam = "Run"   
+            else:
+                runNam = "LossRun" 
+            for protocol in congControlList:
                 for run in runList:
-                    subprocess.Popen("mkdir run" + str(run), shell=True, cwd='plots/' + exp + '/' + cc + '/' ).communicate(timeout=10)
+                    filePath = '../../paperExperiments/' + exp +'/results/'+ protocol.title() + runNam + str(run) + '.csv'
+                    if os.path.exists(filePath):
+                         processListStr.append("python3 extractSingleCsvFile.py " + filePath + " " + exp + " " + protocol + " " + str(run))
+        
+        currentProc = 0
+        while(len(processListStr) > 0):
+            process = processListStr.pop()
+            print(process + "\n")
+            processList.append(subprocess.Popen(process, shell=True))
+            currentProc += 1
+            if(currentProc >= cores):
+                for proc in processList:
+                    proc.wait(timeout=300)
+                currentProc = 0
+                print("Csv Extraction batch complete!\n")
+                print("Extracting next batch!\n")
+                processList.clear()               
     currStep += 1
     
     if(currStep <= endStep and currStep >= startStep): #STEP 6
@@ -164,40 +185,59 @@ if __name__ == "__main__":
     currStep += 1
     
     if(currStep <= endStep and currStep >= startStep): #STEP 7
+        subprocess.Popen("mkdir plots", shell=True).communicate(timeout=10) 
+        subprocess.Popen("rm -r *", shell=True, cwd='plots/').communicate(timeout=10) 
+        
         for exp in experiments:
-            print("\n-----PLOTTING " + exp + "-----\n")
-            for protocol in congControlList:
-                print("\n-----PLOTTING " + protocol + "-----\n")
+            print("\n-----Making plot diretories for " + exp + "-----\n")
+            subprocess.Popen("mkdir " + exp, shell=True, cwd='plots/').communicate(timeout=10)
+            for cc in congControlList:
+                print("\n-----Making plot directories for " + cc + "-----\n")
+                subprocess.Popen("mkdir " + cc, shell=True, cwd='plots/' + exp + '/').communicate(timeout=10)
                 for run in runList:
-                    print("\nCurrently on Run#" + str(run) + " \n")
+                    subprocess.Popen("mkdir run" + str(run), shell=True, cwd='plots/' + exp + '/' + cc + '/' ).communicate(timeout=10)
+    currStep += 1
+    
+    if(currStep <= endStep and currStep >= startStep): #STEP 8
+        print("\nPlotting!")
+        for exp in experiments:
+            processListStr = []
+            for protocol in congControlList:
+                for run in runList:
+                    #print("\nCurrently on Run#" + str(run) + " \n")
         
-                    runTitle = "Run"
-                    if(exp == "experiment2"):
-                        runTitle = "LossRun"
-        
-                    filePath = '../../paperExperiments/' + exp +'/results/'+ protocol.title() + runTitle + str(run) + '.csv'
-                    if os.path.exists(filePath):
-                        subprocess.Popen("mkdir goodput", shell=True, cwd='plots/'+ exp + '/' + protocol +'/run' + str(run) + '/').communicate(timeout=10) 
-                        subprocess.Popen("mkdir throughput", shell=True, cwd='plots/'+ exp + '/' + protocol +'/run' + str(run) + '/').communicate(timeout=10) 
-                        subprocess.Popen("mkdir cwnd", shell=True, cwd='plots/'+ exp + '/' + protocol +'/run' + str(run) + '/').communicate(timeout=10) 
-                        subprocess.Popen("mkdir queueLength", shell=True, cwd='plots/'+ exp + '/' + protocol +'/run' + str(run) + '/').communicate(timeout=10) 
-                        subprocess.Popen("mkdir rtt", shell=True, cwd='plots/'+ exp + '/' + protocol +'/run' + str(run) + '/').communicate(timeout=10) 
-                        
-                        print("Plotting goodput...\n")
-                        processList.append(subprocess.Popen("python3 ../../../../../plotGoodput.py " + "../../../../../" + filePath, shell=True, cwd='plots/' + exp + '/' + protocol + '/run' + str(run) + '/goodput/'))        
-                        print("Plotting throughput...\n")
-                        processList.append(subprocess.Popen("python3 ../../../../../plotThroughput.py " + "../../../../../" + filePath, shell=True, cwd='plots/' + exp + '/' + protocol + '/run' + str(run) + '/throughput/'))
-                        print("Plotting cwnd...\n")
-                        processList.append(subprocess.Popen("python3 ../../../../../plotCwnd.py " + "../../../../../" + filePath, shell=True, cwd='plots/' + exp + '/' + protocol + '/run' + str(run) + '/cwnd/'))
-                        print("Plotting queue length...\n")
-                        processList.append(subprocess.Popen("python3 ../../../../../plotQueueLength.py " + "../../../../../" + filePath, shell=True, cwd='plots/' + exp + '/' + protocol + '/run' + str(run) + '/queueLength/'))
-                        print("Plotting rtt...\n")
-                        processList.append(subprocess.Popen("python3 ../../../../../plotRtt.py " + "../../../../../" + filePath, shell=True, cwd='plots/' + exp + '/' + protocol + '/run' + str(run) + '/rtt/'))
-                        currentProc += 5
-                        if(currentProc >= cores):
-                            for proc in processList:
-                                proc.wait(timeout=300)
-                            currentProc = 0
-                            processList.clear()
+                    runTitle = "run"
+                       
+                    goodputFilePath = '../../paperExperiments/' + exp + '/csvs/'+ protocol + '/' + runTitle + str(run) + '/singledumbbell.server[0].app[0].thread_9/goodput.csv'
+                    throughputFilePath = '../../paperExperiments/' + exp + '/csvs/'+ protocol + '/' + runTitle + str(run) + '/singledumbbell.server[0].tcp.conn-9/throughput.csv'
+                    cwndFilePath = '../../paperExperiments/' + exp + '/csvs/'+ protocol + '/' + runTitle + str(run) + '/singledumbbell.client[0].tcp.conn-8/cwnd.csv'
+                    queueLengthFilePath = '../../paperExperiments/' + exp + '/csvs/'+ protocol + '/' + runTitle + str(run) + '/singledumbbell.router1.ppp[1].queue/queueLength.csv'
+                    rttFilePath = '../../paperExperiments/' + exp + '/csvs/'+ protocol + '/' + runTitle + str(run) + '/singledumbbell.client[0].tcp.conn-8/rtt.csv'
+                    if os.path.exists(cwndFilePath) and os.path.exists(goodputFilePath) and os.path.exists(throughputFilePath) and os.path.exists(queueLengthFilePath):
+                        #subprocess.Popen("mkdir goodput", shell=True, cwd='plots/'+ exp + '/' + protocol +'/run' + str(run) + '/', stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT).communicate(timeout=10) 
+                        #subprocess.Popen("mkdir throughput", shell=True, cwd='plots/'+ exp + '/' + protocol +'/run' + str(run) + '/', stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT).communicate(timeout=10) 
+                        #subprocess.Popen("mkdir cwnd", shell=True, cwd='plots/'+ exp + '/' + protocol +'/run' + str(run) + '/', stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT).communicate(timeout=10) 
+                        #subprocess.Popen("mkdir queueLength", shell=True, cwd='plots/'+ exp + '/' + protocol +'/run' + str(run) + '/', stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT).communicate(timeout=10) 
+                        #subprocess.Popen("mkdir rtt", shell=True, cwd='plots/'+ exp + '/' + protocol +'/run' + str(run) + '/', stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT).communicate(timeout=10) 
+                        processListStr.append(("python3 ../../../../plotGoodput.py " + "../../../../" + goodputFilePath, 'plots/' + exp + '/' + protocol + '/run' + str(run)))
+                        processListStr.append(("python3 ../../../../plotThroughput.py " + "../../../../" + throughputFilePath, 'plots/' + exp + '/' + protocol + '/run' + str(run)))
+                        processListStr.append(("python3 ../../../../plotCwnd.py " + "../../../../" + cwndFilePath, 'plots/' + exp + '/' + protocol + '/run' + str(run)))
+                        processListStr.append(("python3 ../../../../plotQueueLength.py " + "../../../../" + queueLengthFilePath, 'plots/' + exp + '/' + protocol + '/run' + str(run)))
+                        processListStr.append(("python3 ../../../../plotRtt.py " + "../../../../" + rttFilePath, 'plots/' + exp + '/' + protocol + '/run' + str(run)))
+                    else:
+                        print("CSV Entries do not exist! \n")
+        print("Plotting current batch!\n")
+        while(len(processListStr) > 0):
+            processTup = processListStr.pop()
+            print(processTup[0] + "\n")
+            processList.append(subprocess.Popen(processTup[0], shell=True, cwd=processTup[1]))
+            currentProc += 1
+            if(currentProc >= cores):
+                for proc in processList:
+                    proc.wait(timeout=300)
+                currentProc = 0
+                print("Plot batch complete!\n")
+                print("Plotting next batch!\n")
+                processList.clear()
     currStep += 1
         

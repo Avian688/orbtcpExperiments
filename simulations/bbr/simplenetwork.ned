@@ -24,7 +24,7 @@ network simplenetwork
         {
             delay = 0.5ms;
             datarate = 50Mbps;
-            //per = 0.0011584;
+            per = 0.01;
         }
     submodules:
         client[numberOfFlows]: StandardHost {

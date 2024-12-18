@@ -34,79 +34,118 @@ def int_to_word(num):
         raise AssertionError('num is too large: %s' % str(num))
            
 if __name__ == "__main__":
-    numOfClients = int_to_word(len(sys.argv)-1)
-    constClient = 0
-    folderName = '../scenarios/experiment3/' + numOfClients + 'Flows'
-    Path(folderName).mkdir(parents=True, exist_ok=True)
-    fileName = ''
-    for argName in sys.argv[1:len(sys.argv)-1]:
-        fileName+= str(argName) + '-'
-    fileName+= str(sys.argv[len(sys.argv)-1]) + 'ms'   
-    with open(folderName + '/' +  fileName + '.xml', 'w') as f:
-        f.write('<scenario>')
-        f.write('\n    <at t="0">')
-        constantclientNum = 0
-        constantFlows = [5,25,50,75,100]
-        for flowRtt in constantFlows:
-            delay = int(flowRtt)
-            channelDelay = (delay-(0.5*2))/4
-            f.write('\n        <set-channel-param src-module="constantClient['+ str(constantclientNum) + ']" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
-            f.write('\n        <set-channel-param src-module="constantRouter1" src-gate="pppg$o['+ str(constantclientNum) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
-            f.write('\n')
-            f.write('\n        <set-channel-param src-module="constantServer['+ str(constantclientNum) + ']" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>') 
-            f.write('\n        <set-channel-param src-module="constantRouter2" src-gate="pppg$o['+ str(constantclientNum) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
-            f.write('\n\n')
-            constantclientNum += 1
-        clientNum = 0
-        constantclientNum += 1
-        constClient = constantclientNum
-        for arg in sys.argv[1:]:
-            delay = int(arg)
-            channelDelay = (delay-(0.5*2))/4
-            f.write('\n        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o['+ str(clientNum) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
-            f.write('\n        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o['+ str(clientNum) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
-            f.write('\n')
-            f.write('\n        <set-channel-param src-module="constantRouter1" src-gate="pppg$o['+ str(constantclientNum) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
-            f.write('\n        <set-channel-param src-module="constantRouter2" src-gate="pppg$o['+ str(constantclientNum) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
-            f.write('\n')
-            clientNum += 1
-            constantclientNum +=1
-        clientNum = 0
-        for arg in sys.argv[1:]: 
-            delay = int(arg)
-            channelDelay = (delay-(0.5*2))/4
-            for i in range(2):
-                f.write('\n        <set-channel-param src-module="pathChangeClient['+ str(clientNum) + ']" src-gate="pppg$o['+ str(i) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
-                f.write('\n        <set-channel-param src-module="pathChangeServer['+ str(clientNum) + ']" src-gate="pppg$o['+ str(i) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
-            clientNum += 1
-        f.write('\n    </at>')
-        #Disconnect old paths, update weights of new paths. This shifts traffic onto constant routers
-        f.write('\n    <at t="100">')
-        clientNum = 0
-        for arg in sys.argv[1:]:
-            delay = int(arg)
-            channelDelay = (delay-(0.5*2))/4
-            for j in range(2):
-                weight = 1
-                if(j == 0):
-                    weight = 2
-                f.write('\n        <set-channel-param src-module="pathChangeClient['+ str(clientNum) + ']" src-gate="pppg$o['+ str(j) + ']" par="weight" value="'+ str(weight) +'"/>')
-                f.write('\n        <set-channel-param src-module="pathChangeServer['+ str(clientNum) + ']" src-gate="pppg$o['+ str(j) + ']" par="weight" value="'+ str(weight) +'"/>')
-            f.write('\n')
-            clientNum += 1
+    firstChangeTime = 100
+    changeBackTime = 200
+    numOfConstClients = 2
+    numOfMovingClients = 2
+    simSeed = 1
+    #queueSizes = [0.2,1,4] #OF AVERAGE BDP AFFECTS INI FILE
+    constantClientRtt = 50
+    movingClientsRtts = [15,30,45,60,75,90] #OF AVERAGE BDP
+    random.seed(simSeed)
+    for movClientRtt in movingClientsRtts:
+        baseRttDict = {}
+        bwDict = {}
+        folderName = '../../paperExperiments/scenarios/experiment3/'
+        folderBaseRttsName = '../../paperExperiments/baseRtts/experiment3/'
+        folderBwsName = '../../paperExperiments/bandwidths/experiment3/'
+        Path(folderName).mkdir(parents=True, exist_ok=True)
+        Path(folderBaseRttsName).mkdir(parents=True, exist_ok=True)
+        Path(folderBwsName).mkdir(parents=True, exist_ok=True)
+        fileName = 'run'
+        with open(folderName + '.xml', 'w') as f:
+            f.write('<scenario>')
+            f.write('\n    <at t="0">')
+            currConstantClientInterface = numOfConstClients+1     
+            for constClientNum in range(numOfConstClients):
+                delay = int(constantClientRtt)
+                channelDelay = (delay-(0.5*2))/4
+                f.write('\n        <set-channel-param src-module="constantClient['+ str(constClientNum) + ']" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
+                f.write('\n        <set-channel-param src-module="constantRouter1" src-gate="pppg$o['+ str(constClientNum) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
+                f.write('\n')
+                f.write('\n        <set-channel-param src-module="constantServer['+ str(constClientNum) + ']" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>') 
+                f.write('\n        <set-channel-param src-module="constantRouter2" src-gate="pppg$o['+ str(constClientNum) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
+                f.write('\n\n')
+                
+            for movingClientNum in range(numOfMovingClients):
+                delay = int(movClientRtt)
+                channelDelay = (delay-(0.5*2))/4
+                f.write('\n        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o['+ str(movingClientNum) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
+                f.write('\n        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o['+ str(movingClientNum) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
+                f.write('\n')
+                f.write('\n        <set-channel-param src-module="constantRouter1" src-gate="pppg$o['+ str(currConstantClientInterface) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
+                f.write('\n        <set-channel-param src-module="constantRouter2" src-gate="pppg$o['+ str(currConstantClientInterface) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
+                f.write('\n')
+                currConstantClientInterface += 1
+                
+            for movingClientNum in range(numOfMovingClients): 
+                delay = int(movClientRtt)
+                channelDelay = (delay-(0.5*2))/4
+                for i in range(2):
+                    f.write('\n        <set-channel-param src-module="pathChangeClient['+ str(movingClientNum) + ']" src-gate="pppg$o['+ str(i) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
+                    f.write('\n        <set-channel-param src-module="pathChangeServer['+ str(movingClientNum) + ']" src-gate="pppg$o['+ str(i) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
+            f.write('\n    </at>')
+            #Disconnect old paths, update weights of new paths. This shifts traffic onto constant routers at 100s
             
-        routerNum = 0
-        constClientNum = constClient
-        for arg in sys.argv[1:]:
-            delay = int(arg)
-            channelDelay = (delay-(0.5*2))/4
-            f.write('\n        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o['+ str(routerNum) + ']" par="weight" value="'+ str(2) +'"/>')
-            f.write('\n        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o['+ str(routerNum) + ']" par="weight" value="'+ str(2) +'"/>')
-            f.write('\n')
-            f.write('\n        <set-channel-param src-module="constantRouter1" src-gate="pppg$o['+ str(constClientNum) + ']" par="weight" value="'+ str(1) +'"/>')
-            f.write('\n        <set-channel-param src-module="constantRouter2" src-gate="pppg$o['+ str(constClientNum) + ']" par="weight" value="'+ str(1) +'"/>')
-            f.write('\n')
-            routerNum += 1
-            constClientNum += 1
-        f.write('\n    </at>')
-        f.write('\n</scenario>')
+            f.write('\n    <at t="'+ str(firstChangeTime)+ '">')
+            
+            clientNum = 0
+            for movingClientNum in range(numOfMovingClients): 
+                delay = int(movClientRtt)
+                channelDelay = (delay-(0.5*2))/4
+                for j in range(2):
+                    weight = 1
+                    if(j == 0):
+                        weight = 2
+                    f.write('\n        <set-channel-param src-module="pathChangeClient['+ str(movingClientNum) + ']" src-gate="pppg$o['+ str(j) + ']" par="weight" value="'+ str(weight) +'"/>')
+                    f.write('\n        <set-channel-param src-module="pathChangeServer['+ str(movingClientNum) + ']" src-gate="pppg$o['+ str(j) + ']" par="weight" value="'+ str(weight) +'"/>')
+                f.write('\n')
+                clientNum += 1
+                
+            routerNum = 0
+
+            currConstantClientInterface = numOfConstClients+1             
+            for movingClientNum in range(numOfMovingClients): 
+                delay = int(movClientRtt)
+                channelDelay = (delay-(0.5*2))/4
+                f.write('\n        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o['+ str(movingClientNum) + ']" par="weight" value="'+ str(2) +'"/>')
+                f.write('\n        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o['+ str(movingClientNum) + ']" par="weight" value="'+ str(2) +'"/>')
+                f.write('\n')
+                f.write('\n        <set-channel-param src-module="constantRouter1" src-gate="pppg$o['+ str(currConstantClientInterface) + ']" par="weight" value="'+ str(1) +'"/>')
+                f.write('\n        <set-channel-param src-module="constantRouter2" src-gate="pppg$o['+ str(currConstantClientInterface) + ']" par="weight" value="'+ str(1) +'"/>')
+                f.write('\n')
+                currConstantClientInterface += 1
+            f.write('\n    </at>')
+            
+            #SECOND CHANGE - REVERT WEIGHTS BACK
+            f.write('\n    <at t="'+ str(changeBackTime)+ '">')
+            
+            clientNum = 0
+            for movingClientNum in range(numOfMovingClients): 
+                delay = int(movClientRtt)
+                channelDelay = (delay-(0.5*2))/4
+                for j in range(2):
+                    weight = 2
+                    if(j == 0):
+                        weight = 1
+                    f.write('\n        <set-channel-param src-module="pathChangeClient['+ str(movingClientNum) + ']" src-gate="pppg$o['+ str(j) + ']" par="weight" value="'+ str(weight) +'"/>')
+                    f.write('\n        <set-channel-param src-module="pathChangeServer['+ str(movingClientNum) + ']" src-gate="pppg$o['+ str(j) + ']" par="weight" value="'+ str(weight) +'"/>')
+                f.write('\n')
+                clientNum += 1
+                
+            routerNum = 0
+
+            currConstantClientInterface = numOfConstClients+1             
+            for movingClientNum in range(numOfMovingClients): 
+                delay = int(movClientRtt)
+                channelDelay = (delay-(0.5*2))/4
+                f.write('\n        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o['+ str(movingClientNum) + ']" par="weight" value="'+ str(1) +'"/>')
+                f.write('\n        <set-channel-param src-module="pathChangeRouter2" src-gate="pppg$o['+ str(movingClientNum) + ']" par="weight" value="'+ str(1) +'"/>')
+                f.write('\n')
+                f.write('\n        <set-channel-param src-module="constantRouter1" src-gate="pppg$o['+ str(currConstantClientInterface) + ']" par="weight" value="'+ str(2) +'"/>')
+                f.write('\n        <set-channel-param src-module="constantRouter2" src-gate="pppg$o['+ str(currConstantClientInterface) + ']" par="weight" value="'+ str(2) +'"/>')
+                f.write('\n')
+                currConstantClientInterface += 1
+            f.write('\n    </at>')
+            
+            f.write('\n</scenario>')

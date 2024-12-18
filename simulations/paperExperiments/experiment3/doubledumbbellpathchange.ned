@@ -27,7 +27,7 @@ network doubledumbbellpathchange
         channel bottleneckLine extends DatarateChannel
         {
             delay = 0.5ms;
-            datarate = 150 Mbps;
+            datarate = 50 Mbps;
             int weight @mutable = 1;
         }
 

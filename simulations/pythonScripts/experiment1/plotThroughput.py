@@ -8,52 +8,19 @@ import random
 import json
 import scienceplots
 
-def parse_if_number(s):
-    try: return float(s)
-    except: return True if s=="true" else False if s=="false" else s if s else None
-
-def parse_ndarray(s):
-    return np.fromstring(s, sep=' ') if s else None
-    
-def getResults(file):
-    resultsFile = pd.read_csv(file, converters = {
-    'attrvalue': parse_if_number,
-    'binedges': parse_ndarray,
-    'binvalues': parse_ndarray,
-    'vectime': parse_ndarray,
-    'vecvalue': parse_ndarray})
-    vectors = resultsFile[resultsFile.type=='vector']
-    vec = vectors[vectors.name == 'throughput:vector']
-    return vec;
-
-def getResultsOptimal(file):
-    resultsFile = pd.read_csv(file, converters = {
-    'attrvalue': parse_if_number,
-    'binedges': parse_ndarray,
-    'binvalues': parse_ndarray,
-    'vectime': parse_ndarray,
-    'vecvalue': parse_ndarray})
-    vectors = resultsFile[resultsFile.type=='vector']
-    vec = vectors[vectors.name == 'bandwidth:vector']
-    return vec;
-
 if __name__ == "__main__":
-    plt.style.use('science')
     pd.set_option('display.max_rows', None)
     plt.rcParams['text.usetex'] = False
     
     results = []
-    protocols = ["Cubic", "Orbtcp", "Bbr"]
-    runNames = ["Run", "LossRun"]
-    
-    csvName = sys.argv[1].split("Run",1)[1]
-    runNumb = csvName[:-4]
-    with open('../../../../../../../paperExperiments/bandwidths/experiment1/run'+ str(runNumb) +'.json') as jsonData:
+    csvName = sys.argv[1].split("run",1)[1]
+    runNumb = csvName.partition("/")[0]
+    with open('../../../../../../paperExperiments/bandwidths/experiment1/run'+ str(runNumb) +'.json') as jsonData:
         d = json.load(jsonData)
         resultsOptimal = []
         for arg in sys.argv[1:]:
-            results.append(getResults(arg))
-            resultsOptimal.append(getResultsOptimal(arg))
+            time, data = np.genfromtxt(arg, delimiter=',',skip_header=1).transpose()
+            results.append((time, data))
     
         i = 0
         runs = 0
@@ -62,30 +29,30 @@ if __name__ == "__main__":
         for k, v in d.items():
             floatD[float(k)] = float(v)
     
-        fig, axes = plt.subplots(figsize=(25,12))
+        fig, axes = plt.subplots(figsize=(17, 5))
         for result in results:
             colorNum = 0
             #result.index = np.arange(1, len(result) + 1)
-            for expNum in range(len(result.vecvalue.to_numpy())):
-                xAxis = result.vectime.to_numpy()[expNum]
-                yAxis = result.vecvalue.to_numpy()[expNum]
+            for expNum in range(len(results)):
+                xAxis = result[0]
+                yAxis = result[1]
                 yAxisOptimal = np.array(list(floatD.values()))
                 xAxisOptimal = np.array(list(floatD.keys()))
-                axes.plot(xAxis,yAxis/1000000, linewidth=1, label="Throughput")
+                axes.plot(xAxis,yAxis/1000000, label="Throughput")
                 
-                axes.plot(xAxisOptimal, yAxisOptimal, linewidth=1.5, label="Base Bandwidth", drawstyle="steps-post") #'steps-mid', 'steps-pre', 'steps-post', 'steps'
+                axes.plot(xAxisOptimal, yAxisOptimal, label="Available Bandwidth", linestyle='--', drawstyle="steps-post", color='purple') #'steps-mid', 'steps-pre', 'steps-post', 'steps'
                 colorNum += 1
                 break
         axes.set_aspect('auto')
         axes.set_ylim([0,150])
         axes.set_xlim([0,300])
         axes.set_xbound(lower=0.0, upper=300)
-        plt.xticks(fontsize=20)
-        plt.yticks(fontsize=20)
-        plt.xlabel('Time (s)', fontsize=28)
-        plt.ylabel('Throughput (Mbps)', fontsize=28)
-        plt.legend(loc = "upper right")
-        plt.title("Throughput", fontsize=35)
-        plt.savefig('Throughput.png')
+        axes.grid(True)
+        plt.xlabel('Time (s)')
+        plt.ylabel('Throughput (Mbps)')
+        plt.legend(loc = "upper left")
+        plt.title("Throughput")
+        plt.tight_layout(rect=[0, 0, 1, 1], pad=1.0)  
+        plt.savefig('throughput.pdf')
     
 

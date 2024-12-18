@@ -6,26 +6,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import random
+import json
 import scienceplots
 import subprocess
-
-def parse_if_number(s):
-    try: return float(s)
-    except: return True if s=="true" else False if s=="false" else s if s else None
-
-def parse_ndarray(s):
-    return np.fromstring(s, sep=' ') if s else None
-    
-def getResults(file, vecname):
-    resultsFile = pd.read_csv(file, converters = {
-    'attrvalue': parse_if_number,
-    'binedges': parse_ndarray,
-    'binvalues': parse_ndarray,
-    'vectime': parse_ndarray,
-    'vecvalue': parse_ndarray})
-    vectors = resultsFile[resultsFile.type=='vector']
-    vec = vectors[vectors.name == vecname + ':vector']
-    return vec;
 
 if __name__ == "__main__":
     plt.style.use('science')
@@ -40,56 +23,54 @@ if __name__ == "__main__":
     rttData = []
     lossData = []
     
+    #NO LOSS DATA 
     for protocol in protocols:
         for run in runs:
-            filePath = '../../../../paperExperiments/experiment1/results/'+ protocol.title() + 'Run' + str(run) + '.csv'
+            filePath = '../../../../paperExperiments/experiment1/csvs/'+ protocol + '/run' + str(run) + '/singledumbbell.server[0].app[0].thread_9/goodput.csv'
             if os.path.exists(filePath):
                 #BANDWIDTH
-                bwResults = getResults(filePath, "bandwidth")
-                optimalBandwidthY = []
-                optimalBandwidthX = []
-                optimalBandwidthVar = 0
-                for mod in range(len(bwResults.vecvalue.to_numpy())):
-                    bwYAxis = bwResults.vecvalue.to_numpy()[mod] #VALUE
-                    bwXAxis = bwResults.vectime.to_numpy()[mod] #TIME
-                    modName = bwResults.module.to_numpy()[mod] #TIME
-                    variance = np.var(bwResults.vecvalue.to_numpy()[mod])
-                    if(variance > optimalBandwidthVar):
-                        optimalBandwidthVar = variance
-                        optimalBandwidthY = bwYAxis
-                        optimalBandwidthX =  bwXAxis
+                
+                with open('../../../../paperExperiments/bandwidths/experiment1/run'+ str(run) +'.json') as jsonData:
+                    d = json.load(jsonData)
+                
+                floatD = {}
+                for k, v in d.items():
+                    floatD[float(k)] = float(v)
+                    
+                time, data = np.genfromtxt(filePath, dtype=float, delimiter=',',skip_header=1).transpose()
+                    
+                bwResults = data
+                
+                optimalBandwidthY = np.array(list(floatD.values()))
+                optimalBandwidthX =  np.array(list(floatD.keys()))
+                    
                 optimalBandwidthMean = sum(optimalBandwidthY) / len(optimalBandwidthY)
-                
                 #GOODPUT
-                gpResult = getResults(filePath, "goodput")
-                gpYAxis = gpResult.vecvalue.to_numpy()[0] #VALUE
-                rttData.append([protocol, run, gpYAxis.mean()*0.000001, optimalBandwidthMean*0.000001])
-                
-    #LossData      
+                rttData.append([protocol, run, bwResults.mean()*0.000001, optimalBandwidthMean]) #0.000001 = bytes to Mb
+    #LOSS DATA 
     for protocol in protocols:
         for run in runs:
-            filePath = '../../../../../../../paperExperiments/experiment2/results/'+ protocol.title() + 'LossRun' + str(run) + '.csv'
+            filePath2 = '../../../../paperExperiments/experiment2/csvs/'+ protocol + '/run' + str(run) + '/singledumbbell.server[0].app[0].thread_9/goodput.csv'
             if os.path.exists(filePath):
-                #BANDWIDTH
-                bwResults = getResults(filePath, "bandwidth")
-                optimalBandwidthY = []
-                optimalBandwidthX = []
-                optimalBandwidthVar = 0
-                for mod in range(len(bwResults.vecvalue.to_numpy())):
-                    bwYAxis = bwResults.vecvalue.to_numpy()[mod] #VALUE
-                    bwXAxis = bwResults.vectime.to_numpy()[mod] #TIME
-                    modName = bwResults.module.to_numpy()[mod] #TIME
-                    variance = np.var(bwResults.vecvalue.to_numpy()[mod])
-                    if(variance > optimalBandwidthVar):
-                        optimalBandwidthVar = variance
-                        optimalBandwidthY = bwYAxis
-                        optimalBandwidthX =  bwXAxis
-                optimalBandwidthMean2 = sum(optimalBandwidthY) / len(optimalBandwidthY)
+                 #BANDWIDTH
+    
+                with open('../../../../paperExperiments/bandwidths/experiment2/run'+ str(run) +'.json') as jsonData:
+                     d = json.load(jsonData)
+                     
+                floatD = {}
+                for k, v in d.items():
+                    floatD[float(k)] = float(v)
+                        
+                time2, data2 = np.genfromtxt(filePath2, dtype=float, delimiter=',',skip_header=1).transpose()
+                bwResults2 = data2
+                
+                optimalBandwidthY2 = np.array(list(floatD.values()))
+                optimalBandwidthX2 =  np.array(list(floatD.keys()))
+                
+                optimalBandwidthMean2 = sum(optimalBandwidthY2) / len(optimalBandwidthY2)
                 
                 #GOODPUT
-                gpResult2 = getResults(filePath, "goodput")
-                gpYAxis2 = gpResult2.vecvalue.to_numpy()[0] #VALUE
-                lossData.append([protocol, run, gpYAxis2.mean()*0.000001, optimalBandwidthMean2*0.000001])
+                lossData.append([protocol, run, bwResults2.mean()*0.000001, optimalBandwidthMean2]) #0.000001 = bytes to Mb           
     
     bw_rtt_data = pd.DataFrame(rttData, columns=['protocol', 'run_number', 'average_goodput', 'optimal_goodput'])
     loss_data = pd.DataFrame(lossData, columns=['protocol', 'run_number', 'average_goodput', 'optimal_goodput'])
@@ -117,6 +98,7 @@ if __name__ == "__main__":
     
         avg_goodputs = loss_data[loss_data['protocol'] == protocol]['average_goodput']
         values, base = np.histogram(avg_goodputs, bins=BINS)
+
         # evaluate the cumulative
         cumulative = np.cumsum(values)
         # plot the cumulative function

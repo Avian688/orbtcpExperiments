@@ -7,55 +7,32 @@ import matplotlib.pyplot as plt
 import random
 import scienceplots
 
-def parse_if_number(s):
-    try: return float(s)
-    except: return True if s=="true" else False if s=="false" else s if s else None
-
-def parse_ndarray(s):
-    return np.fromstring(s, sep=' ') if s else None
-    
-def getResults(file):
-    resultsFile = pd.read_csv(file, converters = {
-    'attrvalue': parse_if_number,
-    'binedges': parse_ndarray,
-    'binvalues': parse_ndarray,
-    'vectime': parse_ndarray,
-    'vecvalue': parse_ndarray})
-    vectors = resultsFile[resultsFile.type=='vector']
-    vec = vectors[vectors.name == 'cwnd:vector']
-    return vec;
-
 if __name__ == "__main__":
-    plt.style.use('science')
     pd.set_option('display.max_rows', None)
     plt.rcParams['text.usetex'] = False
     
     results = []
     for arg in sys.argv[1:]:
-        results.append(getResults(arg))
+        time, data = np.genfromtxt(arg, delimiter=',',skip_header=1).transpose()
+        results.append((time, data))
+        
     i = 0
-    plt.figure(figsize=(25,12))
-    plt.xticks(fontsize=20)
-    plt.yticks(fontsize=20)
+    plt.figure(figsize=(17, 5))
     for result in results:
         colorNum = 0
         #result.index = np.arange(1, len(result) + 1)
-        for expNum in range(len(result.vecvalue.to_numpy())):
-            yAxis = result.vecvalue.to_numpy()[expNum]
-            #print(results.vecvalue)
-            plt.plot(result.vectime.to_numpy()[expNum],yAxis
-            , drawstyle='steps-post', linewidth=1)
+        for expNum in range(len(results)):
+            plt.plot(result[0],((result[1])/1448), drawstyle='steps-post', label="CWND")
             colorNum += 1
         
         axes = plt.gca()
-        #axes.set_xlim([0, 40])
-        #axes.set_ylim([0,150])
-        plt.xlabel('Time (s)', fontsize=28)
-        plt.ylabel('cwnd (bytes)', fontsize=28)
-        plt.legend(loc = "upper right")
-        plt.title("CWND", fontsize=35)
-        #plt.xticks((np.arange(0, result["Goodput"].idxmax(), step=250)))
-        plt.savefig('cwnd.png')
+        axes.grid(True)
+        plt.xlabel('Time (s)')
+        plt.ylabel('CWND (MSS)')
+        plt.legend(loc = "upper left")
+        plt.title("CWND")
+        plt.tight_layout(rect=[0, 0, 1, 1], pad=1.0) 
+        plt.savefig('cwnd.pdf')
         i += 1
     
 

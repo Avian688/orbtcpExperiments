@@ -36,7 +36,7 @@ def int_to_word(num):
 if __name__ == "__main__":
     #numOfClients = int_to_word(len(sys.argv)-1)
     #folderName = '../scenarios/' + numOfClients + 'Flows'
-    queueLength = 340
+    queueLength = 452
     algorithms = ["orbtcp", "bbr", "cubic"]
     for alg in algorithms:
         fileName =  '../../paperExperiments/experiment2/experiment2' + alg + '.ini'
@@ -74,7 +74,8 @@ if __name__ == "__main__":
             f.write('\n' + '**.scalar-recording=false')
             f.write('\n' + '**.vector-recording=false')
             f.write('\n' + '**.bin-recording=false\n')
-            f.write('\n' + '**.server[*].app[*].*.thrMeasurementInterval = 1s')
+            f.write('\n' + '**.goodputInterval = 1s')
+            f.write('\n' + '**.throughputInterval = 1s')
             
             if(algFlavour == "TcpCubic"):
                 f.write('\n' + '**.tcp.typename = "TcpPaced"')
@@ -153,7 +154,8 @@ if __name__ == "__main__":
                 f.write('\n' + '**.server[*].numApps = 1')
                 f.write('\n' + '**.server[*].app[*].typename  = "TcpSinkApp"')
                 f.write('\n' + '**.server[*].app[*].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
-                f.write('\n' + '**.ppp[*].queue.typename = "IntQueue"\n')
+                f.write('\n' + '**.router1.ppp[1].queue.typename = "IntQueue"\n')
+                f.write('\n' + '**.**.queue.typename = "DropTailQueue"\n')
                 f.write('\n' + '**.additiveIncreasePercent = 0.05')
                 f.write('\n' + '**.eta = 0.95\n')
                 f.write('\n' + '**.alpha = ' + str(0.01))

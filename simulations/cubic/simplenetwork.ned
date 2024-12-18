@@ -24,7 +24,8 @@ network simplenetwork
         channel bottleneckLine extends DatarateChannel //look at 
         {
             delay = 0.5ms;
-            datarate = 100Mbps;
+            datarate = 50Mbps;
+            per = 0.0025;
         }
     submodules:
         client[numberOfFlows]: StandardHost {
