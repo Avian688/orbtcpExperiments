@@ -16,13 +16,13 @@ import time
            
 if __name__ == "__main__":
     
-    startStep = 2
+    startStep = 5
     endStep = 5
     currStep = 1
     cores = 4
     currentProc = 0
     processList = []
-    congControlList = ["cubic","orbtcp"]
+    congControlList = ["bbr", "orbtcp", "cubic"]
     experiment = "experiment3"
     buffersizes = ["smallbuffer", "mediumbuffer", "largebuffer"]
     movingClientsRtts = [15,30,45,60,75,90] #OF AVERAGE BDP
@@ -122,14 +122,14 @@ if __name__ == "__main__":
     currStep += 1
     
     if(currStep <= endStep and currStep >= startStep): #STEP 4
-        subprocess.Popen("mkdir plots", shell=True).communicate(timeout=10) 
-        subprocess.Popen("rm -r *", shell=True, cwd='plots/').communicate(timeout=10) 
+        subprocess.Popen("mkdir ../../plots/experiment3", shell=True).communicate(timeout=10) 
+        subprocess.Popen("rm -r *", shell=True, cwd='../../plots/experiment3').communicate(timeout=10) 
         
         print("\n-----Making plot diretories for " + experiment + "-----\n")
-        subprocess.Popen("mkdir " + experiment, shell=True, cwd='plots/').communicate(timeout=10)
+        subprocess.Popen("mkdir " + experiment, shell=True, cwd='../../plots/').communicate(timeout=10)
         for cc in congControlList:
             print("\n-----Making plot directories for " + cc + "-----\n")
-            subprocess.Popen("mkdir " + cc, shell=True, cwd='plots/' + experiment + '/').communicate(timeout=10)
+            subprocess.Popen("mkdir " + cc, shell=True, cwd='../../plots/' + experiment + '/').communicate(timeout=10)
             
             for buf in buffersizes:
                 for rtt in movingClientsRtts:
@@ -156,10 +156,10 @@ if __name__ == "__main__":
                     for run in runList:
                         #print("\nCurrently on Run#" + str(run) + " \n")
                         
-                        dirPath = 'plots/' + experiment + '/' + protocol + '/' + buf + '/' + str(rtt) + 'ms' + '/run' + str(run) + '/' 
+                        dirPath = '../../plots/' + experiment + '/' + protocol + '/' + buf + '/' + str(rtt) + 'ms' + '/run' + str(run) + '/' 
                         
                         runTitle = "run"
-                        fileBeg = '../../paperExperiments/'+ experiment + '/csvs/'+ protocol.title() + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run)
+                        fileBeg = '../../paperExperiments/'+ experiment + '/csvs/'+ protocol + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run)
                         fileStart = "../../../../../../../" + fileBeg
                         cwndFileList = []
                         rttFileList = []
@@ -168,6 +168,7 @@ if __name__ == "__main__":
                         goodputFileList = []
                         queueLengthFileList = []
                         aggrPlotsFileList = []
+                        aggrPlotsGoodputFileList = []
                         
                         cwndFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn-36/cwnd.csv', "constantClient0"))
                         rttFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn-36/rtt.csv', "constantClient0"))
@@ -200,26 +201,31 @@ if __name__ == "__main__":
                         
                         aggrPlotsFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn-36/cwnd.csv '+ fileStart +'/doubledumbbellpathchange.constantClient[1].tcp.conn-37/cwnd.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeClient[0].tcp.conn-40/cwnd.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeClient[1].tcp.conn-42/cwnd.csv', "aggPlots"))
                         
+                        aggrPlotsGoodputFileList.append((fileStart + '/doubledumbbellpathchange.constantServer[0].app[0].thread_38/goodput.csv '+ fileStart +'/doubledumbbellpathchange.constantServer[1].app[0].thread_39/goodput.csv '+ fileStart +'/doubledumbbellpathchange.constantServer[1].app[0].thread_39/goodput.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeServer[1].app[0].thread_43/goodput.csv', "aggPlots"))
+                        
                         for cwndFile in cwndFileList:
-                            processListStr.append(("python3 ../../../../../../../plotCwnd.py " + cwndFile[0], dirPath + cwndFile[1]))
+                            processListStr.append(("python3 ../../../../pythonScripts/experiment3/plotCwnd.py " + cwndFile[0], dirPath + cwndFile[1]))
                         
                         for rttFile in rttFileList:
-                            processListStr.append(("python3 ../../../../../../../plotRtt.py " + rttFile[0], dirPath + rttFile[1]))
+                            processListStr.append(("python3 ../../../../pythonScripts/experiment3/plotRtt.py " + rttFile[0], dirPath + rttFile[1]))
                                 
                         for tauFile in tauFileList:
-                            processListStr.append(("python3 ../../../../../../../plotTau.py " + tauFile[0], dirPath + tauFile[1]))
+                            processListStr.append(("python3 ../../../../pythonScripts/experiment3//plotTau.py " + tauFile[0], dirPath + tauFile[1]))
                                 
                         for UFile in UFileList:
-                            processListStr.append(("python3 ../../../../../../../plotU.py " + UFile[0], dirPath + UFile[1]))
+                            processListStr.append(("python3 ../../../../pythonScripts/experiment3/plotU.py " + UFile[0], dirPath + UFile[1]))
                                 
                         for goodputFile in goodputFileList:
-                            processListStr.append(("python3 ../../../../../../../plotGoodput.py " + goodputFile[0], dirPath + goodputFile[1]))
+                            processListStr.append(("python3 ../../../../pythonScripts/experiment3/plotGoodput.py " + goodputFile[0], dirPath + goodputFile[1]))
                                 
                         for queueLengthFile in queueLengthFileList:
-                            processListStr.append(("python3 ../../../../../../../plotQueueLength.py " + queueLengthFile[0], dirPath + queueLengthFile[1]))
+                            processListStr.append(("python3 ../../../../pythonScripts/experiment3/plotQueueLength.py " + queueLengthFile[0], dirPath + queueLengthFile[1]))
                                 
                         for aggrePlotFile in aggrPlotsFileList:
-                            processListStr.append(("python3 ../../../../../../../plotCwnd.py " + aggrePlotFile[0], dirPath + aggrePlotFile[1]))
+                            processListStr.append(("python3 ../../../../pythonScripts/experiment3/plotCwnd.py " + aggrePlotFile[0], dirPath + aggrePlotFile[1]))
+                            
+                        for aggreGpPlotFile in aggrPlotsGoodputFileList:
+                            processListStr.append(("python3 ../../../../pythonScripts/experiment3/plotGoodput.py " + aggreGpPlotFile[0], dirPath + aggreGpPlotFile[1]))
                         # goodputFilePath = '../../paperExperiments/' + experiment + '/csvs/'+ protocol.title() + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run) + '/singledumbbell.server[0].app[0].thread_9/goodput.csv'
                         # throughputFilePath = '../../paperExperiments/' + experiment + '/csvs/'+ protocol.title() + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run) + '/singledumbbell.server[0].tcp.conn-9/throughput.csv'
                         # queueLengthFilePath = '../../paperExperiments/' + experiment + '/csvs/'+ protocol.title() + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run) + '/singledumbbell.router1.ppp[1].queue/queueLength.csv'
@@ -239,7 +245,7 @@ if __name__ == "__main__":
         while(len(processListStr) > 0):
             processTup = processListStr.pop()
             print(processTup[0] + "\n")
-            processList.append(subprocess.Popen(processTup[0], shell=True, cwd=processTup[1], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT))
+            processList.append(subprocess.Popen(processTup[0], shell=True, cwd=processTup[1]))
             currentProc += 1
             if(currentProc >= cores):
                 for proc in processList:

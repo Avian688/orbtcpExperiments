@@ -17,7 +17,7 @@ network singledumbbell
         channel standardLine extends DatarateChannel //look at 
         {
             delay = 4.75ms;
-            datarate = 1Gbps;
+            datarate = 10Gbps;
         }
         
         channel bottleneckLine extends DatarateChannel //look at 

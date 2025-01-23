@@ -15,7 +15,7 @@ if __name__ == "__main__":
     results = []
     csvName = sys.argv[1].split("run",1)[1]
     runNumb = csvName.partition("/")[0]
-    with open('../../../../../../paperExperiments/bandwidths/experiment1/run'+ str(runNumb) +'.json') as jsonData:
+    with open('../../../../paperExperiments/bandwidths/experiment1/run'+ str(runNumb) +'.json') as jsonData:
         d = json.load(jsonData)
         resultsOptimal = []
         for arg in sys.argv[1:]:
@@ -46,7 +46,6 @@ if __name__ == "__main__":
         axes.set_aspect('auto')
         axes.set_ylim([0,150])
         axes.set_xlim([0,300])
-        axes.set_xbound(lower=0.0, upper=300)
         axes.grid(True)
         #plt.xticks(fontsize=20)
         #plt.yticks(fontsize=20)

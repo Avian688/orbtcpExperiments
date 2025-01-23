@@ -15,7 +15,7 @@ if __name__ == "__main__":
     results = []
     csvName = sys.argv[1].split("run",1)[1]
     runNumb = csvName.partition("/")[0]
-    with open('../../../../../../paperExperiments/bandwidths/experiment1/run'+ str(runNumb) +'.json') as jsonData:
+    with open('../../../../paperExperiments/bandwidths/experiment1/run'+ str(runNumb) +'.json') as jsonData:
         d = json.load(jsonData)
         resultsOptimal = []
         for arg in sys.argv[1:]:

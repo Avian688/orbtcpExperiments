@@ -13,8 +13,6 @@ if __name__ == "__main__":
     plt.rcParams['text.usetex'] = False
     
     results = []
-    csvName = sys.argv[1].split("run",1)[1]
-    runNumb = csvName.partition("/")[0]
     for arg in sys.argv[1:]:
         time, data = np.genfromtxt(arg, delimiter=',',skip_header=1).transpose()
         results.append((time, data))
@@ -25,12 +23,11 @@ if __name__ == "__main__":
     fig, axes = plt.subplots(figsize=(17, 5))
     for result in results:
         colorNum = 0
-        for expNum in range(len(results)):
-            xAxis = result[0]
-            yAxis = result[1]
-            axes.plot(xAxis,yAxis/1000000, label="Goodput")
-            colorNum += 1
-            break
+        xAxis = result[0]
+        yAxis = result[1]
+        axes.plot(xAxis,yAxis/1000000, label="Goodput")
+        colorNum += 1
+            
     axes.set_aspect('auto')
     axes.set_ylim([0,50])
     axes.set_xlim([0,300])

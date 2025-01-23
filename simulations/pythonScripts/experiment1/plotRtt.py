@@ -14,7 +14,7 @@ if __name__ == "__main__":
     results = []
     csvName = sys.argv[1].split("run",1)[1]
     runNumb = csvName.partition("/")[0]
-    with open('../../../../../../paperExperiments/baseRtts/experiment1/run'+ str(runNumb) +'.json') as jsonData:
+    with open('../../../../paperExperiments/baseRtts/experiment1/run'+ str(runNumb) +'.json') as jsonData:
         d = json.load(jsonData)
         resultsOptimal = []
         for arg in sys.argv[1:]:
@@ -28,7 +28,7 @@ if __name__ == "__main__":
         for k, v in d.items():
             floatD[float(k)] = float(v)
     
-        fig, axes = plt.subplots(figsize=(25,12))
+        fig, axes = plt.subplots(figsize=(17, 5))
         for result in results:
             colorNum = 0
             #result.index = np.arange(1, len(result) + 1)

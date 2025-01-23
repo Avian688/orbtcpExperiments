@@ -17,7 +17,7 @@ if __name__ == "__main__":
     
     BINS = 50
     runs = list(range(1,51))
-    protocols = ["cubic", "orbtcp"]
+    protocols = ["bbr", "cubic", "orbtcp"]
     
     # List containing each data point (each run). Values for each datapoint: protocol, run_number, average_goodput, optimal_goodput
     rttData = []
@@ -26,11 +26,11 @@ if __name__ == "__main__":
     #NO LOSS DATA 
     for protocol in protocols:
         for run in runs:
-            filePath = '../../../../paperExperiments/experiment1/csvs/'+ protocol + '/run' + str(run) + '/singledumbbell.server[0].app[0].thread_9/goodput.csv'
+            filePath = '../../paperExperiments/experiment1/csvs/'+ protocol + '/run' + str(run) + '/singledumbbell.server[0].app[0].thread_9/goodput.csv'
             if os.path.exists(filePath):
                 #BANDWIDTH
                 
-                with open('../../../../paperExperiments/bandwidths/experiment1/run'+ str(run) +'.json') as jsonData:
+                with open('../../paperExperiments/bandwidths/experiment1/run'+ str(run) +'.json') as jsonData:
                     d = json.load(jsonData)
                 
                 floatD = {}
@@ -50,11 +50,11 @@ if __name__ == "__main__":
     #LOSS DATA 
     for protocol in protocols:
         for run in runs:
-            filePath2 = '../../../../paperExperiments/experiment2/csvs/'+ protocol + '/run' + str(run) + '/singledumbbell.server[0].app[0].thread_9/goodput.csv'
+            filePath2 = '../../paperExperiments/experiment2/csvs/'+ protocol + '/run' + str(run) + '/singledumbbell.server[0].app[0].thread_9/goodput.csv'
             if os.path.exists(filePath):
                  #BANDWIDTH
     
-                with open('../../../../paperExperiments/bandwidths/experiment2/run'+ str(run) +'.json') as jsonData:
+                with open('../../paperExperiments/bandwidths/experiment2/run'+ str(run) +'.json') as jsonData:
                      d = json.load(jsonData)
                      
                 floatD = {}
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     fig, axes = plt.subplots(nrows=1, ncols=1,figsize=(3,1.5))
     ax = axes
     
-    optimals = bw_rtt_data[bw_rtt_data['protocol'] == 'cubic']['optimal_goodput']
+    optimals = bw_rtt_data[bw_rtt_data['protocol'] == 'bbr']['optimal_goodput']
     
     values, base = np.histogram(optimals, bins=BINS)
     # evaluate the cumulative

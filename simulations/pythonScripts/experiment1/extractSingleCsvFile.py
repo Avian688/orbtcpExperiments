@@ -36,7 +36,7 @@ if __name__ == "__main__":
     protocol = ""
     run = 0
     argNum = 0
-    vectorsToExtract = ["goodput", "rtt", "cwnd", "queueLength", "throughput", "tau"]
+    vectorsToExtract = ["goodput", "rtt", "cwnd", "queueLength", "throughput", "tau", "mbytesInFlight"]
     
     for arg in sys.argv[1:]:
         if(argNum == 0):

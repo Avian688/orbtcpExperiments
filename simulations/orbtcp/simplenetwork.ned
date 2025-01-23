@@ -25,7 +25,6 @@ network simplenetwork
         {
             delay = 0.5ms;
             datarate = 50Mbps;
-            per = 0.2;
         }
        
     submodules:
