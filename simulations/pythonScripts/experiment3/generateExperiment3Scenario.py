@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 from pathlib import Path
+import json
 
 def int_to_word(num):
     d = { 0 : 'zero', 1 : 'one', 2 : 'two', 3 : 'three', 4 : 'four', 5 : 'five',
@@ -47,13 +48,9 @@ if __name__ == "__main__":
         baseRttDict = {}
         bwDict = {}
         folderName = '../../paperExperiments/scenarios/experiment3/'
-        folderBaseRttsName = '../../paperExperiments/baseRtts/experiment3/'
-        folderBwsName = '../../paperExperiments/bandwidths/experiment3/'
         Path(folderName).mkdir(parents=True, exist_ok=True)
-        Path(folderBaseRttsName).mkdir(parents=True, exist_ok=True)
-        Path(folderBwsName).mkdir(parents=True, exist_ok=True)
-        fileName = 'run'
-        with open(folderName + '.xml', 'w') as f:
+        fileName = str(movClientRtt) + 'ms'
+        with open(folderName + '/' + fileName + '.xml', 'w') as f:
             f.write('<scenario>')
             f.write('\n    <at t="0">')
             currConstantClientInterface = numOfConstClients+1     
@@ -149,3 +146,4 @@ if __name__ == "__main__":
             f.write('\n    </at>')
             
             f.write('\n</scenario>')
+

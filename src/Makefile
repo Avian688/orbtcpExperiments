@@ -2,7 +2,7 @@
 # OMNeT++/OMNEST Makefile for $(LIB_PREFIX)orbtcpExperiments
 #
 # This file was generated with the command:
-#  opp_makemake --make-so -f --deep -KBBR_PROJ=../../bbr -KINET4_5_PROJ=../../inet4.5 -KTCPPACED_PROJ=../../tcpPaced -KCUBIC_PROJ=../../cubic -KORBTCP_PROJ=../../orbtcp -KTCPGOODPUTAPPLICATIONS_PROJ=../../tcpGoodputApplications -DINET_IMPORT -I$$\(INET4_5_PROJ\)/src -L$$\(BBR_PROJ\)/src -L$$\(CUBIC_PROJ\)/src -L$$\(INET4_5_PROJ\)/src -L$$\(ORBTCP_PROJ\)/src -L$$\(TCPGOODPUTAPPLICATIONS_PROJ\)/src -L$$\(TCPPACED_PROJ\)/src -lbbr$$\(D\) -lcubic$$\(D\) -lINET$$\(D\) -lorbtcp$$\(D\) -ltcpGoodputApplications$$\(D\) -ltcpPaced$$\(D\)
+#  opp_makemake --make-so -f --deep -KBBR_PROJ=../../bbr -KINET4_5_PROJ=../../inet4.5 -KTCPGOODPUTAPPLICATIONS_PROJ=../../tcpGoodputApplications -KTCPPACED_PROJ=../../tcpPaced -KCUBIC_PROJ=../../cubic -KORBTCP_PROJ=../../orbtcp -DINET_IMPORT -I$$\(INET4_5_PROJ\)/src -L$$\(BBR_PROJ\)/src -L$$\(CUBIC_PROJ\)/src -L$$\(INET4_5_PROJ\)/src -L$$\(ORBTCP_PROJ\)/src -L$$\(TCPGOODPUTAPPLICATIONS_PROJ\)/src -L$$\(TCPPACED_PROJ\)/src -lbbr$$\(D\) -lcubic$$\(D\) -lINET$$\(D\) -lorbtcp$$\(D\) -ltcpGoodputApplications$$\(D\) -ltcpPaced$$\(D\)
 #
 
 # Name of target to be created (-o option)
@@ -39,10 +39,10 @@ SMFILES =
 # Other makefile variables (-K)
 BBR_PROJ=../../bbr
 INET4_5_PROJ=../../inet4.5
+TCPGOODPUTAPPLICATIONS_PROJ=../../tcpGoodputApplications
 TCPPACED_PROJ=../../tcpPaced
 CUBIC_PROJ=../../cubic
 ORBTCP_PROJ=../../orbtcp
-TCPGOODPUTAPPLICATIONS_PROJ=../../tcpGoodputApplications
 
 #------------------------------------------------------------------------------
 

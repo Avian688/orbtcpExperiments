@@ -13,16 +13,17 @@ from pathlib import Path
 import os
 import subprocess
 import time
-           
+import re
+
 if __name__ == "__main__":
     
-    startStep = 5
-    endStep = 5
+    startStep = 3
+    endStep = 6
     currStep = 1
-    cores = 4
+    cores = 35
     currentProc = 0
     processList = []
-    congControlList = ["bbr", "orbtcp", "cubic"]
+    congControlList = ["bbr", "orbtcp"]#, "cubic"]
     experiment = "experiment3"
     buffersizes = ["smallbuffer", "mediumbuffer", "largebuffer"]
     movingClientsRtts = [15,30,45,60,75,90] #OF AVERAGE BDP
@@ -42,23 +43,27 @@ if __name__ == "__main__":
                     print("----------experiment 3 " + cc + " " + bs + " simulations------------")
                     for line in iniFile:
                         if line.find('[Config') != -1:
-                            configName = (line[8:])[:-2]
-                            progStart = time.time()
-                            processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src --image-path=../../../../inet4.5/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../orbtcp/src/orbtcp -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications experiment3" + cc + bs + ".ini", shell=True, cwd='../../paperExperiments/experiment3', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
-                            currentProc = currentProc + 1
-                            print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
-                            if(currentProc == cores):
-                                procCompleteNum = 0
-                                for proc in processList:
-                                    proc.wait()
-                                    now = time.time()
-                                    f1.write("Run "+ str(exp1RunNum) + ": " + str(now-progStart)) 
-                                    procCompleteNum = procCompleteNum + 1
-                                    print("\tRun #" + str(procCompleteNum) + " is complete!")
-                                    exp1RunNum += 1
-                                currentProc = 0
-                                processList.clear()
-                                print(" ... Running next batch of simulations! ...\n")
+                            match = re.search(r'Run(\d{1,5})\]', line)
+                            if match and int(match.group(1)) in runList:
+                                configName = (line[8:])[:-2]
+                                progStart = time.time()
+                                processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src --image-path=../../../../inet4.5/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../orbtcp/src/orbtcp -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications experiment3" + cc + bs + ".ini", shell=True, cwd='../../paperExperiments/experiment3', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+                                currentProc = currentProc + 1
+                                print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
+                                if(currentProc == cores):
+                                    procCompleteNum = 0
+                                    for proc in processList:
+                                        proc.wait()
+                                        now = time.time()
+                                        f1.write("Run "+ str(exp1RunNum) + ": " + str(now-progStart))
+                                        procCompleteNum = procCompleteNum + 1
+                                        print("\tRun #" + str(procCompleteNum) + " is complete!")
+                                        exp1RunNum += 1
+                                    currentProc = 0
+                                    processList.clear()
+                                    print(" ... Running next batch of simulations! ...\n")
+                            else:
+                                continue
         
         for proc in processList:
             proc.wait()
@@ -89,9 +94,8 @@ if __name__ == "__main__":
             proc.wait()
         processList.clear()
         currentProc = 0
-    currStep += 1
-    
     print("CSVs created for experiments 3!\n")
+    currStep += 1
     
     if(currStep <= endStep and currStep >= startStep): #STEP 3
         currentProc = 0
@@ -102,8 +106,10 @@ if __name__ == "__main__":
             for buf in buffersizes:
                 for rtt in movingClientsRtts:
                     for run in runList:
-                        filePath = '../../paperExperiments/' + experiment +'/results/'+ protocol.title() + str(rtt) + 'ms' + buf + 'Run' + str(run) + '.csv'
+                        filePath = '../../paperExperiments/experiment3/results/'+ protocol.title() + str(rtt) + 'ms' + buf + 'Run' + str(run) + '.csv'
+                        print(filePath)
                         if os.path.exists(filePath):
+                             print("Extracting CSV file for " + experiment + " " + protocol + " " + buf + " " + str(rtt) + " " + str(run))
                              processListStr.append("python3 extractSingleCsvFile.py " + filePath + " " + experiment + " " + protocol + " " + buf + " " + str(rtt) + " " + str(run))
         
         currentProc = 0
@@ -134,17 +140,17 @@ if __name__ == "__main__":
             for buf in buffersizes:
                 for rtt in movingClientsRtts:
                     for run in runList:
-                        subprocess.Popen("mkdir " + str(buf), shell=True, cwd='plots/' + experiment + '/' + cc + '/' ).communicate(timeout=10)
-                        subprocess.Popen("mkdir " + str(rtt) + 'ms', shell=True, cwd='plots/' + experiment + '/' + cc + '/' + buf).communicate(timeout=10)
-                        subprocess.Popen("mkdir run" + str(run), shell=True, cwd='plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms').communicate(timeout=10)
+                        subprocess.Popen("mkdir " + str(buf), shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' ).communicate(timeout=10)
+                        subprocess.Popen("mkdir " + str(rtt) + 'ms', shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf).communicate(timeout=10)
+                        subprocess.Popen("mkdir run" + str(run), shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms').communicate(timeout=10)
                         
-                        subprocess.Popen("mkdir constantClient0", shell=True, cwd='plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-                        subprocess.Popen("mkdir constantClient1", shell=True, cwd='plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-                        subprocess.Popen("mkdir pathChangeClient0", shell=True, cwd='plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-                        subprocess.Popen("mkdir pathChangeClient1", shell=True, cwd='plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-                        subprocess.Popen("mkdir constantBottlneckRouter", shell=True, cwd='plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-                        subprocess.Popen("mkdir pathChangeBottlneckRouter", shell=True, cwd='plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-                        subprocess.Popen("mkdir aggPlots", shell=True, cwd='plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
+                        subprocess.Popen("mkdir constantClient0", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
+                        subprocess.Popen("mkdir constantClient1", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
+                        subprocess.Popen("mkdir pathChangeClient0", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
+                        subprocess.Popen("mkdir pathChangeClient1", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
+                        subprocess.Popen("mkdir constantBottlneckRouter", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
+                        subprocess.Popen("mkdir pathChangeBottlneckRouter", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
+                        subprocess.Popen("mkdir aggPlots", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
     currStep += 1
     
     if(currStep <= endStep and currStep >= startStep): #STEP 5
@@ -155,11 +161,10 @@ if __name__ == "__main__":
                 for rtt in movingClientsRtts:
                     for run in runList:
                         #print("\nCurrently on Run#" + str(run) + " \n")
-                        
-                        dirPath = '../../plots/' + experiment + '/' + protocol + '/' + buf + '/' + str(rtt) + 'ms' + '/run' + str(run) + '/' 
+                        dirPath = '../../plots/experiment3/' + protocol + '/' + buf + '/' + str(rtt) + 'ms' + '/run' + str(run) + '/'
                         
                         runTitle = "run"
-                        fileBeg = '../../paperExperiments/'+ experiment + '/csvs/'+ protocol + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run)
+                        fileBeg = 'paperExperiments/'+ experiment + '/csvs/'+ protocol + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run)
                         fileStart = "../../../../../../../" + fileBeg
                         cwndFileList = []
                         rttFileList = []
@@ -170,62 +175,62 @@ if __name__ == "__main__":
                         aggrPlotsFileList = []
                         aggrPlotsGoodputFileList = []
                         
-                        cwndFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn-36/cwnd.csv', "constantClient0"))
-                        rttFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn-36/rtt.csv', "constantClient0"))
-                        tauFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn-36/tau.csv', "constantClient0"))
-                        UFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn-36/U.csv', "constantClient0"))
-                        goodputFileList.append((fileStart + '/doubledumbbellpathchange.constantServer[0].app[0].thread_38/goodput.csv', "constantClient0"))
+                        cwndFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn/cwnd.csv', "constantClient0"))
+                        rttFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn/rtt.csv', "constantClient0"))
+                        tauFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn/tau.csv', "constantClient0"))
+                        UFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn/U.csv', "constantClient0"))
+                        goodputFileList.append((fileStart + '/doubledumbbellpathchange.constantServer[0].app[0]/goodput.csv', "constantClient0"))
                         
-                        cwndFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[1].tcp.conn-37/cwnd.csv', "constantClient1"))
-                        rttFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[1].tcp.conn-37/rtt.csv', "constantClient1"))
-                        tauFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[1].tcp.conn-37/tau.csv', "constantClient1"))
-                        UFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[1].tcp.conn-37/U.csv', "constantClient1"))
-                        goodputFileList.append((fileStart + '/doubledumbbellpathchange.constantServer[1].app[0].thread_39/goodput.csv', "constantClient1"))
+                        cwndFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[1].tcp.conn/cwnd.csv', "constantClient1"))
+                        rttFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[1].tcp.conn/rtt.csv', "constantClient1"))
+                        tauFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[1].tcp.conn/tau.csv', "constantClient1"))
+                        UFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[1].tcp.conn/U.csv', "constantClient1"))
+                        goodputFileList.append((fileStart + '/doubledumbbellpathchange.constantServer[1].app[0]/goodput.csv', "constantClient1"))
                         
                         queueLengthFileList.append((fileStart + '/doubledumbbellpathchange.constantRouter1.ppp[2].queue/queueLength.csv', "constantBottlneckRouter"))
                         
-                        cwndFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[0].tcp.conn-40/cwnd.csv', "pathChangeClient0"))
-                        rttFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[0].tcp.conn-40/rtt.csv', "pathChangeClient0"))
-                        tauFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[0].tcp.conn-40/tau.csv', "pathChangeClient0"))
-                        UFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[0].tcp.conn-40/U.csv', "pathChangeClient0"))
-                        goodputFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeServer[0].app[0].thread_41/goodput.csv', "pathChangeClient0"))
+                        cwndFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[0].tcp.conn/cwnd.csv', "pathChangeClient0"))
+                        rttFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[0].tcp.conn/rtt.csv', "pathChangeClient0"))
+                        tauFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[0].tcp.conn/tau.csv', "pathChangeClient0"))
+                        UFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[0].tcp.conn/U.csv', "pathChangeClient0"))
+                        goodputFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeServer[0].app[0]/goodput.csv', "pathChangeClient0"))
                         
-                        cwndFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[1].tcp.conn-42/cwnd.csv', "pathChangeClient1"))
-                        rttFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[1].tcp.conn-42/rtt.csv', "pathChangeClient1"))
-                        tauFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[1].tcp.conn-42/tau.csv', "pathChangeClient1"))
-                        UFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[1].tcp.conn-42/U.csv', "pathChangeClient1"))
-                        goodputFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeServer[1].app[0].thread_43/goodput.csv', "pathChangeClient1"))
+                        cwndFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[1].tcp.conn/cwnd.csv', "pathChangeClient1"))
+                        rttFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[1].tcp.conn/rtt.csv', "pathChangeClient1"))
+                        tauFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[1].tcp.conn/tau.csv', "pathChangeClient1"))
+                        UFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[1].tcp.conn/U.csv', "pathChangeClient1"))
+                        goodputFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeServer[1].app[0]/goodput.csv', "pathChangeClient1"))
                         
                         queueLengthFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeRouter1.ppp[2].queue/queueLength.csv', "pathChangeBottlneckRouter"))
                         
                         
-                        aggrPlotsFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn-36/cwnd.csv '+ fileStart +'/doubledumbbellpathchange.constantClient[1].tcp.conn-37/cwnd.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeClient[0].tcp.conn-40/cwnd.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeClient[1].tcp.conn-42/cwnd.csv', "aggPlots"))
+                        aggrPlotsFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn/cwnd.csv '+ fileStart +'/doubledumbbellpathchange.constantClient[1].tcp.conn/cwnd.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeClient[0].tcp.conn/cwnd.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeClient[1].tcp.conn/cwnd.csv', "aggPlots"))
                         
-                        aggrPlotsGoodputFileList.append((fileStart + '/doubledumbbellpathchange.constantServer[0].app[0].thread_38/goodput.csv '+ fileStart +'/doubledumbbellpathchange.constantServer[1].app[0].thread_39/goodput.csv '+ fileStart +'/doubledumbbellpathchange.constantServer[1].app[0].thread_39/goodput.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeServer[1].app[0].thread_43/goodput.csv', "aggPlots"))
+                        aggrPlotsGoodputFileList.append((fileStart + '/doubledumbbellpathchange.constantServer[0].app[0]/goodput.csv '+ fileStart +'/doubledumbbellpathchange.constantServer[1].app[0]/goodput.csv '+ fileStart +'/doubledumbbellpathchange.constantServer[1].app[0]/goodput.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeServer[1].app[0]/goodput.csv', "aggPlots"))
                         
                         for cwndFile in cwndFileList:
-                            processListStr.append(("python3 ../../../../pythonScripts/experiment3/plotCwnd.py " + cwndFile[0], dirPath + cwndFile[1]))
+                            processListStr.append(("python3 ../../../../../../../pythonScripts/experiment3/plotCwnd.py " + cwndFile[0], dirPath + cwndFile[1]))
                         
                         for rttFile in rttFileList:
-                            processListStr.append(("python3 ../../../../pythonScripts/experiment3/plotRtt.py " + rttFile[0], dirPath + rttFile[1]))
+                            processListStr.append(("python3 ../../../../../../../pythonScripts/experiment3/plotRtt.py " + rttFile[0], dirPath + rttFile[1]))
                                 
                         for tauFile in tauFileList:
-                            processListStr.append(("python3 ../../../../pythonScripts/experiment3//plotTau.py " + tauFile[0], dirPath + tauFile[1]))
+                            processListStr.append(("python3 ../../../../../../../pythonScripts/experiment3//plotTau.py " + tauFile[0], dirPath + tauFile[1]))
                                 
                         for UFile in UFileList:
-                            processListStr.append(("python3 ../../../../pythonScripts/experiment3/plotU.py " + UFile[0], dirPath + UFile[1]))
+                            processListStr.append(("python3 ../../../../../../../pythonScripts/experiment3/plotU.py " + UFile[0], dirPath + UFile[1]))
                                 
                         for goodputFile in goodputFileList:
-                            processListStr.append(("python3 ../../../../pythonScripts/experiment3/plotGoodput.py " + goodputFile[0], dirPath + goodputFile[1]))
+                            processListStr.append(("python3 ../../../../../../../pythonScripts/experiment3/plotGoodput.py " + goodputFile[0], dirPath + goodputFile[1]))
                                 
                         for queueLengthFile in queueLengthFileList:
-                            processListStr.append(("python3 ../../../../pythonScripts/experiment3/plotQueueLength.py " + queueLengthFile[0], dirPath + queueLengthFile[1]))
+                            processListStr.append(("python3 ../../../../../../../pythonScripts/experiment3/plotQueueLength.py " + queueLengthFile[0], dirPath + queueLengthFile[1]))
                                 
                         for aggrePlotFile in aggrPlotsFileList:
-                            processListStr.append(("python3 ../../../../pythonScripts/experiment3/plotCwnd.py " + aggrePlotFile[0], dirPath + aggrePlotFile[1]))
+                            processListStr.append(("python3 ../../../../../../../pythonScripts/experiment3/plotCwnd.py " + aggrePlotFile[0], dirPath + aggrePlotFile[1]))
                             
                         for aggreGpPlotFile in aggrPlotsGoodputFileList:
-                            processListStr.append(("python3 ../../../../pythonScripts/experiment3/plotGoodput.py " + aggreGpPlotFile[0], dirPath + aggreGpPlotFile[1]))
+                            processListStr.append(("python3 ../../../../../../../pythonScripts/experiment3/plotGoodput.py " + aggreGpPlotFile[0], dirPath + aggreGpPlotFile[1]))
                         # goodputFilePath = '../../paperExperiments/' + experiment + '/csvs/'+ protocol.title() + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run) + '/singledumbbell.server[0].app[0].thread_9/goodput.csv'
                         # throughputFilePath = '../../paperExperiments/' + experiment + '/csvs/'+ protocol.title() + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run) + '/singledumbbell.server[0].tcp.conn-9/throughput.csv'
                         # queueLengthFilePath = '../../paperExperiments/' + experiment + '/csvs/'+ protocol.title() + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run) + '/singledumbbell.router1.ppp[1].queue/queueLength.csv'
@@ -244,7 +249,6 @@ if __name__ == "__main__":
         print("Plotting current batch!\n")
         while(len(processListStr) > 0):
             processTup = processListStr.pop()
-            print(processTup[0] + "\n")
             processList.append(subprocess.Popen(processTup[0], shell=True, cwd=processTup[1]))
             currentProc += 1
             if(currentProc >= cores):

@@ -12,6 +12,7 @@ import random
 from pathlib import Path
 import os
 import subprocess
+import re
 
 def parse_if_number(s):
     try: return float(s)
@@ -63,6 +64,10 @@ if __name__ == "__main__":
                 val = results.vecvalue.to_numpy()[mod] #VALUE
                 time = results.vectime.to_numpy()[mod] #TIME
                 modName = results.module.to_numpy()[mod]
+                if 'thread' in modName:
+                    modName = re.sub(r'\.thread_\d+', '', modName)
+                modName = re.sub(r'(conn)-\d+', r'\1', modName)
+                
                 finallist = pd.DataFrame({'time': time, str(vec): val})
                 subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs", shell=True).communicate(timeout=10) 
                 subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol, shell=True).communicate(timeout=10) 
@@ -70,6 +75,8 @@ if __name__ == "__main__":
                 subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms', shell=True).communicate(timeout=10) 
                 subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms' + '/run'+ str(run), shell=True).communicate(timeout=10)
                 subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms' + '/run'+ str(run) + "/" + str(modName), shell=True).communicate(timeout=10)
+                
+                
                 finallist.to_csv('../../paperExperiments/'+ exp +'/csvs/' + protocol + '/' + bufferName + '/'+ rtt + 'ms' + '/run'+ str(run) + '/' + str(modName) + '/' + vec + '.csv', index=False)
                 subprocess.Popen("rm " + filePath, shell=True).communicate(timeout=60)
             else:

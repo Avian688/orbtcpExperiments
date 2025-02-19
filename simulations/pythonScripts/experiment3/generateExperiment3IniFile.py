@@ -232,7 +232,8 @@ if __name__ == "__main__":
                     for i in range(numOfRuns):
                         random.seed(simSeed + i)
                         configName = alg.title() + str(scenarioName) + queueIniTitle + "Run" + str(i+1)
-                        f.write('\n' + '[Config ' + configName + ']')       
+                        print(configName)
+                        f.write('\n' + '[Config ' + configName + ']')
                         f.write('\n' + 'extends = General \n')
                         
                         f.write('\n' + '**.numberOfConstantFlows = 2\n')

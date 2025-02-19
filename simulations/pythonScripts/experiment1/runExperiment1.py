@@ -16,13 +16,13 @@ import time
            
 if __name__ == "__main__":
     
-    startStep = 6
+    startStep = 1
     endStep = 8
     currStep = 1
     cores = 35
     currentProc = 0
     processList = []
-    congControlList = ["bbr"]
+    congControlList = ["bbr", "orbtcp", "cubic"]
     experiments = ["experiment1", "experiment2"]
     runs = 50
     runList = list(range(1,runs+1))
@@ -47,7 +47,7 @@ if __name__ == "__main__":
                     if line.find('[Config') != -1:
                         configName = (line[8:])[:-2]
                         progStart = time.time()
-                        processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src --image-path=../../../../inet4.5/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../orbtcp/src/orbtcp -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications experiment1" + cc + ".ini", shell=True, cwd='../../paperExperiments/experiment1', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+                        processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/src:../../../../inet4.5/src:../../../../tcpPaced/src:../../../../cubic/src:../../../../orbtcp/src::../../../../tcpGoodputApplications/src --image-path=../../../../inet4.5/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../orbtcp/src/orbtcp -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications experiment1" + cc + ".ini", shell=True, cwd='../../paperExperiments/experiment1', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
                         currentProc = currentProc + 1
                         print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
                         if(currentProc == cores):
