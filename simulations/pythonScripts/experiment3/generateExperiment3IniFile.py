@@ -30,7 +30,7 @@ def int_to_word(num):
     if (num < 100):
         if num % 10 == 0: return d[num]
         else: return d[num // 10 * 10] + d[num % 10]
-    if (num > 100): 
+    if (num > 100):
         raise AssertionError('num is too large: %s' % str(num))
            
 if __name__ == "__main__":
@@ -74,19 +74,33 @@ if __name__ == "__main__":
                 f.write('\n' + 'cmdenv-log-prefix = %t | %m |\n\n')
                 f.write('\n' + 'cmdenv-event-banners = false')
                 f.write('\n' + '**.cmdenv-log-level = off\n')
-                f.write('\n' + '**.**.tcp.conn-*.cwnd:vector.vector-recording = true')
-                f.write('\n' + '**.**.tcp.conn-*.U:vector.vector-recording = true')
-                f.write('\n' + '**.**.tcp.conn-*.rtt:vector.vector-recording = true')
-                f.write('\n' + '**.**.tcp.conn-*.srtt:vector.vector-recording = true') 
-                f.write('\n' + '**.**.tcp.conn-*.lossRecovery:vector.vector-recording = true')
-                f.write('\n' + '**.**.queue.queueLength:vector.vector-recording = true')
-                f.write('\n' + '**.**.goodput:vector.vector-recording = true')
-                f.write('\n' + '**.**.throughput:vector.vector-recording = true')
-                f.write('\n' + '**.**.bandwidth:vector.vector-recording = true')
-                f.write('\n' + '**.**.mbytesInFlight:vector.vector-recording = true')
+                
+                f.write('\n' + '**.**.tcp.conn-*.cwnd:vector(removeRepeats).vector-recording = true')
+                f.write('\n' + '**.**.tcp.conn-*.U:vector(removeRepeats).vector-recording = true')
+                f.write('\n' + '**.**.tcp.conn-*.rtt:vector(removeRepeats).vector-recording = true')
+                f.write('\n' + '**.**.tcp.conn-*.srtt:vector(removeRepeats).vector-recording = true')
+                f.write('\n' + '**.**.tcp.conn-*.**.result-recording-modes = vector(removeRepeats)')
+                
+                f.write('\n' + '**.**.queue.queueLength:vector(removeRepeats).vector-recording = true')
+                f.write('\n' + '**.**.queue.queueLength.**.result-recording-modes = vector(removeRepeats)')
+                
+                f.write('\n' + '**.**.goodput:vector(removeRepeats).vector-recording = true')
+                f.write('\n' + '**.**.goodput.result-recording-modes = vector(removeRepeats)')
+                
+                f.write('\n' + '**.**.throughput:vector(removeRepeats).vector-recording = true')
+                f.write('\n' + '**.**.throughput.result-recording-modes = vector(removeRepeats)')
+                
+                f.write('\n' + '**.**.bandwidth:vector(removeRepeats).vector-recording = true')
+                f.write('\n' + '**.**.bandwidth.result-recording-modes = vector(removeRepeats)')
+                
+                f.write('\n' + '**.**.mbytesInFlight:vector(removeRepeats).vector-recording = true')
+                f.write('\n' + '**.**.mbytesInFlight.result-recording-modes = vector(removeRepeats)')
+                
+                
                 f.write('\n' + '**.scalar-recording=false')
                 f.write('\n' + '**.vector-recording=false')
                 f.write('\n' + '**.bin-recording=false\n')
+                
                 f.write('\n' + '**.goodputInterval = 1s')
                 f.write('\n' + '**.throughputInterval = 1s')
                 
@@ -237,7 +251,7 @@ if __name__ == "__main__":
                         f.write('\n' + 'extends = General \n')
                         
                         f.write('\n' + '**.numberOfConstantFlows = 2\n')
-                        f.write('\n' + '**.numberOfPathChangeFlows = 2 \n') 
+                        f.write('\n' + '**.numberOfPathChangeFlows = 2 \n')
                                                     
                         for constantClientNumb in range(numOfConstClients):
                             constantClientStart = random.uniform(0,50)
@@ -253,7 +267,7 @@ if __name__ == "__main__":
                         
                         f.write('\n' + '**.ppp[*].queue.packetCapacity = ' + str(int(queueLength*qs)) + '\n')
                         f.write('\n' + '*.scenarioManager.script = xmldoc("../scenarios/experiment3/'+ str(scenarioName) + '.xml")\n')
-    print('\nINI files generated!')            
+    print('\nINI files generated!')
                     
                         
                 

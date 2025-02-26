@@ -17,16 +17,16 @@ import re
 
 if __name__ == "__main__":
     
-    startStep = 3
-    endStep = 6
+    startStep = 1
+    endStep = 3
     currStep = 1
-    cores = 35
+    cores = 40
     currentProc = 0
     processList = []
-    congControlList = ["bbr", "orbtcp"]#, "cubic"]
+    congControlList = ["bbr", "orbtcp", "cubic"]
     experiment = "experiment3"
     buffersizes = ["smallbuffer", "mediumbuffer", "largebuffer"]
-    movingClientsRtts = [15,30,45,60,75,90] #OF AVERAGE BDP
+    movingClientsRtts = [10,20,30,40,50,60,70,80,90,100] #OF AVERAGE BDP
     runs = 5
     runList = list(range(1,runs+1))
     
@@ -154,6 +154,15 @@ if __name__ == "__main__":
     currStep += 1
     
     if(currStep <= endStep and currStep >= startStep): #STEP 5
+        print("Plotting Pre Post!\n")
+        subprocess.Popen("mkdir cumulative", shell=True, cwd='../../plots/experiment3/').communicate(timeout=10)
+        time.sleep(3)
+        p = subprocess.Popen("python3 ../../../pythonScripts/experiment3/plotPrePost.py", shell=True, cwd='../../plots/experiment3/cumulative')
+        p.wait(timeout=3600)
+        time.sleep(1)
+    currStep += 1
+    
+    if(currStep <= endStep and currStep >= startStep): #STEP 6
         print("\nPlotting!")
         processListStr = []
         for protocol in congControlList:
@@ -175,33 +184,25 @@ if __name__ == "__main__":
                         aggrPlotsFileList = []
                         aggrPlotsGoodputFileList = []
                         
-                        cwndFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn/cwnd.csv', "constantClient0"))
-                        rttFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn/rtt.csv', "constantClient0"))
-                        tauFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn/tau.csv', "constantClient0"))
-                        UFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn/U.csv', "constantClient0"))
-                        goodputFileList.append((fileStart + '/doubledumbbellpathchange.constantServer[0].app[0]/goodput.csv', "constantClient0"))
-                        
-                        cwndFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[1].tcp.conn/cwnd.csv', "constantClient1"))
-                        rttFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[1].tcp.conn/rtt.csv', "constantClient1"))
-                        tauFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[1].tcp.conn/tau.csv', "constantClient1"))
-                        UFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[1].tcp.conn/U.csv', "constantClient1"))
-                        goodputFileList.append((fileStart + '/doubledumbbellpathchange.constantServer[1].app[0]/goodput.csv', "constantClient1"))
-                        
-                        queueLengthFileList.append((fileStart + '/doubledumbbellpathchange.constantRouter1.ppp[2].queue/queueLength.csv', "constantBottlneckRouter"))
-                        
-                        cwndFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[0].tcp.conn/cwnd.csv', "pathChangeClient0"))
-                        rttFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[0].tcp.conn/rtt.csv', "pathChangeClient0"))
-                        tauFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[0].tcp.conn/tau.csv', "pathChangeClient0"))
-                        UFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[0].tcp.conn/U.csv', "pathChangeClient0"))
-                        goodputFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeServer[0].app[0]/goodput.csv', "pathChangeClient0"))
-                        
-                        cwndFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[1].tcp.conn/cwnd.csv', "pathChangeClient1"))
-                        rttFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[1].tcp.conn/rtt.csv', "pathChangeClient1"))
-                        tauFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[1].tcp.conn/tau.csv', "pathChangeClient1"))
-                        UFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeClient[1].tcp.conn/U.csv', "pathChangeClient1"))
-                        goodputFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeServer[1].app[0]/goodput.csv', "pathChangeClient1"))
-                        
-                        queueLengthFileList.append((fileStart + '/doubledumbbellpathchange.pathChangeRouter1.ppp[2].queue/queueLength.csv', "pathChangeBottlneckRouter"))
+                        file_mappings = [
+                            ("constantClient", "constantServer", "constantBottleneckRouter"),
+                            ("pathChangeClient", "pathChangeServer", "pathChangeBottleneckRouter")
+                        ]
+
+                        for client_type, server_type, router_type in file_mappings:
+                            for i in range(2):
+                                prefix = f"{fileStart}/doubledumbbellpathchange.{client_type}[{i}].tcp.conn"
+                                label = f"{client_type}{i}"
+                                
+                                cwndFileList.append((f"{prefix}/cwnd.csv", label))
+                                rttFileList.append((f"{prefix}/rtt.csv", label))
+                                tauFileList.append((f"{prefix}/tau.csv", label))
+                                UFileList.append((f"{prefix}/U.csv", label))
+                                
+                                goodputFileList.append((f"{fileStart}/doubledumbbellpathchange.{server_type}[{i}].app[0]/goodput.csv", label))
+                            
+                            queueLengthFileList.append((f"{fileStart}/doubledumbbellpathchange.{router_type}1.ppp[2].queue/queueLength.csv", router_type))
+
                         
                         
                         aggrPlotsFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn/cwnd.csv '+ fileStart +'/doubledumbbellpathchange.constantClient[1].tcp.conn/cwnd.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeClient[0].tcp.conn/cwnd.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeClient[1].tcp.conn/cwnd.csv', "aggPlots"))

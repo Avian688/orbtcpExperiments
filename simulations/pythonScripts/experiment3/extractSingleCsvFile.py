@@ -40,6 +40,7 @@ if __name__ == "__main__":
     run = 0
     argNum = 0
     vectorsToExtract = ["goodput", "rtt", "cwnd", "queueLength", "throughput", "tau", "U"]
+    extracted = False
     
     for arg in sys.argv[1:]:
         if(argNum == 0):
@@ -55,7 +56,7 @@ if __name__ == "__main__":
         elif(argNum == 5):
             run = int(arg)
         argNum = argNum + 1
-            
+    
     rawResults = getResults(filePath)
     for vec in vectorsToExtract:    
         results = rawResults.loc[rawResults['name'] == str(vec)+":vector"]
@@ -78,9 +79,15 @@ if __name__ == "__main__":
                 
                 
                 finallist.to_csv('../../paperExperiments/'+ exp +'/csvs/' + protocol + '/' + bufferName + '/'+ rtt + 'ms' + '/run'+ str(run) + '/' + str(modName) + '/' + vec + '.csv', index=False)
-                subprocess.Popen("rm " + filePath, shell=True).communicate(timeout=60)
+                extracted = True
             else:
-                print("\n None data found! Not extracting \n")    
+                print("\n None data found! Not extracting \n")
+                
+    if(extracted):
+        subprocess.Popen("rm " + filePath, shell=True).communicate(timeout=60)
+        subprocess.Popen("rm  ../../paperExperiments/experiment3/results/*.vec", shell=True).communicate(timeout=60)
+        subprocess.Popen("rm  ../../paperExperiments/experiment3/results/*.vci", shell=True).communicate(timeout=60)
+        subprocess.Popen("rm  ../../paperExperiments/experiment3/results/*.sca", shell=True).communicate(timeout=60)
     
         
     

@@ -6,14 +6,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 import scienceplots
-import os
 
 if __name__ == "__main__":
     pd.set_option('display.max_rows', None)
     plt.rcParams['text.usetex'] = False
-    print("\n CWND CURRENT DIRECTORY")
-    print(os.getcwd().replace('\\', '/'))
-    print("\n ")
     results = []
     for arg in sys.argv[1:]:
         time, data = np.genfromtxt(arg, delimiter=',',skip_header=1).transpose()

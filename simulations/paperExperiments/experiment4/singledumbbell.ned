@@ -8,7 +8,7 @@ import ned.DatarateChannel;
 import ned.IBidirectionalChannel;
 import inet.common.scenario.ScenarioManager;
 
-network singledumbbellhardhandover
+network singledumbbell
 {
     parameters:
         @display("bgb=512,395");
@@ -17,7 +17,7 @@ network singledumbbellhardhandover
         channel standardLine extends DatarateChannel //look at 
         {
             delay = 0ms;
-            datarate = 1Gbps;
+            datarate = 10Gbps;
         }
         
         channel bottleneckLine extends DatarateChannel //look at 
