@@ -76,13 +76,13 @@ if __name__ == "__main__":
                 f.write('\n' + '**.cmdenv-log-level = off\n')
                 
                 f.write('\n' + '**.**.tcp.conn-*.cwnd:vector(removeRepeats).vector-recording = true')
-                f.write('\n' + '**.**.tcp.conn-*.U:vector(removeRepeats).vector-recording = true')
+                #f.write('\n' + '**.**.tcp.conn-*.U:vector(removeRepeats).vector-recording = true')
                 f.write('\n' + '**.**.tcp.conn-*.rtt:vector(removeRepeats).vector-recording = true')
                 f.write('\n' + '**.**.tcp.conn-*.srtt:vector(removeRepeats).vector-recording = true')
                 f.write('\n' + '**.**.tcp.conn-*.**.result-recording-modes = vector(removeRepeats)')
                 
                 f.write('\n' + '**.**.queue.queueLength:vector(removeRepeats).vector-recording = true')
-                f.write('\n' + '**.**.queue.queueLength.**.result-recording-modes = vector(removeRepeats)')
+                f.write('\n' + '**.**.queue.queueLength.result-recording-modes = vector(removeRepeats)')
                 
                 f.write('\n' + '**.**.goodput:vector(removeRepeats).vector-recording = true')
                 f.write('\n' + '**.**.goodput.result-recording-modes = vector(removeRepeats)')
