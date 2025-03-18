@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 import scienceplots
+import re
 
 if __name__ == "__main__":
     pd.set_option('display.max_rows', None)

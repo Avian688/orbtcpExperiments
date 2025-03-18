@@ -19,7 +19,7 @@ if __name__ == "__main__":
     startStep = 1
     endStep = 8
     currStep = 1
-    cores = 35
+    cores = 30
     currentProc = 0
     processList = []
     congControlList = ["bbr", "orbtcp", "cubic"]

@@ -35,7 +35,7 @@ def int_to_word(num):
            
 if __name__ == "__main__":
     simSeed = 1999
-    queueLength = 340
+    queueLength = round(((100*125000)*0.05)/1448) #431 packets
     queueSizes = [0.2, 1, 4]
     numOfRuns = 5
     numOfConstClients = 2
@@ -79,6 +79,7 @@ if __name__ == "__main__":
                 #f.write('\n' + '**.**.tcp.conn-*.U:vector(removeRepeats).vector-recording = true')
                 f.write('\n' + '**.**.tcp.conn-*.rtt:vector(removeRepeats).vector-recording = true')
                 f.write('\n' + '**.**.tcp.conn-*.srtt:vector(removeRepeats).vector-recording = true')
+                f.write('\n' + '**.**.tcp.conn-*.throughput:vector(removeRepeats).vector-recording = true')
                 f.write('\n' + '**.**.tcp.conn-*.**.result-recording-modes = vector(removeRepeats)')
                 
                 f.write('\n' + '**.**.queue.queueLength:vector(removeRepeats).vector-recording = true')
@@ -86,9 +87,6 @@ if __name__ == "__main__":
                 
                 f.write('\n' + '**.**.goodput:vector(removeRepeats).vector-recording = true')
                 f.write('\n' + '**.**.goodput.result-recording-modes = vector(removeRepeats)')
-                
-                f.write('\n' + '**.**.throughput:vector(removeRepeats).vector-recording = true')
-                f.write('\n' + '**.**.throughput.result-recording-modes = vector(removeRepeats)')
                 
                 f.write('\n' + '**.**.bandwidth:vector(removeRepeats).vector-recording = true')
                 f.write('\n' + '**.**.bandwidth.result-recording-modes = vector(removeRepeats)')

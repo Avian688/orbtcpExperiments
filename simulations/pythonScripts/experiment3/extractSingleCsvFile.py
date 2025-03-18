@@ -39,7 +39,7 @@ if __name__ == "__main__":
     rtt = ""
     run = 0
     argNum = 0
-    vectorsToExtract = ["goodput", "rtt", "cwnd", "queueLength", "throughput", "tau", "U"]
+    vectorsToExtract = ["goodput", "rtt", "cwnd", "queueLength", "throughput"]
     extracted = False
     
     for arg in sys.argv[1:]:
@@ -58,8 +58,13 @@ if __name__ == "__main__":
         argNum = argNum + 1
     
     rawResults = getResults(filePath)
-    for vec in vectorsToExtract:    
-        results = rawResults.loc[rawResults['name'] == str(vec)+":vector"]
+    subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs", shell=True).communicate(timeout=10)
+    subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol, shell=True).communicate(timeout=10)
+    subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName, shell=True).communicate(timeout=10)
+    subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms', shell=True).communicate(timeout=10)
+    subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms' + '/run'+ str(run), shell=True).communicate(timeout=10)
+    for vec in vectorsToExtract:
+        results = rawResults.loc[rawResults['name'] == str(vec)+":vector(removeRepeats)"]
         for mod in range(len(results.vecvalue.to_numpy())):
             if(not results.vecvalue.to_numpy()[mod] is None):
                 val = results.vecvalue.to_numpy()[mod] #VALUE
@@ -68,15 +73,8 @@ if __name__ == "__main__":
                 if 'thread' in modName:
                     modName = re.sub(r'\.thread_\d+', '', modName)
                 modName = re.sub(r'(conn)-\d+', r'\1', modName)
-                
-                finallist = pd.DataFrame({'time': time, str(vec): val})
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs", shell=True).communicate(timeout=10) 
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol, shell=True).communicate(timeout=10) 
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName, shell=True).communicate(timeout=10) 
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms', shell=True).communicate(timeout=10) 
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms' + '/run'+ str(run), shell=True).communicate(timeout=10)
                 subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms' + '/run'+ str(run) + "/" + str(modName), shell=True).communicate(timeout=10)
-                
+                finallist = pd.DataFrame({'time': time, str(vec): val})
                 
                 finallist.to_csv('../../paperExperiments/'+ exp +'/csvs/' + protocol + '/' + bufferName + '/'+ rtt + 'ms' + '/run'+ str(run) + '/' + str(modName) + '/' + vec + '.csv', index=False)
                 extracted = True

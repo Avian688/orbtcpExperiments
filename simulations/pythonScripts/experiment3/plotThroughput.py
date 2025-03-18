@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import random
 import json
 import scienceplots
+import re
 
 if __name__ == "__main__":
     pd.set_option('display.max_rows', None)
@@ -16,6 +17,12 @@ if __name__ == "__main__":
     csvName = sys.argv[1].split("run",1)[1]
     runNumb = csvName.partition("/")[0]
     for arg in sys.argv[1:]:
+        match = re.search(r'([a-zA-Z_]+\[\d+\])', arg)
+        module_name = match.group(1) if match else ""
+        if(plotTitle == ""):
+            plotTitle = module_name
+        else:
+            plotTitle = plotTitle + "_" + module_name
         time, data = np.genfromtxt(arg, delimiter=',',skip_header=1).transpose()
         results.append((time, data))
     i = 0
@@ -38,7 +45,7 @@ if __name__ == "__main__":
     plt.xlabel('Time (s)')
     plt.ylabel('Throughput (Mbps)')
     plt.legend(loc = "upper left")
-    plt.title("Throughput")
+    plt.title("Throughput-" + plotTitle)
     plt.tight_layout(rect=[0, 0, 1, 1], pad=1.0)  
     plt.savefig('throughput.pdf')
     

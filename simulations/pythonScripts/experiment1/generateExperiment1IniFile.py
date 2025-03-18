@@ -30,7 +30,7 @@ def int_to_word(num):
     if (num < 100):
         if num % 10 == 0: return d[num]
         else: return d[num // 10 * 10] + d[num % 10]
-    if (num > 100): 
+    if (num > 100):
         raise AssertionError('num is too large: %s' % str(num))
            
 if __name__ == "__main__":
@@ -63,25 +63,30 @@ if __name__ == "__main__":
             f.write('\n' + '**.cmdenv-log-level = off\n')
             
             f.write('\n' + '**.**.tcp.conn-*.cwnd:vector(removeRepeats).vector-recording = true')
-            f.write('\n' + '**.**.tcp.conn-*.U:vector(removeRepeats).vector-recording = true')
+            #f.write('\n' + '**.**.tcp.conn-*.U:vector(removeRepeats).vector-recording = true')
             f.write('\n' + '**.**.tcp.conn-*.rtt:vector(removeRepeats).vector-recording = true')
-            f.write('\n' + '**.**.tcp.conn-*.srtt:vector(removeRepeats).vector-recording = true') 
+            f.write('\n' + '**.**.tcp.conn-*.srtt:vector(removeRepeats).vector-recording = true')
+            f.write('\n' + '**.**.tcp.conn-*.throughput:vector(removeRepeats).vector-recording = true')
+            f.write('\n' + '**.**.tcp.conn-*.**.result-recording-modes = vector(removeRepeats)')
+            
             f.write('\n' + '**.**.queue.queueLength:vector(removeRepeats).vector-recording = true')
+            f.write('\n' + '**.**.queue.queueLength.result-recording-modes = vector(removeRepeats)')
+            
             f.write('\n' + '**.**.goodput:vector(removeRepeats).vector-recording = true')
-            f.write('\n' + '**.**.throughput:vector(removeRepeats).vector-recording = true')
+            f.write('\n' + '**.**.goodput.result-recording-modes = vector(removeRepeats)')
+            
             f.write('\n' + '**.**.bandwidth:vector(removeRepeats).vector-recording = true')
+            f.write('\n' + '**.**.bandwidth.result-recording-modes = vector(removeRepeats)')
+            
             f.write('\n' + '**.**.mbytesInFlight:vector(removeRepeats).vector-recording = true')
+            f.write('\n' + '**.**.mbytesInFlight.result-recording-modes = vector(removeRepeats)')
+            
+            
             f.write('\n' + '**.scalar-recording=false')
             f.write('\n' + '**.vector-recording=false')
             f.write('\n' + '**.bin-recording=false\n')
             f.write('\n' + '**.goodputInterval = 1s')
             f.write('\n' + '**.throughputInterval = 1s')
-            
-            f.write('\n' + '**.**.tcp.conn-*.**.result-recording-modes = vector(removeRepeats)')
-            f.write('\n' + '**.**.queue.queueLength.result-recording-modes = vector(removeRepeats)')
-            f.write('\n' + '**.**.goodput.result-recording-modes = vector(removeRepeats)')
-            f.write('\n' + '**.**.throughput.result-recording-modes = vector(removeRepeats)')
-            f.write('\n' + '**.**.mbytesInFlight.result-recording-modes = vector(removeRepeats)')
             
             if(algFlavour == "TcpCubic"):
                 f.write('\n' + '**.tcp.typename = "TcpPaced"')
@@ -170,17 +175,17 @@ if __name__ == "__main__":
                 
             dir = [f for f in os.listdir('../../paperExperiments/scenarios/experiment1/.')]
             for xmlFile in dir:
-                runNum = int(os.path.basename(xmlFile)[3:-4])                          
+                runNum = int(os.path.basename(xmlFile)[3:-4])
                 configName = alg.title() + "Run" + str(runNum)
-                f.write('\n' + '[Config ' + configName + ']')       
+                f.write('\n' + '[Config ' + configName + ']')
                 f.write('\n' + 'extends = General \n')
-                f.write('\n' + '**.numberOfFlows = 1 \n')  
+                f.write('\n' + '**.numberOfFlows = 1 \n')
                 f.write('\n' + '*.client[0].app[0].connectAddress = "server[0]"')
                 f.write('\n' + '*.client[0].app[0].tOpen = 0s')
                 f.write('\n' + '*.client[0].app[0].tSend = 0s\n')
                 f.write('\n' + '**.ppp[*].queue.packetCapacity = ' + str(queueLength) + '\n')
                 f.write('\n' + '*.scenarioManager.script = xmldoc("../scenarios/experiment1/run' + str(runNum) + '.xml")\n')
-    print('\nINI files generated!')            
+    print('\nINI files generated!')
                 
                     
             

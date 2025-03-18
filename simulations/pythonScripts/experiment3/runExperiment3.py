@@ -14,16 +14,60 @@ import os
 import subprocess
 import time
 import re
+from PyPDF2 import PdfMerger
+
+def merge_pdfs_in_folders(root_folder):
+    for protocol in os.listdir(root_folder):
+        protocol_path = os.path.join(root_folder, protocol)
+        if not os.path.isdir(protocol_path):
+            continue
+        
+        for buffer in os.listdir(protocol_path):
+            buffer_path = os.path.join(protocol_path, buffer)
+            if not os.path.isdir(buffer_path):
+                continue
+            
+            for rtt in os.listdir(buffer_path):
+                rtt_path = os.path.join(buffer_path, rtt)
+                if not os.path.isdir(rtt_path):
+                    continue
+                
+                for run in os.listdir(rtt_path):
+                    run_path = os.path.join(rtt_path, run)
+                    if not os.path.isdir(run_path):
+                        continue
+                    
+                    merger = PdfMerger()
+                    module_found = False
+                    
+                    for module in os.listdir(run_path):
+                        module_path = os.path.join(run_path, module)
+                        if not os.path.isdir(module_path):
+                            continue
+                        
+                        pdf_files = sorted(Path(module_path).glob("*.pdf"))
+                        if not pdf_files:
+                            continue
+                        
+                        module_found = True
+                        for pdf_file in pdf_files:
+                            merger.append(str(pdf_file))
+                    
+                    if module_found:
+                        output_pdf = os.path.join(run_path, "merged_plots.pdf")
+                        merger.write(output_pdf)
+                        merger.close()
+                        print(f"Merged PDFs into {output_pdf}")
 
 if __name__ == "__main__":
     
-    startStep = 1
-    endStep = 3
+    startStep = 6
+    endStep = 6
     currStep = 1
-    cores = 40
+    cores = 35
     currentProc = 0
     processList = []
-    congControlList = ["bbr", "orbtcp", "cubic"]
+    congControlList = ["orbtcp", "bbr", "cubic"]
     experiment = "experiment3"
     buffersizes = ["smallbuffer", "mediumbuffer", "largebuffer"]
     movingClientsRtts = [10,20,30,40,50,60,70,80,90,100] #OF AVERAGE BDP
@@ -48,6 +92,7 @@ if __name__ == "__main__":
                                 configName = (line[8:])[:-2]
                                 progStart = time.time()
                                 processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src --image-path=../../../../inet4.5/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../orbtcp/src/orbtcp -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications experiment3" + cc + bs + ".ini", shell=True, cwd='../../paperExperiments/experiment3', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+                                
                                 currentProc = currentProc + 1
                                 print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
                                 if(currentProc == cores):
@@ -77,16 +122,24 @@ if __name__ == "__main__":
         print("\nAll experiments in Experiment 3 has been run!\n")
         folderLoc =  '../../paperExperiments/experiment3/results/'
         print("------------ Generating CSV Files for experiment 3 ------------")
+        
+        fileList = []
         for file in os.listdir(folderLoc):
             if(file.endswith(".vec")):
                 f = os.path.join(folderLoc, file)
                 processList.append(subprocess.Popen("opp_scavetool export -o "+ "results/"+ file[:-7] + ".csv -F CSV-R " + "results/" + file , shell=True, cwd='../../paperExperiments/experiment3/'))
                 currentProc = currentProc + 1
                 print("Generating CSV file for [" + file + "]... (Run #" + str(currentProc) + ")")
+                fileList.append(file)
                 if(currentProc == cores):
                      for proc in processList:
                          proc.wait()
                      currentProc = 0
+                     for fil in fileList:
+                        subprocess.Popen("rm results/" + fil , shell=True, cwd='../../paperExperiments/experiment3/').communicate(timeout=10) #Remove VEC
+                        subprocess.Popen("rm results/" + fil[:-4] + ".vci" , shell=True, cwd='../../paperExperiments/experiment3/').communicate(timeout=10) #Remove VCI
+                        subprocess.Popen("rm results/" + fil[:-4] + ".sca" , shell=True, cwd='../../paperExperiments/experiment3/').communicate(timeout=10) #Remove VCI
+                     fileList.clear()
                      processList.clear()
                      print("     ... Running next batch! ...\n")
         
@@ -94,7 +147,9 @@ if __name__ == "__main__":
             proc.wait()
         processList.clear()
         currentProc = 0
-    print("CSVs created for experiments 3!\n")
+
+        print("CSVs created for experiments 3!\n")
+
     currStep += 1
     
     if(currStep <= endStep and currStep >= startStep): #STEP 3
@@ -109,8 +164,9 @@ if __name__ == "__main__":
                         filePath = '../../paperExperiments/experiment3/results/'+ protocol.title() + str(rtt) + 'ms' + buf + 'Run' + str(run) + '.csv'
                         print(filePath)
                         if os.path.exists(filePath):
-                             print("Extracting CSV file for " + experiment + " " + protocol + " " + buf + " " + str(rtt) + " " + str(run))
-                             processListStr.append("python3 extractSingleCsvFile.py " + filePath + " " + experiment + " " + protocol + " " + buf + " " + str(rtt) + " " + str(run))
+                            print("Extracting CSV file for " + experiment + " " + protocol + " " + buf + " " + str(rtt) + " " + str(run))
+
+                            processListStr.append("python3 extractSingleCsvFile.py " + filePath + " " + experiment + " " + protocol + " " + buf + " " + str(rtt) + " " + str(run))
         
         currentProc = 0
         while(len(processListStr) > 0):
@@ -120,7 +176,7 @@ if __name__ == "__main__":
             currentProc += 1
             if(currentProc >= cores):
                 for proc in processList:
-                    proc.wait(timeout=300)
+                    proc.wait(timeout=1200)
                 currentProc = 0
                 print("Csv Extraction batch complete!\n")
                 print("Extracting next batch!\n")
@@ -148,8 +204,8 @@ if __name__ == "__main__":
                         subprocess.Popen("mkdir constantClient1", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
                         subprocess.Popen("mkdir pathChangeClient0", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
                         subprocess.Popen("mkdir pathChangeClient1", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-                        subprocess.Popen("mkdir constantBottlneckRouter", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-                        subprocess.Popen("mkdir pathChangeBottlneckRouter", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
+                        subprocess.Popen("mkdir constantRouter", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
+                        subprocess.Popen("mkdir pathChangeRouter", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
                         subprocess.Popen("mkdir aggPlots", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
     currStep += 1
     
@@ -157,12 +213,21 @@ if __name__ == "__main__":
         print("Plotting Pre Post!\n")
         subprocess.Popen("mkdir cumulative", shell=True, cwd='../../plots/experiment3/').communicate(timeout=10)
         time.sleep(3)
-        p = subprocess.Popen("python3 ../../../pythonScripts/experiment3/plotPrePost.py", shell=True, cwd='../../plots/experiment3/cumulative')
+        p = subprocess.Popen("python3 ../../../pythonScripts/experiment3/plotPrePostMethod2.py", shell=True, cwd='../../plots/experiment3/cumulative')
+        p.wait(timeout=3600)
+        time.sleep(1)
+    currStep += 1
+
+    if(currStep <= endStep and currStep >= startStep): #STEP 6
+        print("Plotting Scatter!\n")
+        subprocess.Popen("mkdir cumulative", shell=True, cwd='../../plots/experiment3/').communicate(timeout=10)
+        time.sleep(3)
+        p = subprocess.Popen("python3 ../../../pythonScripts/experiment3/plotScatter.py", shell=True, cwd='../../plots/experiment3/cumulative')
         p.wait(timeout=3600)
         time.sleep(1)
     currStep += 1
     
-    if(currStep <= endStep and currStep >= startStep): #STEP 6
+    if(currStep <= endStep and currStep >= startStep): #STEP 7
         print("\nPlotting!")
         processListStr = []
         for protocol in congControlList:
@@ -180,13 +245,14 @@ if __name__ == "__main__":
                         tauFileList = []
                         UFileList = []
                         goodputFileList = []
+                        throughputFileList = []
                         queueLengthFileList = []
                         aggrPlotsFileList = []
                         aggrPlotsGoodputFileList = []
                         
                         file_mappings = [
-                            ("constantClient", "constantServer", "constantBottleneckRouter"),
-                            ("pathChangeClient", "pathChangeServer", "pathChangeBottleneckRouter")
+                            ("constantClient", "constantServer", "constantRouter"),
+                            ("pathChangeClient", "pathChangeServer", "pathChangeRouter")
                         ]
 
                         for client_type, server_type, router_type in file_mappings:
@@ -196,8 +262,9 @@ if __name__ == "__main__":
                                 
                                 cwndFileList.append((f"{prefix}/cwnd.csv", label))
                                 rttFileList.append((f"{prefix}/rtt.csv", label))
-                                tauFileList.append((f"{prefix}/tau.csv", label))
-                                UFileList.append((f"{prefix}/U.csv", label))
+                                
+                                #if(protocol == "orbtcp"):
+                                    #UFileList.append((f"{prefix}/U.csv", label))
                                 
                                 goodputFileList.append((f"{fileStart}/doubledumbbellpathchange.{server_type}[{i}].app[0]/goodput.csv", label))
                             
@@ -207,16 +274,13 @@ if __name__ == "__main__":
                         
                         aggrPlotsFileList.append((fileStart + '/doubledumbbellpathchange.constantClient[0].tcp.conn/cwnd.csv '+ fileStart +'/doubledumbbellpathchange.constantClient[1].tcp.conn/cwnd.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeClient[0].tcp.conn/cwnd.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeClient[1].tcp.conn/cwnd.csv', "aggPlots"))
                         
-                        aggrPlotsGoodputFileList.append((fileStart + '/doubledumbbellpathchange.constantServer[0].app[0]/goodput.csv '+ fileStart +'/doubledumbbellpathchange.constantServer[1].app[0]/goodput.csv '+ fileStart +'/doubledumbbellpathchange.constantServer[1].app[0]/goodput.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeServer[1].app[0]/goodput.csv', "aggPlots"))
+                        aggrPlotsGoodputFileList.append((fileStart + '/doubledumbbellpathchange.constantServer[0].app[0]/goodput.csv '+ fileStart +'/doubledumbbellpathchange.constantServer[1].app[0]/goodput.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeServer[0].app[0]/goodput.csv '+ fileStart +'/doubledumbbellpathchange.pathChangeServer[1].app[0]/goodput.csv', "aggPlots"))
                         
                         for cwndFile in cwndFileList:
                             processListStr.append(("python3 ../../../../../../../pythonScripts/experiment3/plotCwnd.py " + cwndFile[0], dirPath + cwndFile[1]))
                         
                         for rttFile in rttFileList:
                             processListStr.append(("python3 ../../../../../../../pythonScripts/experiment3/plotRtt.py " + rttFile[0], dirPath + rttFile[1]))
-                                
-                        for tauFile in tauFileList:
-                            processListStr.append(("python3 ../../../../../../../pythonScripts/experiment3//plotTau.py " + tauFile[0], dirPath + tauFile[1]))
                                 
                         for UFile in UFileList:
                             processListStr.append(("python3 ../../../../../../../pythonScripts/experiment3/plotU.py " + UFile[0], dirPath + UFile[1]))
@@ -251,13 +315,37 @@ if __name__ == "__main__":
         while(len(processListStr) > 0):
             processTup = processListStr.pop()
             processList.append(subprocess.Popen(processTup[0], shell=True, cwd=processTup[1]))
+            procName = processTup[0]
+            #print(procName)
+            if "csvs/" in procName:
+                procName = procName.split("csvs/")[-1]
+            parts = procName.strip().split("/")
+            # Extract key details
+            protocol = parts[0]
+            queue_size = parts[1]
+            rtt = parts[2]
+            run_number = parts[3]
+            module = parts[4].split(".")[0]  # Get module name before '.'
+            metric = parts[-1]  # Last part is the recorded value
+            # Format the output
+            formatted_output = f"Plotting {protocol} {queue_size} {rtt} {run_number} {module} {metric}"
+            print(formatted_output)
+        
+            #print("Plotting " + formatted_output)
+            
             currentProc += 1
             if(currentProc >= cores):
                 for proc in processList:
-                    proc.wait(timeout=300)
+                    proc.wait(timeout=500)
                 currentProc = 0
                 print("Plot batch complete!\n")
                 print("Plotting next batch!\n")
                 processList.clear()
+    currStep += 1
+
+    if(currStep <= endStep and currStep >= startStep): #STEP 8
+        print("\n Attempting to merge PDFs!\n")
+        merge_pdfs_in_folders("../../plots/experiment3")
+
     currStep += 1
         

@@ -60,7 +60,7 @@ if __name__ == "__main__":
         Path(folderBaseRttsName).mkdir(parents=True, exist_ok=True)
         Path(folderBwsName).mkdir(parents=True, exist_ok=True)
         fileName = 'run' + str(i+1)
-        with open(folderName + '/' +  fileName + '.xml', 'w') as f:
+        with open(folderName + '/' + fileName + '.xml', 'w') as f:
             f.write('<scenario>')
             clientNum = 0
             channelDelay = (currentRtt-(0.5*2))/4

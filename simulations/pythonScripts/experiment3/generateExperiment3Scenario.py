@@ -31,7 +31,7 @@ def int_to_word(num):
     if (num < 100):
         if num % 10 == 0: return d[num]
         else: return d[num // 10 * 10] + d[num % 10]
-    if (num > 100): 
+    if (num > 100):
         raise AssertionError('num is too large: %s' % str(num))
            
 if __name__ == "__main__":
@@ -53,14 +53,14 @@ if __name__ == "__main__":
         with open(folderName + '/' + fileName + '.xml', 'w') as f:
             f.write('<scenario>')
             f.write('\n    <at t="0">')
-            currConstantClientInterface = numOfConstClients+1     
+            currConstantClientInterface = numOfConstClients+1
             for constClientNum in range(numOfConstClients):
                 delay = int(constantClientRtt)
                 channelDelay = (delay-(0.5*2))/4
                 f.write('\n        <set-channel-param src-module="constantClient['+ str(constClientNum) + ']" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
                 f.write('\n        <set-channel-param src-module="constantRouter1" src-gate="pppg$o['+ str(constClientNum) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
                 f.write('\n')
-                f.write('\n        <set-channel-param src-module="constantServer['+ str(constClientNum) + ']" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>') 
+                f.write('\n        <set-channel-param src-module="constantServer['+ str(constClientNum) + ']" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
                 f.write('\n        <set-channel-param src-module="constantRouter2" src-gate="pppg$o['+ str(constClientNum) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
                 f.write('\n\n')
                 
@@ -75,7 +75,7 @@ if __name__ == "__main__":
                 f.write('\n')
                 currConstantClientInterface += 1
                 
-            for movingClientNum in range(numOfMovingClients): 
+            for movingClientNum in range(numOfMovingClients):
                 delay = int(movClientRtt)
                 channelDelay = (delay-(0.5*2))/4
                 for i in range(2):
@@ -87,7 +87,7 @@ if __name__ == "__main__":
             f.write('\n    <at t="'+ str(firstChangeTime)+ '">')
             
             clientNum = 0
-            for movingClientNum in range(numOfMovingClients): 
+            for movingClientNum in range(numOfMovingClients):
                 delay = int(movClientRtt)
                 channelDelay = (delay-(0.5*2))/4
                 for j in range(2):
@@ -101,8 +101,8 @@ if __name__ == "__main__":
                 
             routerNum = 0
 
-            currConstantClientInterface = numOfConstClients+1             
-            for movingClientNum in range(numOfMovingClients): 
+            currConstantClientInterface = numOfConstClients+1
+            for movingClientNum in range(numOfMovingClients):
                 delay = int(movClientRtt)
                 channelDelay = (delay-(0.5*2))/4
                 f.write('\n        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o['+ str(movingClientNum) + ']" par="weight" value="'+ str(2) +'"/>')
@@ -118,7 +118,7 @@ if __name__ == "__main__":
             f.write('\n    <at t="'+ str(changeBackTime)+ '">')
             
             clientNum = 0
-            for movingClientNum in range(numOfMovingClients): 
+            for movingClientNum in range(numOfMovingClients):
                 delay = int(movClientRtt)
                 channelDelay = (delay-(0.5*2))/4
                 for j in range(2):
@@ -132,8 +132,8 @@ if __name__ == "__main__":
                 
             routerNum = 0
 
-            currConstantClientInterface = numOfConstClients+1             
-            for movingClientNum in range(numOfMovingClients): 
+            currConstantClientInterface = numOfConstClients+1
+            for movingClientNum in range(numOfMovingClients):
                 delay = int(movClientRtt)
                 channelDelay = (delay-(0.5*2))/4
                 f.write('\n        <set-channel-param src-module="pathChangeRouter1" src-gate="pppg$o['+ str(movingClientNum) + ']" par="weight" value="'+ str(1) +'"/>')
