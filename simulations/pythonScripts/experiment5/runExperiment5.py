@@ -61,16 +61,16 @@ def merge_pdfs_in_folders(root_folder):
 
 if __name__ == "__main__":
     
-    startStep = 5
+    startStep = 1
     endStep = 8
     currStep = 1
-    cores = 35
+    cores = 15
     currentProc = 0
     processList = []
-    congControlList = ["bbr", "orbtcp", "cubic"]
+    congControlList = ["bbr3", "bbr", "orbtcp", "cubic"]
     experiment = "experiment5"
     buffersizes = ["smallbuffer", "mediumbuffer", "largebuffer"]
-    clientsRtts = [10,20,30,40,50,60,70,80,90,100] #OF AVERAGE BDP
+    clientsRtts = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP
     runs = 5
     runList = list(range(1,runs+1))
 
@@ -84,7 +84,7 @@ if __name__ == "__main__":
                 for bs in buffersizes:
                     fileName =  '../../paperExperiments/experiment5/experiment5' + cc + bs + '.ini'
                     iniFile = open(fileName, 'r').readlines()
-                    print("----------experiment 4 " + cc + " " + bs + " simulations------------")
+                    print("----------experiment 5 " + cc + " " + bs + " simulations------------")
                     for line in iniFile:
                         if line.find('[Config') != -1:
                             match = re.search(r'Run(\d{1,5})\]', line)
@@ -141,7 +141,7 @@ if __name__ == "__main__":
                      fileList.clear()
                      processList.clear()
                      print("     ... Running next batch! ...\n")
-        
+        time.sleep(10)
         for proc in processList:
             proc.wait()
         processList.clear()
@@ -165,6 +165,7 @@ if __name__ == "__main__":
                              processListStr.append("python3 extractSingleCsvFile.py " + filePath + " " + experiment + " " + protocol + " " + buf + " " + str(rtt) + " " + str(run))
         
         currentProc = 0
+        time.sleep(10)
         while(len(processListStr) > 0):
             process = processListStr.pop()
             print(process + "\n")
@@ -172,7 +173,7 @@ if __name__ == "__main__":
             currentProc += 1
             if(currentProc >= cores):
                 for proc in processList:
-                    proc.wait(timeout=300)
+                    proc.wait(timeout=2000)
                 currentProc = 0
                 print("Csv Extraction batch complete!\n")
                 print("Extracting next batch!\n")
@@ -181,7 +182,7 @@ if __name__ == "__main__":
     
     if(currStep <= endStep and currStep >= startStep): #STEP 4
         subprocess.Popen("mkdir ../../plots/experiment5", shell=True).communicate(timeout=10) 
-        subprocess.Popen("rm -r *", shell=True, cwd='../../plots/experiment5').communicate(timeout=10) 
+        subprocess.Popen("rm -r *", shell=True, cwd='../../plots/experiment5').communicate(timeout=200) 
         
         print("\n-----Making plot diretories for " + experiment + "-----\n")
         subprocess.Popen("mkdir " + experiment, shell=True, cwd='../../plots/').communicate(timeout=10)
@@ -297,6 +298,7 @@ if __name__ == "__main__":
                         # else:
                         #     prnt("CSV Entries do not exist! \n")
         print("Plotting current batch!\n")
+        time.sleep(10)
         while(len(processListStr) > 0):
             processTup = processListStr.pop()
             processList.append(subprocess.Popen(processTup[0], shell=True, cwd=processTup[1]))

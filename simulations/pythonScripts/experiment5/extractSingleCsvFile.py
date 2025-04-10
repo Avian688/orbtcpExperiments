@@ -13,6 +13,7 @@ from pathlib import Path
 import os
 import subprocess
 import re
+import time as termTime
 
 def parse_if_number(s):
     try: return float(s)
@@ -70,24 +71,17 @@ if __name__ == "__main__":
                 modName = re.sub(r'(conn)-\d+', r'\1', modName)
                 
                 finallist = pd.DataFrame({'time': time, str(vec): val})
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs", shell=True).communicate(timeout=10) 
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol, shell=True).communicate(timeout=10) 
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName, shell=True).communicate(timeout=10) 
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms', shell=True).communicate(timeout=10) 
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms' + '/run'+ str(run), shell=True).communicate(timeout=10)
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms' + '/run'+ str(run) + "/" + str(modName), shell=True).communicate(timeout=10)
+                subprocess.Popen("mkdir -p ../../paperExperiments/" + exp + "/csvs", shell=True).communicate(timeout=40) 
+                subprocess.Popen("mkdir -p ../../paperExperiments/" + exp + "/csvs/" + protocol, shell=True).communicate(timeout=40) 
+                subprocess.Popen("mkdir -p ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName, shell=True).communicate(timeout=40) 
+                subprocess.Popen("mkdir -p ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms', shell=True).communicate(timeout=40) 
+                subprocess.Popen("mkdir -p ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms' + '/run'+ str(run), shell=True).communicate(timeout=40)
+                subprocess.Popen("mkdir -p ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms' + '/run'+ str(run) + "/" + str(modName), shell=True).communicate(timeout=40)
                 
                 
                 finallist.to_csv('../../paperExperiments/'+ exp +'/csvs/' + protocol + '/' + bufferName + '/'+ rtt + 'ms' + '/run'+ str(run) + '/' + str(modName) + '/' + vec + '.csv', index=False)
                 extracted = True
-            else:
-                print("\n None data found! Not extracting \n")
-                
-    if(extracted):
-        subprocess.Popen("rm " + filePath, shell=True).communicate(timeout=60)
-        subprocess.Popen("rm  ../../paperExperiments/experiment5/results/*.vec", shell=True).communicate(timeout=60)
-        subprocess.Popen("rm  ../../paperExperiments/experiment5/results/*.vci", shell=True).communicate(timeout=60)
-        subprocess.Popen("rm  ../../paperExperiments/experiment5/results/*.sca", shell=True).communicate(timeout=60)
+    termTime.sleep(1)            
     
         
     

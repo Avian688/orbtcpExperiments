@@ -20,7 +20,7 @@ pd.set_option('display.max_rows', None)
 COLOR = {'cubic': '#0C5DA5', 'bbr': '#FF2C01', 'orbtcp': '#845B97'}
 
 BWS = [100]
-DELAYS = [10,20,30,40,50,60,70,80,90,100]
+DELAYS = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
 RTTVALS = [500]#[100,200,300,400,500,600,700,800,900,1000]
 AQM = "fifo"
 QMULTS = [0.2, 1, 4]

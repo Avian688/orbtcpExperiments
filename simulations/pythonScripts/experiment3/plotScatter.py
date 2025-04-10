@@ -378,22 +378,22 @@ def plot_dd_scatter_jains_vs_util(df, delays=[10,20], qmults=[0.2,1,4]):
                 continue
 
             x = sub_df['fairness_cross_mean'].values
-            y_cross = sub_df['util_mean'].values / 100
+            y_cross = sub_df['util_mean'].values / BANDWIDTH
             y_cross_minus_retr = (
                 sub_df['util_mean'].values
                 - sub_df['retr_cross_mean'].values
-            ) / 100
-            y_rejoin = sub_df['rejoin_util_mean'].values / 100
+            ) / BANDWIDTH
+            y_rejoin = sub_df['rejoin_util_mean'].values / BANDWIDTH
             y_rejoin_minus_retr = (
                 sub_df['rejoin_util_mean'].values
                 - sub_df['retr_rejoin_mean'].values
-            ) / 100
+            ) / BANDWIDTH
 
             # Cross (triangle)
 
             ellipseX =  sub_df['fairness_cross_list'].values[0]
-            ellipseYCross =  sub_df['util_list'].values[0].flatten()/100
-            ellipseYRejoin =  sub_df['rejoin_util_list'].values[0].flatten()/100
+            ellipseYCross =  sub_df['util_list'].values[0].flatten()/BANDWIDTH
+            ellipseYRejoin =  sub_df['rejoin_util_list'].values[0].flatten()/BANDWIDTH
 
             confidence_ellipse(ellipseX, ellipseYRejoin, ax, facecolor=REJOIN_COLOR_MAP.get(prot, 'gray'), edgecolor='none', alpha=0.6)
             confidence_ellipse(ellipseX, ellipseYCross, ax, facecolor=COLOR_MAP.get(prot, 'gray'), edgecolor='none', alpha=0.6)

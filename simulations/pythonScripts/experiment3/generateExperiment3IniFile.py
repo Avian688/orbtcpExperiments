@@ -35,7 +35,8 @@ def int_to_word(num):
            
 if __name__ == "__main__":
     simSeed = 1999
-    queueLength = round(((100*125000)*0.05)/1448) #431 packets
+    bandwidth = 100
+    queueLength = round(((bandwidth*125000)*0.05)/1448) #431 packets
     queueSizes = [0.2, 1, 4]
     numOfRuns = 5
     numOfConstClients = 2

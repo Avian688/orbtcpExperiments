@@ -61,8 +61,8 @@ def merge_pdfs_in_folders(root_folder):
 
 if __name__ == "__main__":
     
-    startStep = 6
-    endStep = 6
+    startStep = 3
+    endStep = 8
     currStep = 1
     cores = 35
     currentProc = 0
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     congControlList = ["orbtcp", "bbr", "cubic"]
     experiment = "experiment3"
     buffersizes = ["smallbuffer", "mediumbuffer", "largebuffer"]
-    movingClientsRtts = [10,20,30,40,50,60,70,80,90,100] #OF AVERAGE BDP
+    movingClientsRtts = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP
     runs = 5
     runList = list(range(1,runs+1))
     
@@ -167,7 +167,7 @@ if __name__ == "__main__":
                             print("Extracting CSV file for " + experiment + " " + protocol + " " + buf + " " + str(rtt) + " " + str(run))
 
                             processListStr.append("python3 extractSingleCsvFile.py " + filePath + " " + experiment + " " + protocol + " " + buf + " " + str(rtt) + " " + str(run))
-        
+        time.sleep(10)
         currentProc = 0
         while(len(processListStr) > 0):
             process = processListStr.pop()
@@ -185,7 +185,7 @@ if __name__ == "__main__":
     
     if(currStep <= endStep and currStep >= startStep): #STEP 4
         subprocess.Popen("mkdir ../../plots/experiment3", shell=True).communicate(timeout=10) 
-        subprocess.Popen("rm -r *", shell=True, cwd='../../plots/experiment3').communicate(timeout=10) 
+        subprocess.Popen("rm -r *", shell=True, cwd='../../plots/experiment3').communicate(timeout=200) 
         
         print("\n-----Making plot diretories for " + experiment + "-----\n")
         subprocess.Popen("mkdir " + experiment, shell=True, cwd='../../plots/').communicate(timeout=10)

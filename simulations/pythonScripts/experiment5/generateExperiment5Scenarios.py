@@ -39,7 +39,7 @@ if __name__ == "__main__":
     simSeed = 1
     #queueSizes = [0.2,1,4] #OF AVERAGE BDP AFFECTS INI FILE
     constantClientRtt = 20
-    clientsRtts = [10,20,30,40,50,60,70,80,90,100] #OF AVERAGE BDP
+    clientsRtts = [20,40,60,80,100,120,140,160,180,200] #OF AVERAGE BDP
     random.seed(simSeed)
     for clientRtt in clientsRtts:
         baseRttDict = {}

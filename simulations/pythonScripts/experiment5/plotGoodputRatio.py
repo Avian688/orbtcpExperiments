@@ -9,9 +9,9 @@ import numpy as np
 
 plt.rcParams['text.usetex'] = False
 
-PROTOCOLS = ['cubic', 'bbr', 'orbtcp']
+PROTOCOLS = ['cubic', 'bbr', 'orbtcp', 'bbr3']
 BWS = [100]
-DELAYS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+DELAYS = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
 QMULTS = [0.2,1,4]
 QMULTDICT = {0.2 : "smallbuffer", 1 : "mediumbuffer", 4 : "largebuffer" }
 RUNS = [1, 2, 3, 4, 5]
@@ -23,7 +23,7 @@ CAPSIZE= 2
 
 def plot_points_rtt(ax, df, data, error,  marker, label):
    if not df.empty:
-      xvals = df.index * 2
+      xvals = df.index
       yvals = df[data]
       yerr  = df[error]
       markers, caps, bars = ax.errorbar(
@@ -46,7 +46,7 @@ for mult in QMULTS:
         for delay in DELAYS:
            start_time = delay
            end_time = 2*delay
-           keep_last_seconds = int(0.25*delay)
+           keep_last_seconds = int(1*delay)
 
            goodput_ratios_20 = []
            goodput_ratios_total = []
@@ -108,6 +108,7 @@ for mult in QMULTS:
    cubic_data = summary_data[summary_data['protocol'] == 'cubic'].set_index('delay')
    bbr_data = summary_data[summary_data['protocol'] == 'bbr'].set_index('delay')
    orbtcp_data = summary_data[summary_data['protocol'] == 'orbtcp'].set_index('delay')
+   bbr3_data = summary_data[summary_data['protocol'] == 'bbr3'].set_index('delay')
 
 
    fig, axes = plt.subplots(nrows=1, ncols=1,figsize=(3,1.2))
@@ -116,6 +117,7 @@ for mult in QMULTS:
    plot_points_rtt(ax, summary_data[summary_data['protocol'] == 'cubic'].set_index('delay'), 'goodput_ratio_total_mean', 'goodput_ratio_total_std',   'x', 'cubic')
    plot_points_rtt(ax, summary_data[summary_data['protocol'] == 'bbr'].set_index('delay'), 'goodput_ratio_total_mean', 'goodput_ratio_total_std',  '.', 'bbr')
    plot_points_rtt(ax, summary_data[summary_data['protocol'] == 'orbtcp'].set_index('delay'), 'goodput_ratio_total_mean', 'goodput_ratio_total_std',   '^', 'orbtcp')
+   plot_points_rtt(ax, summary_data[summary_data['protocol'] == 'bbr3'].set_index('delay'), 'goodput_ratio_total_mean', 'goodput_ratio_total_std',   '_', 'bbr3')
 
    ax.set(yscale='linear',xlabel='RTT (ms)', ylabel='Goodput Ratio')
    for axis in [ax.xaxis, ax.yaxis]:
@@ -129,8 +131,8 @@ for mult in QMULTS:
    legend_map   = dict(zip(labels, line_handles))
 
    # Decide which protocols go top vs. bottom row
-   handles_top = [legend_map.get('cubic'), legend_map.get('bbr'), legend_map.get('orbtcp')]
-   labels_top  = ['cubic', 'bbr', 'orbtcp']
+   handles_top = [legend_map.get('cubic'), legend_map.get('bbr'), legend_map.get('orbtcp'), legend_map.get('bbr3')]
+   labels_top  = ['cubic', 'bbr', 'orbtcp', 'bbr3']
 
 
    legend_top = plt.legend(
