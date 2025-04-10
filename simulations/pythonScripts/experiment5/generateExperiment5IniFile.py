@@ -235,7 +235,7 @@ if __name__ == "__main__":
                         bdp = bwBytes * rtt
                                                
                         for clientNumb in range(numOfClients):
-                            clientStart = random.uniform(0,rtt*100)
+                            clientStart = random.uniform(0,rtt*200)
                             f.write('\n' + '*.client[' + str(clientNumb) + '].app[0].connectAddress =  "server[" + string(parentIndex()) +"]"')
                             f.write('\n' + '*.client[' + str(clientNumb) + '].app[0].tOpen = '+ str(clientStart) +'s')
                             f.write('\n' + '*.client[' + str(clientNumb) + '].app[0].tSend = '+ str(clientStart) +'s\n')
