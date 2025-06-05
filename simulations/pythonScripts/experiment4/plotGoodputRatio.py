@@ -147,4 +147,4 @@ for mult in QMULTS:
       borderaxespad=0.0
    )
    plt.gca().add_artist(legend_top)
-   plt.savefig(f"goodput_ratio_inter_rtt_{mult}.pdf" , dpi=1080)
+   plt.savefig(f"goodput_ratio_intra_rtt_{mult}.pdf" , dpi=1080)
