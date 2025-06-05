@@ -9,7 +9,7 @@ import numpy as np
 
 plt.rcParams['text.usetex'] = False
 
-PROTOCOLS = ['cubic', 'bbr', 'orbtcp']
+PROTOCOLS = ['cubic', 'bbr', 'orbtcp', 'bbr3']
 BWS = [100]
 DELAYS = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
 QMULTS = [0.2, 1 ,4]
@@ -118,13 +118,15 @@ for mult in QMULTS:
    cubic_data = summary_data[summary_data['protocol'] == 'cubic'].set_index('delay')
    bbr_data = summary_data[summary_data['protocol'] == 'bbr'].set_index('delay')
    orbtcp_data = summary_data[summary_data['protocol'] == 'orbtcp'].set_index('delay')
+   bbr3_data = summary_data[summary_data['protocol'] == 'bbr3'].set_index('delay')
 
    fig, axes = plt.subplots(nrows=1, ncols=1,figsize=(3,1.2))
    ax = axes
 
    plot_points_rtt(ax, cubic_data, 'goodput_ratio_total_mean', 'goodput_ratio_total_std',   'x', 'cubic')
    plot_points_rtt(ax, bbr_data, 'goodput_ratio_total_mean', 'goodput_ratio_total_std',  '.', 'bbr')
-   plot_points_rtt(ax, orbtcp_data, 'goodput_ratio_total_mean', 'goodput_ratio_total_std',   '_', 'orbtcp')
+   plot_points_rtt(ax, orbtcp_data, 'goodput_ratio_total_mean', 'goodput_ratio_total_std',   '^', 'orbtcp')
+   plot_points_rtt(ax, bbr3_data, 'goodput_ratio_total_mean', 'goodput_ratio_total_std',   '_', 'bbr3')
 
    print(cubic_data)
    # Add fairness reference lines:
@@ -147,7 +149,7 @@ for mult in QMULTS:
       legend_map   = dict(zip(labels, line_handles))
 
       # Decide which protocols go top vs. bottom row
-      handles_top = [legend_map.get('cubic'), legend_map.get('bbr'), legend_map.get('orbtcp')]
+      handles_top = [legend_map.get('cubic'), legend_map.get('bbr'), legend_map.get('orbtcp'), legend_map.get('bbr3')]
       labels_top  = ['cubic', 'bbr', 'orbtcp']
 
       legend_top = plt.legend(

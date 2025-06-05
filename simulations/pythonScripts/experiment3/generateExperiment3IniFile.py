@@ -41,7 +41,7 @@ if __name__ == "__main__":
     numOfRuns = 5
     numOfConstClients = 2
     numOfMovingClients = 2
-    algorithms = ["orbtcp", "bbr", "cubic"]
+    algorithms = ["orbtcp", "bbr", "cubic", "bbr3"]
     for alg in algorithms:
         for qs in queueSizes:
             
@@ -53,13 +53,15 @@ if __name__ == "__main__":
             elif(qs == 4):
                 queueIniTitle = "largebuffer"
                     
-            fileName =  '../../paperExperiments/experiment3/experiment3' + alg + queueIniTitle + '.ini'
+            fileName =  '../../paperExperiments/experiment3/experiment3' + '_' + alg + '_' + queueIniTitle + '.ini'
             print('\nGenerating ini files for ' + alg + '...')
             
             if(alg == "cubic"):
                 algFlavour = "TcpCubic"
             elif(alg == "bbr"):
                 algFlavour = "BbrFlavour"
+            elif(alg == "bbr3"):
+                algFlavour = "Bbr3Flavour"
             else:
                 algFlavour = "OrbtcpFlavour"
                 
@@ -188,6 +190,48 @@ if __name__ == "__main__":
                     f.write('\n' + '*.configurator.updateInterval = 100.000001s\n')
                     f.write('\n' + '*.configurator.optimizeRoutes = false\n')
                     f.write('\n' + '*.*.forwarding = false\n')
+                elif(algFlavour == "Bbr3Flavour"):
+                    f.write('\n' + '**.tcp.typename = "Bbr"')
+                    f.write('\n' + '**.tcp.tcpAlgorithmClass = "Bbr3Flavour"')
+                    f.write('\n' + '**.tcp.advertisedWindow = 200000000')
+                    f.write('\n' + '**.tcp.windowScalingSupport = true')
+                    f.write('\n' + '**.tcp.windowScalingFactor = -1')
+                    f.write('\n' + '**.tcp.increasedIWEnabled = true')
+                    f.write('\n' + '**.tcp.delayedAcksEnabled = false')
+                    f.write('\n' + '**.tcp.timestampSupport = true')
+                    f.write('\n' + '**.tcp.ecnWillingness = false')
+                    f.write('\n' + '**.tcp.nagleEnabled = true')
+                    f.write('\n' + '**.tcp.stopOperationTimeout = 4000s')
+                    f.write('\n' + '**.tcp.mss = 1448')
+                    f.write('\n' + '**.tcp.sackSupport = true')
+                    
+                    f.write('\n' + '**.constantClient[*].numApps = 1')
+                    f.write('\n' + '**.constantClient[*].app[*].typename  = "TcpGoodputSessionApp"')
+                    f.write('\n' + '*.constantClient[*].app[0].tClose = -1s')
+                    f.write('\n' + '*.constantClient[*].app[0].sendBytes = 2GB')
+                    f.write('\n' + '*.constantClient[*].app[0].dataTransferMode = "bytecount"')
+                    f.write('\n' + '*.constantClient[*].app[0].statistic-recording = true\n')
+                    f.write('\n' + '**.constantServer[*].numApps = 1')
+                    f.write('\n' + '**.constantServer[*].app[*].typename  = "TcpSinkApp"')
+                    f.write('\n' + '**.constantServer[*].app[*].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
+                    
+                    f.write('\n' + '**.pathChangeClient[*].numApps = 1')
+                    f.write('\n' + '**.pathChangeClient[*].app[*].typename  = "TcpGoodputSessionApp"')
+                    f.write('\n' + '*.pathChangeClient[*].app[0].tClose = -1s')
+                    f.write('\n' + '*.pathChangeClient[*].app[0].sendBytes = 2GB')
+                    f.write('\n' + '*.pathChangeClient[*].app[0].dataTransferMode = "bytecount"')
+                    f.write('\n' + '*.pathChangeClient[*].app[0].statistic-recording = true\n')
+                    f.write('\n' + '**.pathChangeServer[*].numApps = 1')
+                    f.write('\n' + '**.pathChangeServer[*].app[*].typename  = "TcpSinkApp"')
+                    f.write('\n' + '**.pathChangeServer[*].app[*].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
+                    
+                    f.write('\n' + '**.ppp[*].queue.typename = "BandwidthRecorderDropTailQueue"\n')
+                    f.write('\n' + '**.tcp.initialSsthresh = ' + str(400*1448) + '\n')
+                    
+                    f.write('\n' + '*.configurator.config = xml("<config><interface hosts=\'**\' address=\'10.x.x.x\' netmask=\'255.x.x.x\'/><autoroute metric=\'weight\'/></config>")\n')
+                    f.write('\n' + '*.configurator.updateInterval = 100.000001s\n')
+                    f.write('\n' + '*.configurator.optimizeRoutes = false\n')
+                    f.write('\n' + '*.*.forwarding = false\n')    
                 else:
                     f.write('\n' + '**.tcp.typename = "Orbtcp"')
                     f.write('\n' + '**.tcp.tcpAlgorithmClass = "OrbtcpFlavour"')

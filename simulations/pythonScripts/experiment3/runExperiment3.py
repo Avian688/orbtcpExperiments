@@ -61,19 +61,22 @@ def merge_pdfs_in_folders(root_folder):
 
 if __name__ == "__main__":
     
-    startStep = 3
+    startStep = 1
     endStep = 8
     currStep = 1
-    cores = 35
+    cores = 30
     currentProc = 0
     processList = []
-    congControlList = ["orbtcp", "bbr", "cubic"]
+    congControlList = ["bbr3","bbr", "orbtcp", "cubic"]
     experiment = "experiment3"
     buffersizes = ["smallbuffer", "mediumbuffer", "largebuffer"]
     movingClientsRtts = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP
     runs = 5
     runList = list(range(1,runs+1))
-    
+
+    subprocess.Popen("python3 generateExperiment3Scenario.py", shell=True).communicate(timeout=30)
+    subprocess.Popen("python3 generateExperiment3IniFile.py", shell=True).communicate(timeout=30)
+
     if(currStep <= endStep and currStep >= startStep): #STEP 1
         subprocess.Popen("rm experiment3runTimes.txt", shell=True).communicate(timeout=30)
         
@@ -91,7 +94,7 @@ if __name__ == "__main__":
                             if match and int(match.group(1)) in runList:
                                 configName = (line[8:])[:-2]
                                 progStart = time.time()
-                                processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src --image-path=../../../../inet4.5/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../orbtcp/src/orbtcp -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications experiment3" + cc + bs + ".ini", shell=True, cwd='../../paperExperiments/experiment3', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+                                processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src --image-path=../../../../inet4.5/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../orbtcp/src/orbtcp -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications experiment3_" + cc + "_" +  bs + ".ini", shell=True, cwd='../../paperExperiments/experiment3', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
                                 
                                 currentProc = currentProc + 1
                                 print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
@@ -135,10 +138,10 @@ if __name__ == "__main__":
                      for proc in processList:
                          proc.wait()
                      currentProc = 0
-                     for fil in fileList:
-                        subprocess.Popen("rm results/" + fil , shell=True, cwd='../../paperExperiments/experiment3/').communicate(timeout=10) #Remove VEC
-                        subprocess.Popen("rm results/" + fil[:-4] + ".vci" , shell=True, cwd='../../paperExperiments/experiment3/').communicate(timeout=10) #Remove VCI
-                        subprocess.Popen("rm results/" + fil[:-4] + ".sca" , shell=True, cwd='../../paperExperiments/experiment3/').communicate(timeout=10) #Remove VCI
+                    #  for fil in fileList:
+                    #     subprocess.Popen("rm results/" + fil , shell=True, cwd='../../paperExperiments/experiment3/').communicate(timeout=10) #Remove VEC
+                    #     subprocess.Popen("rm results/" + fil[:-4] + ".vci" , shell=True, cwd='../../paperExperiments/experiment3/').communicate(timeout=10) #Remove VCI
+                    #     subprocess.Popen("rm results/" + fil[:-4] + ".sca" , shell=True, cwd='../../paperExperiments/experiment3/').communicate(timeout=10) #Remove VCI
                      fileList.clear()
                      processList.clear()
                      print("     ... Running next batch! ...\n")
@@ -176,7 +179,7 @@ if __name__ == "__main__":
             currentProc += 1
             if(currentProc >= cores):
                 for proc in processList:
-                    proc.wait(timeout=1200)
+                    proc.wait(timeout=4000)
                 currentProc = 0
                 print("Csv Extraction batch complete!\n")
                 print("Extracting next batch!\n")
@@ -187,7 +190,7 @@ if __name__ == "__main__":
         subprocess.Popen("mkdir ../../plots/experiment3", shell=True).communicate(timeout=10) 
         subprocess.Popen("rm -r *", shell=True, cwd='../../plots/experiment3').communicate(timeout=200) 
         
-        print("\n-----Making plot diretories for " + experiment + "-----\n")
+        print("\n-----Making plot directories for " + experiment + "-----\n")
         subprocess.Popen("mkdir " + experiment, shell=True, cwd='../../plots/').communicate(timeout=10)
         for cc in congControlList:
             print("\n-----Making plot directories for " + cc + "-----\n")

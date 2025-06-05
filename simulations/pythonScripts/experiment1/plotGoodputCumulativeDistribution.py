@@ -17,7 +17,7 @@ if __name__ == "__main__":
     
     BINS = 50
     runs = list(range(1,51))
-    protocols = ["bbr", "cubic", "orbtcp"]
+    protocols = ["orbtcp", "bbr", "cubic", "bbr3"]
     
     # List containing each data point (each run). Values for each datapoint: protocol, run_number, average_goodput, optimal_goodput
     rttData = []
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     #NO LOSS DATA 
     for protocol in protocols:
         for run in runs:
-            filePath = '../../paperExperiments/experiment1/csvs/'+ protocol + '/run' + str(run) + '/singledumbbell.server[0].app[0].thread_9/goodput.csv'
+            filePath = '../../paperExperiments/experiment1/csvs/'+ protocol + '/run' + str(run) + '/singledumbbell.server[0].app[0]/goodput.csv'
             if os.path.exists(filePath):
                 #BANDWIDTH
                 
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     #LOSS DATA 
     for protocol in protocols:
         for run in runs:
-            filePath2 = '../../paperExperiments/experiment2/csvs/'+ protocol + '/run' + str(run) + '/singledumbbell.server[0].app[0].thread_9/goodput.csv'
+            filePath2 = '../../paperExperiments/experiment2/csvs/'+ protocol + '/run' + str(run) + '/singledumbbell.server[0].app[0]/goodput.csv'
             if os.path.exists(filePath):
                  #BANDWIDTH
     
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     bw_rtt_data = pd.DataFrame(rttData, columns=['protocol', 'run_number', 'average_goodput', 'optimal_goodput'])
     loss_data = pd.DataFrame(lossData, columns=['protocol', 'run_number', 'average_goodput', 'optimal_goodput'])
     
-    colours = {'cubic': '#0C5DA5', 'bbr': '#00B945', 'orbtcp': '#FF9500'}
+    colours = {'cubic': '#0C5DA5', 'bbr': '#00B945', 'orbtcp': '#FF9500', 'bbr3': '#eb0909'}
     
     fig, axes = plt.subplots(nrows=1, ncols=1,figsize=(3,1.5))
     ax = axes

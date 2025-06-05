@@ -68,7 +68,7 @@ if __name__ == "__main__":
                 f.write('\n    <at t="' + str(currentInterval) + '">')  
                 currentBw = random.randint(minBw,maxBw) #Mbps
                 currentRtt = random.randint(minRtt,maxRtt) #ms
-                currentPer = random.uniform(0,0.01) #PER 
+                currentPer = round(random.uniform(0,0.01), 4)#PER 
                 channelDelay = (currentRtt-(0.5*2))/4
                 f.write('\n        <set-channel-param src-module="client[0]" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
                 f.write('\n        <set-channel-param src-module="router1" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')

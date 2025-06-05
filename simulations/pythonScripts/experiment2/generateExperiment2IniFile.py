@@ -36,16 +36,18 @@ def int_to_word(num):
 if __name__ == "__main__":
     #numOfClients = int_to_word(len(sys.argv)-1)
     #folderName = '../scenarios/' + numOfClients + 'Flows'
-    queueLength = 452
-    algorithms = ["orbtcp", "bbr", "cubic"]
+    queueLength = 340
+    algorithms = ["orbtcp", "bbr", "cubic", "bbr3"]
     for alg in algorithms:
-        fileName =  '../../paperExperiments/experiment2/experiment2' + alg + '.ini'
+        fileName =  '../../paperExperiments/experiment2/experiment2' + '_' + alg + '.ini'
         print('\nGenerating ini files for ' + alg + '...')
         
         if(alg == "cubic"):
             algFlavour = "TcpCubic"
         elif(alg == "bbr"):
             algFlavour = "BbrFlavour"
+        elif(alg == "bbr3"):
+            algFlavour = "Bbr3Flavour"
         else:
             algFlavour = "OrbtcpFlavour"
             
@@ -142,6 +144,32 @@ if __name__ == "__main__":
                 f.write('\n' + '**.server[*].app[*].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
                 f.write('\n' + '**.ppp[*].queue.typename = "BandwidthRecorderDropTailQueue"\n')
                 f.write('\n' + '**.tcp.initialSsthresh = ' + str(500*1448) + '\n')
+            elif(algFlavour == "Bbr3Flavour"):
+                    f.write('\n' + '**.tcp.typename = "Bbr"')
+                    f.write('\n' + '**.tcp.tcpAlgorithmClass = "Bbr3Flavour"')
+                    f.write('\n' + '**.tcp.advertisedWindow = 200000000')
+                    f.write('\n' + '**.tcp.windowScalingSupport = true')
+                    f.write('\n' + '**.tcp.windowScalingFactor = -1')
+                    f.write('\n' + '**.tcp.increasedIWEnabled = true')
+                    f.write('\n' + '**.tcp.delayedAcksEnabled = false')
+                    f.write('\n' + '**.tcp.timestampSupport = true')
+                    f.write('\n' + '**.tcp.ecnWillingness = false')
+                    f.write('\n' + '**.tcp.nagleEnabled = true')
+                    f.write('\n' + '**.tcp.stopOperationTimeout = 4000s')
+                    f.write('\n' + '**.tcp.mss = 1448')
+                    f.write('\n' + '**.tcp.sackSupport = true')
+                    
+                    f.write('\n' + '**.client[*].numApps = 1')
+                    f.write('\n' + '**.client[*].app[*].typename  = "TcpGoodputSessionApp"')
+                    f.write('\n' + '*.client[*].app[0].tClose = -1s')
+                    f.write('\n' + '*.client[*].app[0].sendBytes = 2GB')
+                    f.write('\n' + '*.client[*].app[0].dataTransferMode = "bytecount"')
+                    f.write('\n' + '*.client[*].app[0].statistic-recording = true\n')
+                    f.write('\n' + '**.server[*].numApps = 1')
+                    f.write('\n' + '**.server[*].app[*].typename  = "TcpSinkApp"')
+                    f.write('\n' + '**.server[*].app[*].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
+                    f.write('\n' + '**.ppp[*].queue.typename = "BandwidthRecorderDropTailQueue"\n')
+                    f.write('\n' + '**.tcp.initialSsthresh = ' + str(4000*1448) + '\n') 
             else:
                 f.write('\n' + '**.tcp.typename = "Orbtcp"')
                 f.write('\n' + '**.tcp.tcpAlgorithmClass = "OrbtcpFlavour"')

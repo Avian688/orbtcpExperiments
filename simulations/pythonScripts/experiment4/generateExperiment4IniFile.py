@@ -51,7 +51,7 @@ if __name__ == "__main__":
             elif(qs == 4):
                 queueIniTitle = "largebuffer"
                     
-            fileName =  '../../paperExperiments/experiment4/experiment4' + alg + queueIniTitle + '.ini'
+            fileName =  '../../paperExperiments/experiment4/experiment4' + '_' + alg + '_' + queueIniTitle + '.ini'
             print('\nGenerating ini files for ' + alg + '...')
             
             if(alg == "cubic"):
@@ -155,7 +155,7 @@ if __name__ == "__main__":
                     f.write('\n' + '**.server[*].app[*].typename  = "TcpSinkApp"')
                     f.write('\n' + '**.server[*].app[*].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
                     f.write('\n' + '**.ppp[*].queue.typename = "BandwidthRecorderDropTailQueue"\n')
-                    f.write('\n' + '**.tcp.initialSsthresh = ' + str(400*1448) + '\n')
+                    f.write('\n' + '**.tcp.initialSsthresh = ' + str(4000*1448) + '\n')
                     
                 elif(algFlavour == "Bbr3Flavour"):
                     f.write('\n' + '**.tcp.typename = "Bbr"')
@@ -182,7 +182,7 @@ if __name__ == "__main__":
                     f.write('\n' + '**.server[*].app[*].typename  = "TcpSinkApp"')
                     f.write('\n' + '**.server[*].app[*].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
                     f.write('\n' + '**.ppp[*].queue.typename = "BandwidthRecorderDropTailQueue"\n')
-                    f.write('\n' + '**.tcp.initialSsthresh = ' + str(400*1448) + '\n')    
+                    f.write('\n' + '**.tcp.initialSsthresh = ' + str(4000*1448) + '\n')    
                 else:
                     f.write('\n' + '**.tcp.typename = "Orbtcp"')
                     f.write('\n' + '**.tcp.tcpAlgorithmClass = "OrbtcpFlavour"')
@@ -214,7 +214,7 @@ if __name__ == "__main__":
                     f.write('\n' + '**.eta = 0.95\n')
                     f.write('\n' + '**.alpha = ' + str(0.01))
                     f.write('\n' + '**.fixedAvgRTTVal = '+ str(0) + '\n')
-                    f.write('\n' + '**.tcp.initialSsthresh = ' + str(400*1448) + '\n')
+                    f.write('\n' + '**.tcp.initialSsthresh = ' + str(4000*1448) + '\n')
                         
                 dir = [f for f in os.listdir('../../paperExperiments/scenarios/experiment4/.')]
                 #TODO Generate Run x Buffer Size  = 5 * 3 = CubicRun1SmallBuffer/CubicRun1MediuBuffer
@@ -237,7 +237,7 @@ if __name__ == "__main__":
                         for clientNumb in range(numOfClients):
                             clientStart = 0.01
                             if (clientNumb > 0):
-                                clientStart = random.uniform(rtt*500,rtt*525)
+                                clientStart = random.uniform(rtt*490,rtt*510)
                             f.write('\n' + '*.client[' + str(clientNumb) + '].app[0].connectAddress =  "server[" + string(parentIndex()) +"]"')
                             f.write('\n' + '*.client[' + str(clientNumb) + '].app[0].tOpen = '+ str(clientStart) +'s')
                             f.write('\n' + '*.client[' + str(clientNumb) + '].app[0].tSend = '+ str(clientStart) +'s\n')

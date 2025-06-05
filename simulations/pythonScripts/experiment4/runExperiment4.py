@@ -61,10 +61,10 @@ def merge_pdfs_in_folders(root_folder):
 
 if __name__ == "__main__":
     
-    startStep = 4
+    startStep = 1
     endStep = 8
     currStep = 1
-    cores = 40
+    cores = 30
     currentProc = 0
     processList = []
     congControlList = ["bbr3", "bbr", "orbtcp", "cubic"]
@@ -73,6 +73,9 @@ if __name__ == "__main__":
     clientsRtts = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP
     runs = 5
     runList = list(range(1,runs+1))
+
+    subprocess.Popen("python3 generateExperiment4Scenarios.py", shell=True).communicate(timeout=30)
+    subprocess.Popen("python3 generateExperiment4IniFile.py", shell=True).communicate(timeout=30)
 
     if(currStep <= endStep and currStep >= startStep): #STEP 1
         subprocess.Popen("rm experiment4runTimes.txt", shell=True).communicate(timeout=30)
@@ -91,7 +94,7 @@ if __name__ == "__main__":
                             if match and int(match.group(1)) in runList:
                                 configName = (line[8:])[:-2]
                                 progStart = time.time()
-                                processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src --image-path=../../../../inet4.5/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../orbtcp/src/orbtcp -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications experiment4" + cc + bs + ".ini", shell=True, cwd='../../paperExperiments/experiment4', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+                                processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src --image-path=../../../../inet4.5/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../orbtcp/src/orbtcp -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications experiment4_" + cc + "_" + bs + ".ini", shell=True, cwd='../../paperExperiments/experiment4', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
                                 currentProc = currentProc + 1
                                 print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
                                 if(currentProc == cores):

@@ -78,7 +78,6 @@ if __name__ == "__main__":
                 subprocess.Popen("mkdir -p ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms' + '/run'+ str(run), shell=True).communicate(timeout=40)
                 subprocess.Popen("mkdir -p ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms' + '/run'+ str(run) + "/" + str(modName), shell=True).communicate(timeout=40)
                 
-                
                 finallist.to_csv('../../paperExperiments/'+ exp +'/csvs/' + protocol + '/' + bufferName + '/'+ rtt + 'ms' + '/run'+ str(run) + '/' + str(modName) + '/' + vec + '.csv', index=False)
                 extracted = True
     termTime.sleep(1)            

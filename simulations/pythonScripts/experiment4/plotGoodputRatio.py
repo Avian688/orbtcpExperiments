@@ -113,6 +113,7 @@ for mult in QMULTS:
 
    fig, axes = plt.subplots(nrows=1, ncols=1,figsize=(3,1.2))
    ax = axes
+   ax.set_ylim([0, 1])
 
    plot_points_rtt(ax, summary_data[summary_data['protocol'] == 'cubic'].set_index('delay'), 'goodput_ratio_total_mean', 'goodput_ratio_total_std',   'x', 'cubic')
    plot_points_rtt(ax, summary_data[summary_data['protocol'] == 'bbr'].set_index('delay'), 'goodput_ratio_total_mean', 'goodput_ratio_total_std',  '.', 'bbr')

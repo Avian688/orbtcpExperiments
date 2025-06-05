@@ -11,7 +11,7 @@ plt.rcParams['text.usetex'] = False
 
 
 ROOT_PATH = "../../paperExperiments/experiment1/results/TwoFlows50ms50ms" #home/mihai/mininettestbed/nooffload/results_fairness_intra_rtt_async/fifo" 
-PROTOCOLS = ['bbr']#['cubic', 'bbr', 'bbr1']
+PROTOCOLS = ['cubic', 'bbr', 'orbtcp', 'bbr3']
 BWS = [100]
 DELAYS = [50]#[10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 QMULTS = [1] #[0.2, 1 ,4]
@@ -114,7 +114,8 @@ for mult in QMULTS:
    
     bbr_data = summary_data[summary_data['protocol'] == 'bbr'].set_index('delay')
     cubic_data = summary_data[summary_data['protocol'] == 'cubic'].set_index('delay')
-    bbr1_data = summary_data[summary_data['protocol'] == 'bbr1'].set_index('delay')
+    orbtcp_data = summary_data[summary_data['protocol'] == 'orbtcp'].set_index('delay')
+    bbr3_data = summary_data[summary_data['protocol'] == 'bbr3'].set_index('delay')
    
     LINEWIDTH = 0.15
     ELINEWIDTH = 0.75
@@ -123,8 +124,8 @@ for mult in QMULTS:
    
     fig, axes = plt.subplots(nrows=1, ncols=1,figsize=(3,1.2))
     ax = axes
-   
-   
+    ax.set_ylim([0, 1])
+    plt.margins(y=0.05)
    
     markers, caps, bars = ax.errorbar(cubic_data.index*2, cubic_data['goodput_ratio_20_mean'], yerr=cubic_data['goodput_ratio_20_std'],marker='x',linewidth=LINEWIDTH, elinewidth=ELINEWIDTH, capsize=CAPSIZE, capthick=CAPTHICK, label='cubic')
     [bar.set_alpha(0.5) for bar in bars]
@@ -132,7 +133,10 @@ for mult in QMULTS:
     markers, caps, bars = ax.errorbar(bbr_data.index*2,bbr_data['goodput_ratio_20_mean'], yerr=bbr_data['goodput_ratio_20_std'],marker='^',linewidth=LINEWIDTH, elinewidth=ELINEWIDTH, capsize=CAPSIZE, capthick=CAPTHICK,label='bbr')
     [bar.set_alpha(0.5) for bar in bars]
     [cap.set_alpha(0.5) for cap in caps]
-    markers, caps, bars = ax.errorbar(bbr1_data.index*2,bbr1_data['goodput_ratio_20_mean'], yerr=bbr1_data['goodput_ratio_20_std'],marker='+',linewidth=LINEWIDTH, elinewidth=ELINEWIDTH, capsize=CAPSIZE, capthick=CAPTHICK,label='bbr1')
+    markers, caps, bars = ax.errorbar(bbr1_data.index*2,bbr1_data['goodput_ratio_20_mean'], yerr=bbr3_data['goodput_ratio_20_std'],marker='+',linewidth=LINEWIDTH, elinewidth=ELINEWIDTH, capsize=CAPSIZE, capthick=CAPTHICK,label='bbr3')
+    [bar.set_alpha(0.5) for bar in bars]
+    [cap.set_alpha(0.5) for cap in caps]
+    markers, caps, bars = ax.errorbar(bbr1_data.index*2,bbr1_data['goodput_ratio_20_mean'], yerr=orbtcp_data['goodput_ratio_20_std'],marker='+',linewidth=LINEWIDTH, elinewidth=ELINEWIDTH, capsize=CAPSIZE, capthick=CAPTHICK,label='orbtcp')
     [bar.set_alpha(0.5) for bar in bars]
     [cap.set_alpha(0.5) for cap in caps]
    

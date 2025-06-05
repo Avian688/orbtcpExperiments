@@ -1,0 +1,8 @@
+Experiment 6:
+> Parking Lot topology
+> Protocols: OrbTCP, BBR, Cubic, BBRv3
+> Queue Length: 1 BDP of flow RTT
+> All flows vary RTT from 20-200 ms
+> One spine flow, three rib flows
+> 5 Runs varying start time
+> Plots: Goodput Ratio (Min-max and proportional fairness lines)

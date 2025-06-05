@@ -1,0 +1,12 @@
+Experiment 3:
+> Two Dumbbells
+> Protocols: OrbTCP, BBR, Cubic, BBRv3
+> Queue Length: 1 BDP of 50ms
+> Four total flows (Two on each dumbbell)
+> Top dumbbell fixed flows of 50ms
+> Bottom dumbbell varying flow RTT from 20-200 ms
+> 5 Runs varying start time
+> At 100s, bottom two flows move to top dumbbell
+> At 200s, the two flows move back to bottom dumbbell
+> "Soft Handover" experiment
+> Plots: Cumulative Pre Post Goodput Ratio, Efficiency Scatter

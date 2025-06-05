@@ -1,0 +1,14 @@
+Experiment 1 & 2:
+
+Experiment 1:
+> Single Dumbbell
+> Protocols: OrbTCP, BBR, Cubic, BBRv3
+> Queue Length: Average 1 BDP
+> Varying RTT from 5-100 ms
+> Varying BW from 50-100 Mbps
+> Intervals of 15s
+> 50 Runs which influence random seed
+> Plots: Cumulative Goodput Distribution
+
+Experiment 2:
+> Varying Loss rate from 0 to 1 percent
