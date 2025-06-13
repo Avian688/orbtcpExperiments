@@ -62,21 +62,27 @@ def merge_pdfs_in_folders(root_folder):
 if __name__ == "__main__":
     
     startStep = 1
-    endStep = 8
+    endStep = 1
     currStep = 1
-    cores = 30
+    cores = 25
     currentProc = 0
     processList = []
     congControlList = ["bbr3","bbr", "orbtcp", "cubic"]
     experiment = "experiment8"
     buffersizes = ["smallbuffer", "mediumbuffer", "largebuffer"]
-    disruptionIntervals = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP
-    rtts = [50]
     runs = 5
     runList = list(range(1,runs+1))
 
-    subprocess.Popen("python3 generateexperiment8IniFile.py", shell=True).communicate(timeout=30)
-
+    subprocess.Popen("python3 generateExperiment8IniFile.py", shell=True).communicate(timeout=30)
+    
+    city_pairs = [
+        ("San Diego", "Seattle", ["isl", "bentpipe"]),
+        ("Seattle", "New York", ["isl", "bentpipe"]),
+        ("San Diego", "New York", ["isl", "bentpipe"]),
+        ("New York", "London", ["bentpipe"]),
+        ("San Diego", "Shanghai", ["bentpipe"])
+    ]
+    
     if(currStep <= endStep and currStep >= startStep): #STEP 1
         subprocess.Popen("rm experiment8runTimes.txt", shell=True).communicate(timeout=30)
         
@@ -84,35 +90,34 @@ if __name__ == "__main__":
             exp1RunNum = 1
             f1.write("--experiment 8 Runtimes (s)--")
             for cc in congControlList:
-                for bs in buffersizes:
-                    fileName =  '../../paperExperiments/experiment8/experiment8' + cc + bs + '.ini'
-                    iniFile = open(fileName, 'r').readlines()
-                    print("----------experiment 8 " + cc + " " + bs + " simulations------------")
-                    for line in iniFile:
-                        if line.find('[Config') != -1:
-                            match = re.search(r'Run(\d{1,5})\]', line)
-                            if match and int(match.group(1)) in runList:
-                                configName = (line[8:])[:-2]
-                                progStart = time.time()
-                                processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src --image-path=../../../../inet4.5/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../orbtcp/src/orbtcp -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications experiment8_" + cc + "_" + bs + ".ini", shell=True, cwd='../../paperExperiments/experiment8', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
-                                
-                                currentProc = currentProc + 1
-                                print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
-                                if(currentProc == cores):
-                                    procCompleteNum = 0
-                                    for proc in processList:
-                                        proc.wait()
-                                        now = time.time()
-                                        f1.write("Run "+ str(exp1RunNum) + ": " + str(now-progStart))
-                                        procCompleteNum = procCompleteNum + 1
-                                        print("\tRun #" + str(procCompleteNum) + " is complete!")
-                                        exp1RunNum += 1
-                                    currentProc = 0
-                                    processList.clear()
-                                    print(" ... Running next batch of simulations! ...\n")
-                            else:
-                                continue
-        
+                fileName =  '../../paperExperiments/experiment8/experiment8_' + cc + '.ini'
+                iniFile = open(fileName, 'r').readlines()
+                print("----------experiment 8 " + cc + " simulations------------")
+                for line in iniFile:
+                    if line.find('[Config') != -1:
+                        match = re.search(r'Run(\d{1,5})\]', line)
+                        if match and int(match.group(1)) in runList:
+                            configName = (line[8:])[:-2]
+                            progStart = time.time()
+                            processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../leosatellites/src:../../../../leosatellites/simulations:../../../../os3/simulations:../../../../os3/src:../../../../orbtcp/simulations:../../../../orbtcp/src --image-path=../../../../inet4.5/images:../../../../os3/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../leosatellites/src/leosatellites -l ../../../../os3/src/os3 -l ../../../../orbtcp/src/orbtcp  experiment8_" + cc + ".ini", shell=True, cwd='../../paperExperiments/experiment8', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+                            
+                            currentProc = currentProc + 1
+                            print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
+                            if(currentProc == cores):
+                                procCompleteNum = 0
+                                for proc in processList:
+                                    proc.wait()
+                                    now = time.time()
+                                    f1.write("Run "+ str(exp1RunNum) + ": " + str(now-progStart))
+                                    procCompleteNum = procCompleteNum + 1
+                                    print("\tRun #" + str(procCompleteNum) + " is complete!")
+                                    exp1RunNum += 1
+                                currentProc = 0
+                                processList.clear()
+                                print(" ... Running next batch of simulations! ...\n")
+                        else:
+                            continue
+    
         for proc in processList:
             proc.wait()
     

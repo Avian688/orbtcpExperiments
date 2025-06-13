@@ -33,6 +33,7 @@ network leoconstellation
         double alt;
         int satsPerPlane;
         int numOfPlanes;
+        bool enableInterSatelliteLinks = default(true);
         @display("bgi=background_earth,s;bgb=2160,1080");
     submodules:
         visualizer: <default(firstAvailableOrEmpty("IntegratedCanvasVisualizer"))> like IIntegratedVisualizer if typename != "" {
