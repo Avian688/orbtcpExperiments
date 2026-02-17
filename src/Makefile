@@ -2,7 +2,7 @@
 # OMNeT++/OMNEST Makefile for $(LIB_PREFIX)orbtcpExperiments
 #
 # This file was generated with the command:
-#  opp_makemake --make-so -f --deep -KBBR_PROJ=../../bbr -KINET4_5_PROJ=../../inet4.5 -KTCPGOODPUTAPPLICATIONS_PROJ=../../tcpGoodputApplications -KTCPPACED_PROJ=../../tcpPaced -KCUBIC_PROJ=../../cubic -KLEOSATELLITES_PROJ=../../leosatellites -KOS3_PROJ=../../os3 -KORBTCP_PROJ=../../orbtcp -DINET_IMPORT -I/usr/include/boost -I/usr/local/Cellar/boost/1.87.0/include/boost -I$$\(INET4_5_PROJ\)/src -I/opt/homebrew/Cellar/igraph/0.10.15_1/include/igraph -I$$\(OS3_PROJ\)/src -I/opt/homebrew/opt/curl/include/curl -L$$\(BBR_PROJ\)/src -L$$\(CUBIC_PROJ\)/src -L$$\(INET4_5_PROJ\)/src -L$$\(LEOSATELLITES_PROJ\)/src -L$$\(ORBTCP_PROJ\)/src -L$$\(OS3_PROJ\)/src -L$$\(TCPGOODPUTAPPLICATIONS_PROJ\)/src -L$$\(TCPPACED_PROJ\)/src -lbbr$$\(D\) -lcubic$$\(D\) -lINET$$\(D\) -lleosatellites$$\(D\) -lorbtcp$$\(D\) -los3$$\(D\) -ltcpGoodputApplications$$\(D\) -ltcpPaced$$\(D\)
+#  opp_makemake --make-so -f --deep -KBBR_PROJ=../../bbr -KINET4_5_PROJ=../../inet4.5 -KTCPGOODPUTAPPLICATIONS_PROJ=../../tcpGoodputApplications -KTCPPACED_PROJ=../../tcpPaced -KCUBIC_PROJ=../../cubic -KLEOCC_PROJ=../../leocc -KLEOSATELLITES_PROJ=../../leosatellites -KOS3_PROJ=../../os3 -KORBTCP_PROJ=../../orbtcp -KSATCP_PROJ=../../satcp -DINET_IMPORT -I/usr/include/boost -I/usr/local/Cellar/boost/1.87.0/include/boost -I$$\(INET4_5_PROJ\)/src -I/opt/homebrew/Cellar/igraph/0.10.15_1/include/igraph -I$$\(OS3_PROJ\)/src -I/opt/homebrew/opt/curl/include/curl -L$$\(BBR_PROJ\)/src -L$$\(CUBIC_PROJ\)/src -L$$\(INET4_5_PROJ\)/src -L$$\(LEOCC_PROJ\)/src -L$$\(LEOSATELLITES_PROJ\)/src -L$$\(ORBTCP_PROJ\)/src -L$$\(OS3_PROJ\)/src -L$$\(SATCP_PROJ\)/src -L$$\(TCPGOODPUTAPPLICATIONS_PROJ\)/src -L$$\(TCPPACED_PROJ\)/src -lbbr$$\(D\) -lcubic$$\(D\) -lINET$$\(D\) -lleocc$$\(D\) -lleosatellites$$\(D\) -lorbtcp$$\(D\) -los3$$\(D\) -lsatcp$$\(D\) -ltcpGoodputApplications$$\(D\) -ltcpPaced$$\(D\)
 #
 
 # Name of target to be created (-o option)
@@ -26,7 +26,7 @@ INCLUDE_PATH = \
 EXTRA_OBJS =
 
 # Additional libraries (-L, -l options)
-LIBS = $(LDFLAG_LIBPATH)$(BBR_PROJ)/src $(LDFLAG_LIBPATH)$(CUBIC_PROJ)/src $(LDFLAG_LIBPATH)$(INET4_5_PROJ)/src $(LDFLAG_LIBPATH)$(LEOSATELLITES_PROJ)/src $(LDFLAG_LIBPATH)$(ORBTCP_PROJ)/src $(LDFLAG_LIBPATH)$(OS3_PROJ)/src $(LDFLAG_LIBPATH)$(TCPGOODPUTAPPLICATIONS_PROJ)/src $(LDFLAG_LIBPATH)$(TCPPACED_PROJ)/src  -lbbr$(D) -lcubic$(D) -lINET$(D) -lleosatellites$(D) -lorbtcp$(D) -los3$(D) -ltcpGoodputApplications$(D) -ltcpPaced$(D)
+LIBS = $(LDFLAG_LIBPATH)$(BBR_PROJ)/src $(LDFLAG_LIBPATH)$(CUBIC_PROJ)/src $(LDFLAG_LIBPATH)$(INET4_5_PROJ)/src $(LDFLAG_LIBPATH)$(LEOCC_PROJ)/src $(LDFLAG_LIBPATH)$(LEOSATELLITES_PROJ)/src $(LDFLAG_LIBPATH)$(ORBTCP_PROJ)/src $(LDFLAG_LIBPATH)$(OS3_PROJ)/src $(LDFLAG_LIBPATH)$(SATCP_PROJ)/src $(LDFLAG_LIBPATH)$(TCPGOODPUTAPPLICATIONS_PROJ)/src $(LDFLAG_LIBPATH)$(TCPPACED_PROJ)/src  -lbbr$(D) -lcubic$(D) -lINET$(D) -lleocc$(D) -lleosatellites$(D) -lorbtcp$(D) -los3$(D) -lsatcp$(D) -ltcpGoodputApplications$(D) -ltcpPaced$(D)
 
 # Output directory
 PROJECT_OUTPUT_DIR = ../out
@@ -48,9 +48,11 @@ INET4_5_PROJ=../../inet4.5
 TCPGOODPUTAPPLICATIONS_PROJ=../../tcpGoodputApplications
 TCPPACED_PROJ=../../tcpPaced
 CUBIC_PROJ=../../cubic
+LEOCC_PROJ=../../leocc
 LEOSATELLITES_PROJ=../../leosatellites
 OS3_PROJ=../../os3
 ORBTCP_PROJ=../../orbtcp
+SATCP_PROJ=../../satcp
 
 #------------------------------------------------------------------------------
 
@@ -71,7 +73,7 @@ include $(CONFIGFILE)
 # Simulation kernel and user interface libraries
 OMNETPP_LIBS = -loppenvir$D $(KERNEL_LIBS) $(SYS_LIBS)
 ifneq ($(PLATFORM),win32)
-LIBS += -Wl,-rpath,$(abspath $(BBR_PROJ)/src) -Wl,-rpath,$(abspath $(CUBIC_PROJ)/src) -Wl,-rpath,$(abspath $(INET4_5_PROJ)/src) -Wl,-rpath,$(abspath $(LEOSATELLITES_PROJ)/src) -Wl,-rpath,$(abspath $(ORBTCP_PROJ)/src) -Wl,-rpath,$(abspath $(OS3_PROJ)/src) -Wl,-rpath,$(abspath $(TCPGOODPUTAPPLICATIONS_PROJ)/src) -Wl,-rpath,$(abspath $(TCPPACED_PROJ)/src)
+LIBS += -Wl,-rpath,$(abspath $(BBR_PROJ)/src) -Wl,-rpath,$(abspath $(CUBIC_PROJ)/src) -Wl,-rpath,$(abspath $(INET4_5_PROJ)/src) -Wl,-rpath,$(abspath $(LEOCC_PROJ)/src) -Wl,-rpath,$(abspath $(LEOSATELLITES_PROJ)/src) -Wl,-rpath,$(abspath $(ORBTCP_PROJ)/src) -Wl,-rpath,$(abspath $(OS3_PROJ)/src) -Wl,-rpath,$(abspath $(SATCP_PROJ)/src) -Wl,-rpath,$(abspath $(TCPGOODPUTAPPLICATIONS_PROJ)/src) -Wl,-rpath,$(abspath $(TCPPACED_PROJ)/src)
 endif
 
 COPTS = $(CFLAGS) $(IMPORT_DEFINES) -DINET_IMPORT $(INCLUDE_PATH) -I$(OMNETPP_INCL_DIR)

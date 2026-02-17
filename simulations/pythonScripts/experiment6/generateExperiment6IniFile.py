@@ -2,7 +2,7 @@
 
 # Generates a INI file given the congestion control algorithm. INI file will be filled using the scenarios folder
 # generateIniFile congestionCongAlg ... congestionCongAlgN
-# Aiden Valentine
+# 
 
 import sys
 import pandas as pd
@@ -265,7 +265,7 @@ if __name__ == "__main__":
                     scenarioName = os.path.basename(xmlFile)[:-4]
                     for i in range(numOfRuns):
                         random.seed(simSeed + i)
-                        configName = alg.title() + str(scenarioName) + queueIniTitle + "Run" + str(i+1)
+                        configName = alg.title() + "_" + str(scenarioName) + "_" + queueIniTitle + "_" + "Run" + str(i+1)
                         print(configName)
                         f.write('\n' + '[Config ' + configName + ']')
                         f.write('\n' + 'extends = General \n')

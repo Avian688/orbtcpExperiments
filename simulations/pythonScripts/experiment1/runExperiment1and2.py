@@ -2,7 +2,7 @@
 
 # Runs experiment 1
 # runExperiment1
-# Aiden Valentine
+# 
 
 import sys
 import pandas as pd
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     startStep = 1
     endStep = 8
     currStep = 1
-    cores = 30
+    cores = 5
     currentProc = 0
     processList = []
     congControlList = ["bbr3","bbr", "orbtcp", "cubic"]
@@ -45,7 +45,7 @@ if __name__ == "__main__":
             exp1RunNum = 1
             f1.write("--Experiment 1 Runtimes (s)--")
             for cc in congControlList:
-                fileName =  '../../paperExperiments/experiment1/experiment1' + cc +'.ini'
+                fileName =  '../../paperExperiments/experiment1/experiment1_' + cc +'.ini'
                 iniFile = open(fileName, 'r').readlines()
                 print("----------experiment 1 " + cc + " simulations------------")
                 for line in iniFile:
@@ -82,7 +82,7 @@ if __name__ == "__main__":
             f2.write("--Experiment 2 Runtimes (s)--")
             exp2RunNum = 1
             for cc in congControlList:
-                fileName =  '../../paperExperiments/experiment2/experiment2' + cc +'.ini'
+                fileName =  '../../paperExperiments/experiment2/experiment2_' + cc +'.ini'
                 iniFile = open(fileName, 'r').readlines()
                 print("----------experiment 2 " + cc + " simulations------------")
                 for line in iniFile:
@@ -175,7 +175,7 @@ if __name__ == "__main__":
                 runNam = "LossRun" 
             for protocol in congControlList:
                 for run in runList:
-                    filePath = '../../paperExperiments/' + exp +'/results/'+ protocol.title() + runNam + str(run) + '.csv'
+                    filePath = '../../paperExperiments/' + exp +'/results/'+ protocol.title() + "_" + runNam + str(run) + '.csv'
                     if os.path.exists(filePath):
                          processListStr.append("python3 extractSingleCsvFile.py " + filePath + " " + exp + " " + protocol + " " + str(run))
         
@@ -197,16 +197,25 @@ if __name__ == "__main__":
     
         
     if(currStep <= endStep and currStep >= startStep): #STEP 6
-        print("Plotting cumulative distribution!\n")
+        print("Plotting goodput cumulative distribution!\n")
         subprocess.Popen("mkdir experiment1and2Cumulative", shell=True, cwd='../../plots/').communicate(timeout=10)
         time.sleep(3)
         p = subprocess.Popen("python3 ../../pythonScripts/experiment1/plotGoodputCumulativeDistribution.py", shell=True, cwd='../../plots/experiment1and2Cumulative/')
         p.wait(timeout=3600)
         time.sleep(1)
     currStep += 1
+
+    if(currStep <= endStep and currStep >= startStep): #STEP 7
+        print("Plotting RTT cumulative distribution!\n")
+        subprocess.Popen("mkdir experiment1and2Cumulative", shell=True, cwd='../../plots/').communicate(timeout=10)
+        time.sleep(3)
+        p = subprocess.Popen("python3 ../../pythonScripts/experiment1/plotRttCumulativeDistribution.py", shell=True, cwd='../../plots/experiment1and2Cumulative/')
+        p.wait(timeout=3600)
+        time.sleep(1)
+    currStep += 1
     
         
-    if(currStep <= endStep and currStep >= startStep): #STEP 7
+    if(currStep <= endStep and currStep >= startStep): #STEP 8
         subprocess.Popen("mkdir ../../plots/experiment1", shell=True).communicate(timeout=10)
         subprocess.Popen("mkdir ../../plots/experiment2", shell=True).communicate(timeout=10)
         for exp in experiments:
@@ -223,7 +232,7 @@ if __name__ == "__main__":
     currStep += 1
     
     
-    if(currStep <= endStep and currStep >= startStep): #STEP 8
+    if(currStep <= endStep and currStep >= startStep): #STEP 9
         print("\nPlotting!")
         processListStr = []
         processListMerge = []

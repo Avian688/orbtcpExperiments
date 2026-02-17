@@ -2,7 +2,7 @@
 
 # Generates a INI file given the congestion control algorithm. INI file will be filled using the scenarios folder
 # generateIniFile congestionCongAlg ... congestionCongAlgN
-# Aiden Valentine
+# 
 
 import sys
 import pandas as pd
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     simSeed = 1999
     bandwidth = 100
     queueLength = round(((bandwidth*125000)*0.05)/1448) #431 packets
-    queueSizes = [0.2, 1, 4]
+    queueSizes = [1]
     numOfRuns = 5
     numOfConstClients = 2
     numOfMovingClients = 2
@@ -297,13 +297,13 @@ if __name__ == "__main__":
                         f.write('\n' + '**.numberOfPathChangeFlows = 2 \n')
                                                     
                         for constantClientNumb in range(numOfConstClients):
-                            constantClientStart = random.uniform(0,50)
+                            constantClientStart = random.randint(0,50)
                             f.write('\n' + '*.constantClient[' + str(constantClientNumb) + '].app[0].connectAddress =  "constantServer[" + string(parentIndex()) +"]"')
-                            f.write('\n' + '*.constantClient[[' + str(constantClientNumb) + '].app[0].tOpen = '+ str(constantClientStart) +'s')
+                            f.write('\n' + '*.constantClient[' + str(constantClientNumb) + '].app[0].tOpen = '+ str(constantClientStart) +'s')
                             f.write('\n' + '*.constantClient[' + str(constantClientNumb) + '].app[0].tSend = '+ str(constantClientStart) +'s\n')
                         
                         for movingClientNumb in range(numOfMovingClients):
-                            movingClientStart = random.uniform(0,50)
+                            movingClientStart = random.randint(0,50)
                             f.write('\n' + '*.pathChangeClient[' + str(movingClientNumb) + '].app[0].connectAddress =  "pathChangeServer[" + string(parentIndex()) +"]"')
                             f.write('\n' + '*.pathChangeClient[' + str(movingClientNumb) + '].app[0].tOpen = '+ str(movingClientStart) +'s')
                             f.write('\n' + '*.pathChangeClient[' + str(movingClientNumb) + '].app[0].tSend = '+ str(movingClientStart) +'s\n')

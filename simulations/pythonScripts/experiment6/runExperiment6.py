@@ -2,7 +2,7 @@
 
 # Runs experiment 6
 # runExperiment1
-# Aiden Valentine
+# 
 
 import sys
 import pandas as pd
@@ -61,8 +61,8 @@ def merge_pdfs_in_folders(root_folder):
 
 if __name__ == "__main__":
     
-    startStep = 1
-    endStep = 8
+    startStep = 5
+    endStep = 5
     currStep = 1
     cores = 30
     numOfRibFlows = 3
@@ -86,7 +86,7 @@ if __name__ == "__main__":
             f1.write("--Experiment 6 Runtimes (s)--")
             for cc in congControlList:
                 for bs in buffersizes:
-                    fileName =  '../../paperExperiments/experiment6/experiment6' + cc + bs + '.ini'
+                    fileName =  '../../paperExperiments/experiment6/experiment6_' + cc + '_' + bs + '.ini'
                     iniFile = open(fileName, 'r').readlines()
                     print("----------experiment 6 " + cc + " " + bs + " simulations------------")
                     for line in iniFile:
@@ -162,7 +162,7 @@ if __name__ == "__main__":
             for buf in buffersizes:
                 for rtt in clientsRtts:
                     for run in runList:
-                        filePath = '../../paperExperiments/experiment6/results/'+ protocol.title() + str(rtt) + 'ms' + buf + 'Run' + str(run) + '.csv'
+                        filePath = '../../paperExperiments/experiment6/results/'+ protocol.title() + "_" + str(rtt) + 'ms' + "_" + buf + "_" + 'Run' + str(run) + '.csv'
                         print(filePath)
                         if os.path.exists(filePath):
                              processListStr.append("python3 extractSingleCsvFile.py " + filePath + " " + experiment + " " + protocol + " " + buf + " " + str(rtt) + " " + str(run))
@@ -182,10 +182,10 @@ if __name__ == "__main__":
                 print("Extracting next batch!\n")
                 processList.clear()          
 
-        subprocess.Popen("rm " + filePath, shell=True).communicate(timeout=60)
-        subprocess.Popen("rm  ../../paperExperiments/experiment6/results/*.vec", shell=True).communicate(timeout=60)
-        subprocess.Popen("rm  ../../paperExperiments/experiment6/results/*.vci", shell=True).communicate(timeout=60)
-        subprocess.Popen("rm  ../../paperExperiments/experiment6/results/*.sca", shell=True).communicate(timeout=60)     
+        #subprocess.Popen("rm " + filePath, shell=True).communicate(timeout=60)
+        #subprocess.Popen("rm  ../../paperExperiments/experiment6/results/*.vec", shell=True).communicate(timeout=60)
+        ##subprocess.Popen("rm  ../../paperExperiments/experiment6/results/*.vci", shell=True).communicate(timeout=60)
+        #subprocess.Popen("rm  ../../paperExperiments/experiment6/results/*.sca", shell=True).communicate(timeout=60)     
 
     currStep += 1
     

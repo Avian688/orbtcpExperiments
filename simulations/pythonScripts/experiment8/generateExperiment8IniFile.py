@@ -2,7 +2,7 @@
 
 # Generates a INI file given the congestion control algorithm. INI file will be filled using the scenarios folder
 # generateIniFile congestionCongAlg ... congestionCongAlgN
-# Aiden Valentine
+# 
 
 import sys
 import pandas as pd
@@ -54,11 +54,24 @@ if __name__ == "__main__":
     }
     
     city_pairs = [
-        ("San Diego", "Seattle", ["isl", "bentpipe"]),
-        ("Seattle", "New York", ["isl", "bentpipe"]),
-        ("San Diego", "New York", ["isl", "bentpipe"]),
-        ("New York", "London", ["bentpipe"]),
-        ("San Diego", "Shanghai", ["bentpipe"])
+        ("San Diego", "Seattle", {
+            "isl": 157,
+            "bentpipe": 157
+        }),
+        ("Seattle", "New York", {
+            "isl": 287,
+            "bentpipe": 311
+        }),
+        ("San Diego", "New York", {
+            "isl": 287,
+            "bentpipe": 317
+        }),
+        ("New York", "London", {
+            "isl": 371
+        }),
+        ("San Diego", "Shanghai", {
+            "isl": 707
+        })
     ]
     
     for alg in algorithms:
@@ -93,7 +106,7 @@ if __name__ == "__main__":
             f.write('\n' + '**.**.tcp.conn-*.throughput:vector(removeRepeats).vector-recording = true')
             f.write('\n' + '**.**.tcp.conn-*.**.result-recording-modes = vector(removeRepeats)')
             
-            f.write('\n' + '**.**.queue.queueLength:vector(removeRepeats).vector-recording = true')
+            f.write('\n' + '**.**.queue.queueLength:vector(removeRepeats).vector-recording = false')
             f.write('\n' + '**.**.queue.queueLength.result-recording-modes = vector(removeRepeats)')
             
             f.write('\n' + '**.**.goodput:vector(removeRepeats).vector-recording = true')
@@ -102,7 +115,7 @@ if __name__ == "__main__":
             f.write('\n' + '**.**.bandwidth:vector(removeRepeats).vector-recording = true')
             f.write('\n' + '**.**.bandwidth.result-recording-modes = vector(removeRepeats)')
             
-            f.write('\n' + '**.**.mbytesInFlight:vector(removeRepeats).vector-recording = true')
+            f.write('\n' + '**.**.mbytesInFlight:vector(removeRepeats).vector-recording = false')
             f.write('\n' + '**.**.mbytesInFlight.result-recording-modes = vector(removeRepeats)')
             
             
@@ -162,7 +175,6 @@ if __name__ == "__main__":
             f.write('\n' + '**.satellite[*].NoradModule.altitude = 550')
             f.write('\n' + '**.numOfGS = ' + str(len(entries)+len(cities_coordinates)))
             f.write('\n' + '**.dataRate = 100Mbps')
-            f.write('\n' + '**.queueSize = 300')
             f.write('\n' + '**.loadFiles = true')
             
             currentGsNum = 0
@@ -255,63 +267,70 @@ if __name__ == "__main__":
             for i in range(numOfRuns):
                 for qs in queueSizes:
                     queueIniTitle = ""
-                    if(qs == 0.2):
+                    if qs == 0.2:
                         queueIniTitle = "smallbuffer"
-                    elif(qs == 1):
+                    elif qs == 1:
                         queueIniTitle = "mediumbuffer"
-                    elif(qs == 4):
+                    elif qs == 4:
                         queueIniTitle = "largebuffer"
-                        
+            
                     for pair in city_pairs:
                         sourceName = pair[0]
                         destinationName = pair[1]
-                        source = sourceName.replace(" ", "") # e.g., "San Diego" -> "SanDiego"
+                        mode_to_buffer = pair[2]  # Now a dictionary like {"isl": 173, "bentpipe": 173}
+                        
+                        source = sourceName.replace(" ", "")
                         destination = destinationName.replace(" ", "")
-                        modes = pair[2]
-                        for mode in modes:
+            
+                        for mode, bs in mode_to_buffer.items():
                             random.seed(simSeed + i)
                             configName = f"{alg.title()}_{source}To{destination}_{mode}_{queueIniTitle}"
                             
                             groundStationStart = random.uniform(0, 1)
-                            
+            
                             f.write('\n' + f'[Config {configName}_Run{i+1}]')
                             f.write('\n' + 'extends = General \n')
-                            
+            
                             f.write('\n' + '**.numberOfFlows = 1 \n')
-                            if(mode == "isl"):
+                            if mode == "isl":
                                 f.write('\n' + '**.enableInterSatelliteLinks = true\n')
                             else:
                                 f.write('\n' + '**.enableInterSatelliteLinks = false\n')
-                            
+            
+                            # Resolve indices
                             sourceNum = 0
                             sourceNumFound = False
                             destNum = 0
                             destNumFound = False
                             for key in cities_coordinates:
-                                if(sourceName == key):
+                                if sourceName == key:
                                     sourceNumFound = True
-                                elif(destinationName == key):
+                                elif destinationName == key:
                                     destNumFound = True
-                                if(not sourceNumFound):
-                                    sourceNum = sourceNum + 1
-                                if(not destNumFound):
-                                    destNum = destNum + 1
-                                    
-                                    
-                            f.write('\n' + '**.groundStation['+ str(sourceNum) +'].numApps = 1')
-                            f.write('\n' + '**.groundStation['+ str(sourceNum) +'].app[0].typename  = "TcpGoodputSessionApp"')
-                            f.write('\n' + '*.groundStation['+ str(sourceNum) +'].app[0].tClose = -1s')
-                            f.write('\n' + '*.groundStation['+ str(sourceNum) +'].app[0].sendBytes = 2GB')
-                            f.write('\n' + '*.groundStation['+ str(sourceNum) +'].app[0].dataTransferMode = "bytecount"')
-                            f.write('\n' + '*.groundStation['+ str(sourceNum) +'].app[0].statistic-recording = true\n')
+                                if not sourceNumFound:
+                                    sourceNum += 1
+                                if not destNumFound:
+                                    destNum += 1
                             
-                            f.write('\n' + '**.groundStation['+ str(destNum) +'].numApps = 1')
-                            f.write('\n' + '**.groundStation['+ str(destNum) +'].app[0].typename  = "TcpSinkApp"')
-                            f.write('\n' + '**.groundStation['+ str(destNum) +'].app[0].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
-                            
-                            f.write('\n' + '*.groundStation['+ str(sourceNum) +'].app[0].connectAddress = "groundStation['+ str(destNum) +']"')
-                            f.write('\n' + '*.groundStation['+ str(sourceNum) +'].app[0].tOpen  = '+ str(groundStationStart) +'s')
-                            f.write('\n' + '*.groundStation['+ str(sourceNum) +'].app[0].tSend = '+ str(groundStationStart) +'s\n')
+                            bufferSize = math.ceil(bs * qs)     
+                            # Set buffer size (this is the key part you’re adding)
+                            f.write('\n' + f'**.groundStation[{sourceNum}].app[0].packetBufferSize = {bufferSize} \n')
+                            f.write('\n' + f'**.queueSize = {bufferSize}')
+
+                            f.write('\n' + f'**.groundStation[{sourceNum}].numApps = 1')
+                            f.write('\n' + f'**.groundStation[{sourceNum}].app[0].typename  = "TcpGoodputSessionApp"')
+                            f.write('\n' + f'*.groundStation[{sourceNum}].app[0].tClose = -1s')
+                            f.write('\n' + f'*.groundStation[{sourceNum}].app[0].sendBytes = 2GB')
+                            f.write('\n' + f'*.groundStation[{sourceNum}].app[0].dataTransferMode = "bytecount"')
+                            f.write('\n' + f'*.groundStation[{sourceNum}].app[0].statistic-recording = true\n')
+            
+                            f.write('\n' + f'**.groundStation[{destNum}].numApps = 1')
+                            f.write('\n' + f'**.groundStation[{destNum}].app[0].typename  = "TcpSinkApp"')
+                            f.write('\n' + f'**.groundStation[{destNum}].app[0].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
+            
+                            f.write('\n' + f'*.groundStation[{sourceNum}].app[0].connectAddress = "groundStation[{destNum}]"')
+                            f.write('\n' + f'*.groundStation[{sourceNum}].app[0].tOpen  = {groundStationStart}s')
+                            f.write('\n' + f'*.groundStation[{sourceNum}].app[0].tSend = {groundStationStart}s\n')
     print('\nINI files generated!')
                 
                     

@@ -2,7 +2,7 @@
 
 # Runs experiment 1
 # runExperiment1
-# Aiden Valentine
+# 
 
 import sys
 import pandas as pd
@@ -61,23 +61,24 @@ def merge_pdfs_in_folders(root_folder):
 
 if __name__ == "__main__":
     
-    startStep = 1
-    endStep = 8
+    startStep = 6
+    endStep = 6
     currStep = 1
-    cores = 30
+    cores = 10
     currentProc = 0
     processList = []
     congControlList = ["bbr3","bbr", "orbtcp", "cubic"]
     experiment = "experiment3"
-    buffersizes = ["smallbuffer", "mediumbuffer", "largebuffer"]
-    movingClientsRtts = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP
+    buffersizes = ["mediumbuffer"]
+    movingClientsRtts = [20] #OF AVERAGE BDP
     runs = 5
     runList = list(range(1,runs+1))
 
-    subprocess.Popen("python3 generateExperiment3Scenario.py", shell=True).communicate(timeout=30)
-    subprocess.Popen("python3 generateExperiment3IniFile.py", shell=True).communicate(timeout=30)
-
     if(currStep <= endStep and currStep >= startStep): #STEP 1
+
+        subprocess.Popen("python3 generateExperiment3Scenario.py", shell=True).communicate(timeout=30)
+        subprocess.Popen("python3 generateExperiment3IniFile.py", shell=True).communicate(timeout=30)
+    
         subprocess.Popen("rm experiment3runTimes.txt", shell=True).communicate(timeout=30)
         
         with open('experiment3runTimes.txt', 'w') as f1:
@@ -85,7 +86,7 @@ if __name__ == "__main__":
             f1.write("--Experiment 3 Runtimes (s)--")
             for cc in congControlList:
                 for bs in buffersizes:
-                    fileName =  '../../paperExperiments/experiment3/experiment3' + cc + bs + '.ini'
+                    fileName =  '../../paperExperiments/experiment3/experiment3_' + cc + '_' +  bs + '.ini'
                     iniFile = open(fileName, 'r').readlines()
                     print("----------experiment 3 " + cc + " " + bs + " simulations------------")
                     for line in iniFile:
@@ -199,17 +200,17 @@ if __name__ == "__main__":
             for buf in buffersizes:
                 for rtt in movingClientsRtts:
                     for run in runList:
-                        subprocess.Popen("mkdir " + str(buf), shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' ).communicate(timeout=10)
-                        subprocess.Popen("mkdir " + str(rtt) + 'ms', shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf).communicate(timeout=10)
-                        subprocess.Popen("mkdir run" + str(run), shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms').communicate(timeout=10)
+                        subprocess.Popen("mkdir " + str(buf), shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' ).communicate(timeout=20)
+                        subprocess.Popen("mkdir " + str(rtt) + 'ms', shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf).communicate(timeout=20)
+                        subprocess.Popen("mkdir run" + str(run), shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms').communicate(timeout=20)
                         
-                        subprocess.Popen("mkdir constantClient0", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-                        subprocess.Popen("mkdir constantClient1", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-                        subprocess.Popen("mkdir pathChangeClient0", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-                        subprocess.Popen("mkdir pathChangeClient1", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-                        subprocess.Popen("mkdir constantRouter", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-                        subprocess.Popen("mkdir pathChangeRouter", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-                        subprocess.Popen("mkdir aggPlots", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
+                        subprocess.Popen("mkdir constantClient0", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=20)
+                        subprocess.Popen("mkdir constantClient1", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=20)
+                        subprocess.Popen("mkdir pathChangeClient0", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=20)
+                        subprocess.Popen("mkdir pathChangeClient1", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=20)
+                        subprocess.Popen("mkdir constantRouter", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=20)
+                        subprocess.Popen("mkdir pathChangeRouter", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=20)
+                        subprocess.Popen("mkdir aggPlots", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=20)
     currStep += 1
     
     if(currStep <= endStep and currStep >= startStep): #STEP 5
@@ -225,7 +226,16 @@ if __name__ == "__main__":
         print("Plotting Scatter!\n")
         subprocess.Popen("mkdir cumulative", shell=True, cwd='../../plots/experiment3/').communicate(timeout=10)
         time.sleep(3)
-        p = subprocess.Popen("python3 ../../../pythonScripts/experiment3/plotScatter.py", shell=True, cwd='../../plots/experiment3/cumulative')
+        p = subprocess.Popen("python3 ../../../pythonScripts/experiment3/plotScatterFixed.py", shell=True, cwd='../../plots/experiment3/cumulative')
+        p.wait(timeout=3600)
+        time.sleep(1)
+    currStep += 1
+
+    if(currStep <= endStep and currStep >= startStep): #STEP 7
+        print("Printing AvgRTT!\n")
+        subprocess.Popen("mkdir cumulative", shell=True, cwd='../../plots/experiment3/').communicate(timeout=10)
+        time.sleep(3)
+        p = subprocess.Popen("python3 ../../../pythonScripts/experiment3/printAverageRTTs.py", shell=True, cwd='../../plots/experiment3/cumulative')
         p.wait(timeout=3600)
         time.sleep(1)
     currStep += 1

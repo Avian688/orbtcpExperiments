@@ -2,7 +2,7 @@
 
 # Generates a INI file given the congestion control algorithm. INI file will be filled using the scenarios folder
 # generateIniFile congestionCongAlg ... congestionCongAlgN
-# Aiden Valentine
+# 
 
 import sys
 import pandas as pd
@@ -39,7 +39,8 @@ if __name__ == "__main__":
     simSeed = 1999
     #numOfClients = int_to_word(len(sys.argv)-1)
     #folderName = '../scenarios/' + numOfClients + 'Flows'
-    queueSizes = [0.2, 1, 4]
+    #queueSizes = [0.2, 1, 4]
+    queueSizes = [1]
     bandwidth = 12500000
     numOfRuns = 5
     algorithms = ["orbtcp", "bbr", "cubic", "bbr3"]

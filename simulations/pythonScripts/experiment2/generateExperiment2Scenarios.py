@@ -3,7 +3,7 @@
 # Generates a scenario XML file given sender->receiver base propagation delays (ms)
 # generateRttChangeScenario delayChangeNum delayNum1 delayNum2... delayNumX
 # This will generate X flows for the use in the scenario manager
-# Aiden Valentine
+# 
 
 import sys
 import pandas as pd

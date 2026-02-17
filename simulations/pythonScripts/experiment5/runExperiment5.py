@@ -2,7 +2,7 @@
 
 # Runs experiment 1
 # runExperiment1
-# Aiden Valentine
+# 
 
 import sys
 import pandas as pd
@@ -85,7 +85,7 @@ if __name__ == "__main__":
             f1.write("--Experiment 5 Runtimes (s)--")
             for cc in congControlList:
                 for bs in buffersizes:
-                    fileName =  '../../paperExperiments/experiment5/experiment5' + cc + bs + '.ini'
+                    fileName =  '../../paperExperiments/experiment5/experiment5_' + cc + '_' + bs + '.ini'
                     iniFile = open(fileName, 'r').readlines()
                     print("----------experiment 5 " + cc + " " + bs + " simulations------------")
                     for line in iniFile:
@@ -161,7 +161,7 @@ if __name__ == "__main__":
             for buf in buffersizes:
                 for rtt in clientsRtts:
                     for run in runList:
-                        filePath = '../../paperExperiments/experiment5/results/'+ protocol.title() + str(rtt) + 'ms' + buf + 'Run' + str(run) + '.csv'
+                        filePath = '../../paperExperiments/experiment5/results/'+ protocol.title() + '_' + str(rtt) + 'ms' + '_' + buf + '_Run' + str(run) + '.csv'
                         print(filePath)
                         if os.path.exists(filePath):
                              print("Extracting CSV file for " + experiment + " " + protocol + " " + buf + " " + str(rtt) + " " + str(run))

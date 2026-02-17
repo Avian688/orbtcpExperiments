@@ -2,7 +2,6 @@
 
 # Generates a INI file given the congestion control algorithm. INI file will be filled using the scenarios folder
 # generateIniFile congestionCongAlg ... congestionCongAlgN
-# Aiden Valentine
 
 import sys
 import pandas as pd
@@ -206,7 +205,7 @@ if __name__ == "__main__":
             dir = [f for f in os.listdir('../../paperExperiments/scenarios/experiment1/.')]
             for xmlFile in dir:
                 runNum = int(os.path.basename(xmlFile)[3:-4])
-                configName = alg.title() + "Run" + str(runNum)
+                configName = alg.title() + "_Run" + str(runNum)
                 f.write('\n' + '[Config ' + configName + ']')
                 f.write('\n' + 'extends = General \n')
                 f.write('\n' + '**.numberOfFlows = 1 \n')

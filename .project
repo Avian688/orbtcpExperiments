@@ -6,9 +6,11 @@
 		<project>bbr</project>
 		<project>cubic</project>
 		<project>inet4.5</project>
+		<project>leocc</project>
 		<project>leosatellites</project>
 		<project>orbtcp</project>
 		<project>os3</project>
+		<project>satcp</project>
 		<project>tcpGoodputApplications</project>
 		<project>tcpPaced</project>
 	</projects>

@@ -7,145 +7,157 @@ import os, sys
 from matplotlib.ticker import ScalarFormatter
 import numpy as np
 
-plt.rcParams['text.usetex'] = False
+plt.rcParams['text.usetex'] = True
+plt.rcParams['axes.labelsize'] = "medium"
+plt.rcParams['xtick.labelsize'] = "medium"
+plt.rcParams['ytick.labelsize'] = "medium"
 
-PROTOCOLS = ['cubic', 'bbr', 'orbtcp', 'bbr3']
+PROTOCOLS = ['cubic', 'bbr', 'bbr3', 'orbtcp']
 BWS = [100]
 DELAYS = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
-QMULTS = [0.2,1,4]
-QMULTDICT = {0.2 : "smallbuffer", 1 : "mediumbuffer", 4 : "largebuffer" }
+QMULTS = [0.2, 1, 4]
+QMULTDICT = {0.2: "smallbuffer", 1: "mediumbuffer", 4: "largebuffer"}
 RUNS = [1, 2, 3, 4, 5]
 
 LINEWIDTH = 0.30
 ELINEWIDTH = 0.75
 CAPTHICK = ELINEWIDTH
-CAPSIZE= 2
+CAPSIZE = 2
 
-def plot_points_rtt(ax, df, data, error,  marker, label):
-   if not df.empty:
-      xvals = df.index
-      yvals = df[data]
-      yerr  = df[error]
-      markers, caps, bars = ax.errorbar(
-         xvals, yvals,
-         yerr=yerr,
-         marker=marker,
-         linewidth=LINEWIDTH,
-         elinewidth=ELINEWIDTH,
-         capsize=CAPSIZE,
-         capthick=CAPTHICK,
-         label=label
-      )
-      [bar.set_alpha(0.5) for bar in bars]
-      [cap.set_alpha(0.5) for cap in caps]
+def plot_points_rtt(ax, df, data, error, marker, label):
+    if not df.empty:
+        xvals = df.index
+        yvals = df[data]
+        yerr = df[error]
+        markers, caps, bars = ax.errorbar(
+            xvals, yvals,
+            yerr=yerr,
+            marker=marker,
+            linewidth=LINEWIDTH,
+            elinewidth=ELINEWIDTH,
+            capsize=CAPSIZE,
+            capthick=CAPTHICK,
+            label=label
+        )
+        [bar.set_alpha(0.5) for bar in bars]
+        [cap.set_alpha(0.5) for cap in caps]
 
 for mult in QMULTS:
-   data = []
-   for protocol in PROTOCOLS:
-     for bw in BWS:
-        for delay in DELAYS:
-           start_time = delay
-           end_time = 2*delay
-           keep_last_seconds = int(1*delay)
+    data = []
+    for protocol in PROTOCOLS:
+        for bw in BWS:
+            for delay in DELAYS:
+                start_time = delay
+                end_time = 2 * delay
+                keep_last_seconds = int(1 * delay)
 
-           goodput_ratios_20 = []
-           goodput_ratios_total = []
+                goodput_ratios_20 = []
+                goodput_ratios_total = []
 
-           for run in RUNS:
-               PATH = '../../../paperExperiments/experiment5/csvs/'+ protocol + '/' + QMULTDICT.get(mult) + '/' + str(delay) + 'ms/run' + str(run) + '/' #add ../ 
-               receiver1GoodputPath = PATH + 'singledumbbell.server[0].app[0]/goodput.csv'
-               receiver2GoodputPath = PATH + 'singledumbbell.server[1].app[0]/goodput.csv'
-               if os.path.exists(receiver1GoodputPath) and os.path.exists(receiver2GoodputPath):
-                  receiver1_total = pd.read_csv(receiver1GoodputPath).reset_index(drop=True)
-                  receiver2_total = pd.read_csv(receiver2GoodputPath).reset_index(drop=True)
+                for run in RUNS:
+                    PATH = (
+                        '../../../paperExperiments/experiment5/csvs/'
+                        + protocol + '/'
+                        + QMULTDICT.get(mult) + '/'
+                        + str(delay) + 'ms/run' + str(run) + '/'
+                    )
+                    receiver1Path = PATH + 'singledumbbell.server[0].app[0]/goodput.csv'
+                    receiver2Path = PATH + 'singledumbbell.server[1].app[0]/goodput.csv'
+                    if os.path.exists(receiver1Path) and os.path.exists(receiver2Path):
+                        r1 = pd.read_csv(receiver1Path).reset_index(drop=True)
+                        r2 = pd.read_csv(receiver2Path).reset_index(drop=True)
 
-                  receiver1_total['time'] = receiver1_total['time'].apply(lambda x: int(float(x)))
-                  receiver2_total['time'] = receiver2_total['time'].apply(lambda x: int(float(x)))
+                        r1['time'] = r1['time'].apply(lambda x: int(float(x)))
+                        r2['time'] = r2['time'].apply(lambda x: int(float(x)))
 
+                        r1 = r1[(r1['time'] > start_time) & (r1['time'] < end_time)]
+                        r2 = r2[(r2['time'] > start_time) & (r2['time'] < end_time)]
 
-                  receiver1_total = receiver1_total[(receiver1_total['time'] > start_time) & (receiver1_total['time'] < end_time)]
-                  receiver2_total = receiver2_total[(receiver2_total['time'] > start_time) & (receiver2_total['time'] < end_time)]
+                        r1 = r1.drop_duplicates('time')
+                        r2 = r2.drop_duplicates('time')
 
-                  receiver1_total = receiver1_total.drop_duplicates('time')
-                  receiver2_total = receiver2_total.drop_duplicates('time')
+                        last_r1 = r1[r1['time'] >= end_time - keep_last_seconds].reset_index(drop=True)
+                        last_r2 = r2[r2['time'] >= end_time - keep_last_seconds].reset_index(drop=True)
 
-                  receiver1 = receiver1_total[receiver1_total['time'] >= end_time - keep_last_seconds].reset_index(drop=True)
-                  receiver2 = receiver2_total[receiver2_total['time'] >= end_time - keep_last_seconds].reset_index(drop=True)
+                        r1 = r1.set_index('time')
+                        r2 = r2.set_index('time')
+                        last_r1 = last_r1.set_index('time')
+                        last_r2 = last_r2.set_index('time')
 
-                  receiver1_total = receiver1_total.set_index('time')
-                  receiver2_total = receiver2_total.set_index('time')
+                        total = (
+                            r1.join(r2, how='inner', lsuffix='1', rsuffix='2')
+                            [['goodput1', 'goodput2']]
+                            .dropna()
+                        )
+                        partial = (
+                            last_r1.join(last_r2, how='inner', lsuffix='1', rsuffix='2')
+                            [['goodput1', 'goodput2']]
+                            .dropna()
+                        )
 
-                  receiver1 = receiver1.set_index('time')
-                  receiver2 = receiver2.set_index('time')
+                        goodput_ratios_20.append(partial.min(axis=1) / partial.max(axis=1))
+                        goodput_ratios_total.append(total.min(axis=1) / total.max(axis=1))
+                    else:
+                        print("Files %s or %s not found." % (receiver1Path, receiver2Path))
 
-                  total = receiver1_total.join(receiver2_total, how='inner', lsuffix='1', rsuffix='2')[['goodput1', 'goodput2']]
-                  partial = receiver1.join(receiver2, how='inner', lsuffix='1', rsuffix='2')[['goodput1', 'goodput2']]
+                if goodput_ratios_20 and goodput_ratios_total:
+                    gp20 = np.concatenate(goodput_ratios_20, axis=0)
+                    gptot = np.concatenate(goodput_ratios_total, axis=0)
+                    if gp20.size and gptot.size:
+                        data.append([
+                            protocol, bw, delay, delay/10, mult,
+                            gp20.mean(), gp20.std(),
+                            gptot.mean(), gptot.std()
+                        ])
 
-                  total = total.dropna()
-                  partial = partial.dropna()
+    summary_data = pd.DataFrame(
+        data,
+        columns=[
+            'protocol', 'goodput', 'delay', 'delay_ratio',
+            'qmult', 'goodput_ratio_20_mean', 'goodput_ratio_20_std',
+            'goodput_ratio_total_mean', 'goodput_ratio_total_std'
+        ]
+    )
 
-                  goodput_ratios_20.append(partial.min(axis=1)/partial.max(axis=1))
-                  goodput_ratios_total.append(total.min(axis=1)/total.max(axis=1))
-               else:
-                  avg_goodput = None
-                  std_goodput = None
-                  jain_goodput_20 = None
-                  jain_goodput_total = None
-                  print("Files %s not found." % receiver1GoodputPath)
+    fig, ax = plt.subplots(figsize=(4.5,1.2))
+    ax.set_ylim([0, 1.1])
+    plt.margins(y=0.05)
 
-           if len(goodput_ratios_20) > 0 and len(goodput_ratios_total) > 0:
-              goodput_ratios_20 = np.concatenate(goodput_ratios_20, axis=0)
-              goodput_ratios_total = np.concatenate(goodput_ratios_total, axis=0)
+    for proto, marker in [('cubic', 'x'), ('bbr', '.'), ('orbtcp', '^'), ('bbr3', '_')]:
+        df = summary_data[summary_data['protocol'] == proto].set_index('delay')
+        plot_points_rtt(
+            ax, df,
+            'goodput_ratio_total_mean',
+            'goodput_ratio_total_std',
+            marker, proto
+        )
 
-              if len(goodput_ratios_20) > 0 and len(goodput_ratios_total) > 0:
-                 data_entry = [protocol, bw, delay, delay/10, mult, goodput_ratios_20.mean(), goodput_ratios_20.std(), goodput_ratios_total.mean(), goodput_ratios_total.std()]
-                 data.append(data_entry)
+    ax.set(yscale='linear', xlabel='RTT (ms)', ylabel='Goodput Ratio')
+    for axis in [ax.xaxis, ax.yaxis]:
+        axis.set_major_formatter(ScalarFormatter())
 
-   summary_data = pd.DataFrame(data,
-                              columns=['protocol', 'goodput', 'delay', 'delay_ratio','qmult', 'goodput_ratio_20_mean',
-                                       'goodput_ratio_20_std', 'goodput_ratio_total_mean', 'goodput_ratio_total_std'])
+    # Commented out the 2-row "pyramid" legend that showed protocol names at the top:
+    handles, labels = ax.get_legend_handles_labels()
+    line_handles = [h[0] if isinstance(h, tuple) else h for h in handles]
+    legend_map = dict(zip(labels, line_handles))
+    handles_top = [
+        legend_map.get('cubic'),
+        legend_map.get('bbr'),
+        legend_map.get('bbr3'),
+        legend_map.get('orbtcp')
+    ]
+    labels_top = ['Cubic', 'BBRv1', 'BBRv3', 'LeoTCP']
+    legend_top = plt.legend(
+        handles_top, labels_top,
+        ncol=4,
+        loc='upper center',
+        bbox_to_anchor=(0.5, 1.2),
+        columnspacing=1.0,
+        handletextpad=0.5,
+        labelspacing=0.1,
+        borderaxespad=0.0,
+        fontsize='small'
+    )
+    plt.gca().add_artist(legend_top)
 
-   cubic_data = summary_data[summary_data['protocol'] == 'cubic'].set_index('delay')
-   bbr_data = summary_data[summary_data['protocol'] == 'bbr'].set_index('delay')
-   orbtcp_data = summary_data[summary_data['protocol'] == 'orbtcp'].set_index('delay')
-   bbr3_data = summary_data[summary_data['protocol'] == 'bbr3'].set_index('delay')
-
-
-   fig, axes = plt.subplots(nrows=1, ncols=1,figsize=(3,1.2))
-   ax = axes
-   ax.set_ylim([0, 1])
-   plt.margins(y=0.05)
-   
-   plot_points_rtt(ax, summary_data[summary_data['protocol'] == 'cubic'].set_index('delay'), 'goodput_ratio_total_mean', 'goodput_ratio_total_std',   'x', 'cubic')
-   plot_points_rtt(ax, summary_data[summary_data['protocol'] == 'bbr'].set_index('delay'), 'goodput_ratio_total_mean', 'goodput_ratio_total_std',  '.', 'bbr')
-   plot_points_rtt(ax, summary_data[summary_data['protocol'] == 'orbtcp'].set_index('delay'), 'goodput_ratio_total_mean', 'goodput_ratio_total_std',   '^', 'orbtcp')
-   plot_points_rtt(ax, summary_data[summary_data['protocol'] == 'bbr3'].set_index('delay'), 'goodput_ratio_total_mean', 'goodput_ratio_total_std',   '_', 'bbr3')
-
-   ax.set(yscale='linear',xlabel='RTT (ms)', ylabel='Goodput Ratio')
-   for axis in [ax.xaxis, ax.yaxis]:
-       axis.set_major_formatter(ScalarFormatter())
-
-
-   # Build a 2-row "pyramid" legend
-   handles, labels = ax.get_legend_handles_labels()
-   # Convert errorbar handles if needed
-   line_handles = [h[0] if isinstance(h, tuple) else h for h in handles]
-   legend_map   = dict(zip(labels, line_handles))
-
-   # Decide which protocols go top vs. bottom row
-   handles_top = [legend_map.get('cubic'), legend_map.get('bbr'), legend_map.get('orbtcp'), legend_map.get('bbr3')]
-   labels_top  = ['cubic', 'bbr', 'orbtcp', 'bbr3']
-
-
-   legend_top = plt.legend(
-      handles_top, labels_top,
-      ncol=3,
-      loc='upper center',
-      bbox_to_anchor=(0.5, 1.41),
-      columnspacing=1.0,
-      handletextpad=0.5,
-      labelspacing=0.1,
-      borderaxespad=0.0
-   )
-   plt.gca().add_artist(legend_top)
-   plt.savefig(f"goodput_ratio_inter_rtt_{mult}.pdf" , dpi=1080)
+    plt.savefig(f"goodput_ratio_inter_rtt_{mult}.pdf", dpi=1080)

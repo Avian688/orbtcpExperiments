@@ -29,6 +29,7 @@ network leoconstellation
     parameters:
         int numOfSats; // Number of satellites
         int numOfGS; // Number of Ground Stations
+        int numOfClients = default(0); // Number of Clients
         double incl;
         double alt;
         int satsPerPlane;

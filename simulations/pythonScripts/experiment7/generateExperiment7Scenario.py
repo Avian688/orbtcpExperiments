@@ -3,7 +3,7 @@
 # Generates a path change scenario XML file given sender->receiver base propagation delays (ms)
 # generatePathChangeScenario delayNum1 delayNum2... delayNumX
 # This will generate X flows for the use in the scenario manager which will change path at 10s
-# Aiden Valentine
+# 
 
 import sys
 import pandas as pd

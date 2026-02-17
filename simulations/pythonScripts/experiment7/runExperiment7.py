@@ -2,7 +2,7 @@
 
 # Runs experiment 1
 # runExperiment1
-# Aiden Valentine
+# 
 
 import sys
 import pandas as pd
@@ -67,18 +67,17 @@ if __name__ == "__main__":
     cores = 30
     currentProc = 0
     processList = []
-    congControlList = ["bbr3","bbr", "orbtcp", "cubic"]
+    congControlList = ["bbr3", "bbr", "orbtcp", "cubic"]
     experiment = "experiment7"
-    buffersizes = ["smallbuffer", "mediumbuffer", "largebuffer"]
+    buffersizes = ["mediumbuffer"]
     disruptionIntervals = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP
     rtts = [50]
     runs = 5
     runList = list(range(1,runs+1))
 
-    subprocess.Popen("python3 generateExperiment7Scenario.py", shell=True).communicate(timeout=30)
-    subprocess.Popen("python3 generateExperiment7IniFile.py", shell=True).communicate(timeout=30)
-
     if(currStep <= endStep and currStep >= startStep): #STEP 1
+        subprocess.Popen("python3 generateExperiment7Scenario.py", shell=True).communicate(timeout=30)
+        subprocess.Popen("python3 generateExperiment7IniFile.py", shell=True).communicate(timeout=30)
         subprocess.Popen("rm experiment7runTimes.txt", shell=True).communicate(timeout=30)
         
         with open('experiment7runTimes.txt', 'w') as f1:
@@ -86,7 +85,7 @@ if __name__ == "__main__":
             f1.write("--Experiment 7 Runtimes (s)--")
             for cc in congControlList:
                 for bs in buffersizes:
-                    fileName =  '../../paperExperiments/experiment7/experiment7' + cc + bs + '.ini'
+                    fileName =  '../../paperExperiments/experiment7/experiment7_' + cc + '_' + bs + '.ini'
                     iniFile = open(fileName, 'r').readlines()
                     print("----------experiment 7 " + cc + " " + bs + " simulations------------")
                     for line in iniFile:
@@ -204,35 +203,26 @@ if __name__ == "__main__":
                         for run in runList:
                             subprocess.Popen("mkdir " + str(buf), shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' ).communicate(timeout=10)
                             subprocess.Popen("mkdir " + str(rtt) + 'ms', shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf).communicate(timeout=10)
-                            subprocess.Popen("mkdir DI" + str(di) + 'ms', shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms').communicate(timeout=10)
-                            subprocess.Popen("mkdir run" + str(run), shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms' + '/DI' + str(di) + 'ms').communicate(timeout=10)
+                            subprocess.Popen("mkdir Disruption" + str(di) + 'ms', shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms').communicate(timeout=10)
+                            subprocess.Popen("mkdir run" + str(run), shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms' + '/Disruption' + str(di) + 'ms').communicate(timeout=10)
                             
-                            subprocess.Popen("mkdir client", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/DI ' + str(di) + 'ms/run' + str(run)).communicate(timeout=10)
-                            subprocess.Popen("mkdir server", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/DI ' + str(di) + 'ms/run' + str(run)).communicate(timeout=10)
-                            subprocess.Popen("mkdir router1", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/DI ' + str(di) + 'ms/run' + str(run)).communicate(timeout=10)
-                            subprocess.Popen("mkdir router2", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/DI ' + str(di) + 'ms/run' + str(run)).communicate(timeout=10)
-                            subprocess.Popen("mkdir aggPlots", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/DI ' + str(di) + 'ms/run' + str(run)).communicate(timeout=10)
+                            subprocess.Popen("mkdir client", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/Disruption' + str(di) + 'ms/run' + str(run)).communicate(timeout=10)
+                            subprocess.Popen("mkdir server", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/Disruption' + str(di) + 'ms/run' + str(run)).communicate(timeout=10)
+                            subprocess.Popen("mkdir router1", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/Disruption' + str(di) + 'ms/run' + str(run)).communicate(timeout=10)
+                            subprocess.Popen("mkdir router2", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/Disruption' + str(di) + 'ms/run' + str(run)).communicate(timeout=10)
+                            subprocess.Popen("mkdir aggPlots", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/Disruption' + str(di) + 'ms/run' + str(run)).communicate(timeout=10)
     currStep += 1
     
-    # if(currStep <= endStep and currStep >= startStep): #STEP 5
-    #     print("Plotting Pre Post!\n")
-    #     subprocess.Popen("mkdir cumulative", shell=True, cwd='../../plots/experiment7/').communicate(timeout=10)
-    #     time.sleep(3)
-    #     p = subprocess.Popen("python3 ../../../pythonScripts/experiment7/plotPrePostMethod2.py", shell=True, cwd='../../plots/experiment7/cumulative')
-    #     p.wait(timeout=3600)
-    #     time.sleep(1)
-    # currStep += 1
-    #
-    # if(currStep <= endStep and currStep >= startStep): #STEP 6
-    #     print("Plotting Scatter!\n")
-    #     subprocess.Popen("mkdir cumulative", shell=True, cwd='../../plots/experiment7/').communicate(timeout=10)
-    #     time.sleep(3)
-    #     p = subprocess.Popen("python3 ../../../pythonScripts/experiment7/plotScatter.py", shell=True, cwd='../../plots/experiment7/cumulative')
-    #     p.wait(timeout=3600)
-    #     time.sleep(1)
-    # currStep += 1
+    if(currStep <= endStep and currStep >= startStep): #STEP 5
+        print("Plotting Aggregate Goodput!\n")
+        subprocess.Popen("mkdir cumulative", shell=True, cwd='../../plots/experiment7/').communicate(timeout=10)
+        time.sleep(3)
+        p = subprocess.Popen("python3 ../../../pythonScripts/experiment7/plotAggrGoodputInterval.py", shell=True, cwd='../../plots/experiment7/cumulative')
+        p.wait(timeout=3600)
+        time.sleep(1)
+    currStep += 1
     
-    if(currStep <= endStep and currStep >= startStep): #STEP 7
+    if(currStep <= endStep and currStep >= startStep): #STEP 6
         print("\nPlotting!")
         processListStr = []
         for protocol in congControlList:
@@ -241,11 +231,11 @@ if __name__ == "__main__":
                     for di in disruptionIntervals:
                         for run in runList:
                             #print("\nCurrently on Run#" + str(run) + " \n")
-                            dirPath = '../../plots/experiment7/' + protocol + '/' + buf + '/' + str(rtt) + 'ms/DI' + str(di) +'ms/run' + str(run) + '/'
+                            dirPath = '../../plots/experiment7/' + protocol + '/' + buf + '/' + str(rtt) + 'ms/Disruption' + str(di) +'ms/run' + str(run) + '/'
                             
                             runTitle = "run"
-                            fileBeg = 'paperExperiments/'+ experiment + '/csvs/'+ protocol + '/' + buf + '/' + str(rtt) + 'ms/DI' + str(di) +'ms/run' + str(run) + '/'
-                            fileStart = "../../../../../../../" + fileBeg
+                            fileBeg = 'paperExperiments/'+ experiment + '/csvs/'+ protocol + '/' + buf + '/' + str(rtt) + 'ms/Disruption' + str(di) +'ms/run' + str(run)
+                            fileStart = "../../../../../../../../" + fileBeg
                             cwndFileList = []
                             rttFileList = []
                             tauFileList = []
@@ -257,7 +247,7 @@ if __name__ == "__main__":
                             aggrPlotsGoodputFileList = []
                             
                             file_mappings = [
-                                ("client", "server", "router")
+                                ("client", "server", "router1")
                             ]
     
                             for client_type, server_type, router_type in file_mappings:
@@ -270,36 +260,36 @@ if __name__ == "__main__":
                                 #if(protocol == "orbtcp"):
                                     #UFileList.append((f"{prefix}/U.csv", label))
                                 
-                                goodputFileList.append((f"{fileStart}/singledumbbell.{server_type}[{i}].app[0]/goodput.csv", label))
+                                goodputFileList.append((f"{fileStart}/singledumbbell.{server_type}[0].app[0]/goodput.csv", label))
                                 
-                                queueLengthFileList.append((f"{fileStart}/singledumbbell.{router_type}1.ppp[1].queue/queueLength.csv", router_type))
+                                queueLengthFileList.append((f"{fileStart}/singledumbbell.{router_type}.ppp[1].queue/queueLength.csv", router_type))
     
                             
                             
                             aggrPlotsFileList.append((fileStart + '/singledumbbell.client[0].tcp.conn/cwnd.csv', "aggPlots"))
                             
                             aggrPlotsGoodputFileList.append((fileStart + '/singledumbbell.server[0].app[0]/goodput.csv', "aggPlots"))
-                            
+
                             for cwndFile in cwndFileList:
-                                processListStr.append(("python3 ../../../../../../../pythonScripts/experiment7/plotCwnd.py " + cwndFile[0], dirPath + cwndFile[1]))
+                                processListStr.append(("python3 ../../../../../../../../pythonScripts/experiment7/plotCwnd.py " + cwndFile[0], dirPath + cwndFile[1]))
                             
                             for rttFile in rttFileList:
-                                processListStr.append(("python3 ../../../../../../../pythonScripts/experiment7/plotRtt.py " + rttFile[0], dirPath + rttFile[1]))
+                                processListStr.append(("python3 ../../../../../../../../pythonScripts/experiment7/plotRtt.py " + rttFile[0], dirPath + rttFile[1]))
                                     
                             for UFile in UFileList:
-                                processListStr.append(("python3 ../../../../../../../pythonScripts/experiment7/plotU.py " + UFile[0], dirPath + UFile[1]))
+                                processListStr.append(("python3 ../../../../../../../../pythonScripts/experiment7/plotU.py " + UFile[0], dirPath + UFile[1]))
                                     
                             for goodputFile in goodputFileList:
-                                processListStr.append(("python3 ../../../../../../../pythonScripts/experiment7/plotGoodput.py " + goodputFile[0], dirPath + goodputFile[1]))
+                                processListStr.append(("python3 ../../../../../../../../pythonScripts/experiment7/plotGoodput.py " + goodputFile[0], dirPath + goodputFile[1]))
                                     
                             for queueLengthFile in queueLengthFileList:
-                                processListStr.append(("python3 ../../../../../../../pythonScripts/experiment7/plotQueueLength.py " + queueLengthFile[0], dirPath + queueLengthFile[1]))
+                                processListStr.append(("python3 ../../../../../../../../pythonScripts/experiment7/plotQueueLength.py " + queueLengthFile[0], dirPath + queueLengthFile[1]))
                                     
                             for aggrePlotFile in aggrPlotsFileList:
-                                processListStr.append(("python3 ../../../../../../../pythonScripts/experiment7/plotCwnd.py " + aggrePlotFile[0], dirPath + aggrePlotFile[1]))
+                                processListStr.append(("python3 ../../../../../../../../pythonScripts/experiment7/plotCwnd.py " + aggrePlotFile[0], dirPath + aggrePlotFile[1]))
                                 
                             for aggreGpPlotFile in aggrPlotsGoodputFileList:
-                                processListStr.append(("python3 ../../../../../../../pythonScripts/experiment7/plotGoodput.py " + aggreGpPlotFile[0], dirPath + aggreGpPlotFile[1]))
+                                processListStr.append(("python3 ../../../../../../../../pythonScripts/experiment7/plotGoodput.py " + aggreGpPlotFile[0], dirPath + aggreGpPlotFile[1]))
                             # goodputFilePath = '../../paperExperiments/' + experiment + '/csvs/'+ protocol.title() + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run) + '/singledumbbell.server[0].app[0].thread_9/goodput.csv'
                             # throughputFilePath = '../../paperExperiments/' + experiment + '/csvs/'+ protocol.title() + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run) + '/singledumbbell.server[0].tcp.conn-9/throughput.csv'
                             # queueLengthFilePath = '../../paperExperiments/' + experiment + '/csvs/'+ protocol.title() + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run) + '/singledumbbell.router1.ppp[1].queue/queueLength.csv'
@@ -348,7 +338,7 @@ if __name__ == "__main__":
                 processList.clear()
     currStep += 1
 
-    if(currStep <= endStep and currStep >= startStep): #STEP 8
+    if(currStep <= endStep and currStep >= startStep): #STEP 7
         print("\n Attempting to merge PDFs!\n")
         merge_pdfs_in_folders("../../plots/experiment7")
 

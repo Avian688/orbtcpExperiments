@@ -2,7 +2,7 @@
 
 # Runs experiment 1
 # runExperiment1
-# Aiden Valentine
+# 
 
 import sys
 import pandas as pd
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     cores = 30
     currentProc = 0
     processList = []
-    congControlList = ["bbr3", "bbr", "orbtcp", "cubic"]
+    congControlList = ["orbtcp", "cubic","bbr3", "bbr"]
     experiment = "experiment4"
     buffersizes = ["smallbuffer", "mediumbuffer", "largebuffer"]
     clientsRtts = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP
@@ -85,7 +85,7 @@ if __name__ == "__main__":
             f1.write("--Experiment 4 Runtimes (s)--")
             for cc in congControlList:
                 for bs in buffersizes:
-                    fileName =  '../../paperExperiments/experiment4/experiment4' + cc + bs + '.ini'
+                    fileName =  '../../paperExperiments/experiment4/experiment4_' + cc + '_' + bs + '.ini'
                     iniFile = open(fileName, 'r').readlines()
                     print("----------experiment 4 " + cc + " " + bs + " simulations------------")
                     for line in iniFile:
@@ -161,7 +161,7 @@ if __name__ == "__main__":
             for buf in buffersizes:
                 for rtt in clientsRtts:
                     for run in runList:
-                        filePath = '../../paperExperiments/experiment4/results/'+ protocol.title() + str(rtt) + 'ms' + buf + 'Run' + str(run) + '.csv'
+                        filePath = '../../paperExperiments/experiment4/results/'+ protocol.title() + '_' + str(rtt) + 'ms' + '_' + buf + '_Run' + str(run) + '.csv'
                         print(filePath)
                         if os.path.exists(filePath):
                              print("Extracting CSV file for " + experiment + " " + protocol + " " + buf + " " + str(rtt) + " " + str(run))

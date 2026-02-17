@@ -2,7 +2,7 @@
 
 # Generates a single csv file for given experiment name
 # generateSingleCsvFile experimentName protocolName runNumber
-# Aiden Valentine
+# 
 
 import sys
 import pandas as pd

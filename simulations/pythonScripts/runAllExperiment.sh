@@ -34,7 +34,7 @@ echo "2) Run specific experiments (e.g. 1 3 5)"
 read -rp "Enter 1 or 2: " choice
 
 if [ "$choice" == "1" ]; then
-  for i in {1..6}; do
+  for i in {1..7}; do
     if [ "$i" -eq 2 ]; then
       continue
     fi
@@ -49,7 +49,7 @@ elif [ "$choice" == "2" ]; then
   include_exp1=false
 
   for num in "${selected[@]}"; do
-    if ! [[ "$num" =~ ^[1-6]$ ]]; then
+    if ! [[ "$num" =~ ^[1-7]$ ]]; then
       echo "Invalid experiment number: $num"
       continue
     fi

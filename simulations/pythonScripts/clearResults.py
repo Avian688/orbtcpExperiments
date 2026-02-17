@@ -2,7 +2,7 @@
 
 # Clears result folders given the OrbTCP flavour folders
 # clearResults orbtcp ... orbTcpFlavourN
-# Aiden Valentine
+# 
 
 import sys
 import pandas as pd

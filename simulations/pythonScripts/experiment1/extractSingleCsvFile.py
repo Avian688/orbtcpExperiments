@@ -2,7 +2,6 @@
 
 # Generates a single csv file for given experiment name
 # generateSingleCsvFile experimentName protocolName runNumber
-# Aiden Valentine
 
 import sys
 import pandas as pd
@@ -38,7 +37,7 @@ if __name__ == "__main__":
     protocol = ""
     run = 0
     argNum = 0
-    vectorsToExtract = ["goodput", "rtt", "cwnd", "queueLength", "throughput", "tau", "mbytesInFlight"]
+    vectorsToExtract = ["goodput", "rtt", "cwnd", "queueLength", "throughput", "tau", "mbytesInFlight", "srtt"]
     
     for arg in sys.argv[1:]:
         if(argNum == 0):
