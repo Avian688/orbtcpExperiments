@@ -1,4 +1,4 @@
-Experiment 7:
+Experiment 7: Hard Handover Experiment
 > Single dumbbell
 > Protocols: OrbTCP, BBR, Cubic, BBRv3
 > Queue Length: 1 BDP of flow RTT (50ms)

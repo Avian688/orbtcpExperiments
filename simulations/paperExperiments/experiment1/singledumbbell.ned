@@ -7,6 +7,7 @@ import inet.node.inet.Router;
 import ned.DatarateChannel;
 import ned.IBidirectionalChannel;
 import inet.common.scenario.ScenarioManager;
+import tcppaced.networklayer.configurator.ipv4.AutoNetworkConfigurator;
 
 network singledumbbell
 {
@@ -29,7 +30,7 @@ network singledumbbell
         client[numberOfFlows]: StandardHost {
             @display("p=68,71,m,n,numberOfFlows,150");
         }
-        configurator: Ipv4NetworkConfigurator {
+        configurator: AutoNetworkConfigurator {
             @display("p=450,350");
         }
         server[numberOfFlows]: StandardHost {

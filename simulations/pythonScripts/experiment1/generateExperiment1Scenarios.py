@@ -1,93 +1,148 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-# Generates a scenario XML file given sender->receiver base propagation delays (ms)
-# generateRttChangeScenario delayChangeNum delayNum1 delayNum2... delayNumX
-# This will generate X flows for the use in the scenario manager
-# 
+# Generates scenario XML files for experiment 1.
+# Hard handover every 5s: disconnect+crash, then reconnect after random 45–120ms.
+# Only the bottleneck link (router1<->router2, pppg$o[1]) changes RTT+BW.
+# Client/router and router/server links are fixed: 0ms delay, 10Gbps.
+# Keeps loss-rate RNG draw (currentPer) to keep random sequence consistent.
 
-import sys
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
+import json
 import random
 from pathlib import Path
-import json
 
-def int_to_word(num):
-    d = { 0 : 'zero', 1 : 'one', 2 : 'two', 3 : 'three', 4 : 'four', 5 : 'five',
-          6 : 'six', 7 : 'seven', 8 : 'eight', 9 : 'nine', 10 : 'ten',
-          11 : 'eleven', 12 : 'twelve', 13 : 'thirteen', 14 : 'fourteen',
-          15 : 'fifteen', 16 : 'sixteen', 17 : 'seventeen', 18 : 'eighteen',
-          19 : 'nineteen', 20 : 'twenty',
-          30 : 'thirty', 40 : 'forty', 50 : 'fifty', 60 : 'sixty',
-          70 : 'seventy', 80 : 'eighty', 90 : 'ninety' }
-    k = 1000
-    m = k * 1000
-    b = m * 1000
-    t = b * 1000
-    assert(0 <= num)
-    if (num < 20):
-        return d[num]
-    if (num < 100):
-        if num % 10 == 0: return d[num]
-        else: return d[num // 10 * 10] + d[num % 10]
-    if (num > 100): 
-        raise AssertionError('num is too large: %s' % str(num))
-           
-if __name__ == "__main__":
-    numOfClients = 1
-    minBw = 50 #Mb
-    maxBw = 100 #Mb
-    minRtt = 5
-    maxRtt = 100
+
+def main() -> None:
+    minBw = 50   # Mbps
+    maxBw = 100  # Mbps
+    minRtt = 1   # ms
+    maxRtt = 100 # ms
+
     numOfRuns = 50
-    simLength = 300 #s
+    simLength = 300     # seconds
     simSeed = 1
-    intervalLength = 15
-    currentBw = 0
-    currentRtt = 0 
-    for i in range(numOfRuns):
+
+    handoverEvery = 5      # seconds
+    minHandoverMs = 45      # ms
+    maxHandoverMs = 120     # ms
+
+    fixed_access_bw = "10Gbps"
+    fixed_access_delay = "0ms"
+
+    folderScenario = Path("../../paperExperiments/scenarios/experiment1/")
+    folderBaseRtts = Path("../../paperExperiments/baseRtts/experiment1/")
+    folderBws = Path("../../paperExperiments/bandwidths/experiment1/")
+    folderScenario.mkdir(parents=True, exist_ok=True)
+    folderBaseRtts.mkdir(parents=True, exist_ok=True)
+    folderBws.mkdir(parents=True, exist_ok=True)
+
+    for run_idx in range(numOfRuns):
+        rng = random.Random(simSeed + run_idx)
+
         baseRttDict = {}
         bwDict = {}
-        currentBw = 75 #Mb
-        currentRtt = 75 #ms
-        currentInterval = 0
-        random.seed(simSeed + i)
-        folderName = '../../paperExperiments/scenarios/experiment1/'
-        folderBaseRttsName = '../../paperExperiments/baseRtts/experiment1/'
-        folderBwsName = '../../paperExperiments/bandwidths/experiment1/'
-        Path(folderName).mkdir(parents=True, exist_ok=True)
-        Path(folderBaseRttsName).mkdir(parents=True, exist_ok=True)
-        Path(folderBwsName).mkdir(parents=True, exist_ok=True)
-        fileName = 'run' + str(i+1)
-        with open(folderName + '/' +  fileName + '.xml', 'w') as f:
-            f.write('<scenario>')
-            clientNum = 0
-            channelDelay = (currentRtt-(0.5*2))/4
-            while(currentInterval <= simLength):
-                f.write('\n    <at t="' + str(currentInterval) + '">')  
-                currentBw = random.randint(minBw,maxBw) #Mbps
-                currentRtt = random.randint(minRtt,maxRtt) #ms
-                currentPer = round(random.uniform(0,0.01), 4)#PER 
-                channelDelay = (currentRtt-(0.5*2))/4
-                f.write('\n        <set-channel-param src-module="client[0]" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
-                f.write('\n        <set-channel-param src-module="router1" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
-                f.write('\n')
-                f.write('\n        <set-channel-param src-module="server[0]" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>') 
-                f.write('\n        <set-channel-param src-module="router2" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
-                f.write('\n')
-                f.write('\n        <set-channel-param src-module="router1" src-gate="pppg$o[1]" par="datarate" value="'+ str(currentBw) +'Mbps"/>')
-                f.write('\n        <set-channel-param src-module="router2" src-gate="pppg$o[1]" par="datarate" value="'+ str(currentBw) +'Mbps"/>')
-                f.write('\n    </at>')
-                baseRttDict[currentInterval] = currentRtt
-                bwDict[currentInterval] = currentBw
-                currentInterval += intervalLength
-            f.write('\n</scenario>')
-            
-        rttDictObj = json.dumps(baseRttDict, indent=len(baseRttDict))
-        with open(folderBaseRttsName + fileName + ".json", "w") as o:
-            o.write(rttDictObj)
-            
-        bwDictObj = json.dumps(bwDict, indent=len(bwDict))
-        with open(folderBwsName + fileName + ".json", "w") as p:
-            p.write(bwDictObj)
+
+        fileName = f"run{run_idx + 1}"
+        xml_path = folderScenario / f"{fileName}.xml"
+
+        with xml_path.open("w", encoding="utf-8") as f:
+            def w(line: str = "") -> None:
+                f.write(line + "\n")
+
+            def block(lines) -> None:
+                for line in lines:
+                    w(line)
+
+            w("<scenario>")
+
+            # ---- Initial conditions at t=0 ----
+            currentBw = rng.randint(minBw, maxBw)     # Mbps
+            currentRtt = rng.randint(minRtt, maxRtt)  # ms
+            currentPer = round(rng.uniform(0, 0.01), 4)  # keep for RNG consistency (even if unused)
+
+            # RTT applied ONLY on the bottleneck link: RTT = 2 * one_way_delay
+            bottleneckDelay = (currentRtt / 2.0)
+
+            w('    <at t="0">')
+            block([
+                # Fix access links (client<->router1 and router2<->server) to 0ms, 10Gbps
+                f'        <set-channel-param src-module="client[0]" src-gate="pppg$o[0]" par="delay" value="{fixed_access_delay}"/>',
+                f'        <set-channel-param src-module="router1"   src-gate="pppg$o[0]" par="delay" value="{fixed_access_delay}"/>',
+                f'        <set-channel-param src-module="server[0]" src-gate="pppg$o[0]" par="delay" value="{fixed_access_delay}"/>',
+                f'        <set-channel-param src-module="router2"   src-gate="pppg$o[0]" par="delay" value="{fixed_access_delay}"/>',
+                "",
+                f'        <set-channel-param src-module="client[0]" src-gate="pppg$o[0]" par="datarate" value="{fixed_access_bw}"/>',
+                f'        <set-channel-param src-module="router1"   src-gate="pppg$o[0]" par="datarate" value="{fixed_access_bw}"/>',
+                f'        <set-channel-param src-module="server[0]" src-gate="pppg$o[0]" par="datarate" value="{fixed_access_bw}"/>',
+                f'        <set-channel-param src-module="router2"   src-gate="pppg$o[0]" par="datarate" value="{fixed_access_bw}"/>',
+                "",
+                # Set bottleneck BW at t=0 (link exists already, so set-channel-param is fine)
+                f'        <set-channel-param src-module="router1" src-gate="pppg$o[1]" par="datarate" value="{currentBw}Mbps"/>',
+                f'        <set-channel-param src-module="router2" src-gate="pppg$o[1]" par="datarate" value="{currentBw}Mbps"/>',
+                "",
+                # Set bottleneck one-way delay to represent RTT on this link only
+                f'        <set-channel-param src-module="router1" src-gate="pppg$o[1]" par="delay" value="{bottleneckDelay}ms"/>',
+                f'        <set-channel-param src-module="router2" src-gate="pppg$o[1]" par="delay" value="{bottleneckDelay}ms"/>',
+            ])
+            w("    </at>")
+
+            baseRttDict["0"] = currentRtt
+            bwDict["0"] = currentBw
+
+            # ---- Handover loop: every 5 seconds ----
+            t = handoverEvery
+            while t <= simLength:
+                dur_ms = rng.randint(minHandoverMs, maxHandoverMs)
+                dur_s = dur_ms / 1000.0
+                reconnect_t = t + dur_s
+
+                # Start hard handover: disconnect + crash the bottleneck PPPs
+                w(f'    <at t="{t}">')
+                block([
+                    '        <disconnect src-module="router1" src-gate="pppg$o[1]"/>',
+                    '        <disconnect src-module="router2" src-gate="pppg$o[1]"/>',
+                    '        <crash module="router1.ppp[1]"/>',
+                    '        <crash module="router2.ppp[1]"/>',
+                ])
+                w("    </at>")
+
+                # New conditions apply AFTER handover
+                currentBw = rng.randint(minBw, maxBw)
+                currentRtt = rng.randint(minRtt, maxRtt)
+                currentPer = round(rng.uniform(0, 0.01), 4)  # keep RNG sequence consistent
+
+                bottleneckDelay = (currentRtt / 2.0)
+
+                # Reconnect bottleneck with NEW BW and NEW delay directly in connect params
+                w(f'    <at t="{reconnect_t}">')
+                block([
+                    '        <connect src-module="router1" src-gate="pppg$o[1]"',
+                    '                 dest-module="router2" dest-gate="pppg$i[1]"',
+                    '                 channel-type="ned.DatarateChannel">',
+                    f'                 <param name="datarate" value="{currentBw}Mbps" />',
+                    f'                 <param name="delay" value="{bottleneckDelay}ms" />',
+                    "        </connect>",
+                    '        <connect src-module="router2" src-gate="pppg$o[1]"',
+                    '                 dest-module="router1" dest-gate="pppg$i[1]"',
+                    '                 channel-type="ned.DatarateChannel">',
+                    f'                 <param name="datarate" value="{currentBw}Mbps" />',
+                    f'                 <param name="delay" value="{bottleneckDelay}ms" />',
+                    "        </connect>",
+                    '        <start module="router1.ppp[1]"/>',
+                    '        <start module="router2.ppp[1]"/>',
+                    '        <update module="configurator" />',
+                ])
+                w("    </at>")
+
+                baseRttDict[f"{reconnect_t}"] = currentRtt
+                bwDict[f"{reconnect_t}"] = currentBw
+
+                t += handoverEvery
+
+            w("</scenario>")
+
+        (folderBaseRtts / f"{fileName}.json").write_text(json.dumps(baseRttDict, indent=2), encoding="utf-8")
+        (folderBws / f"{fileName}.json").write_text(json.dumps(bwDict, indent=2), encoding="utf-8")
+
+
+if __name__ == "__main__":
+    main()
