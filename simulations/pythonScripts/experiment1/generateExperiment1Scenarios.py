@@ -2,8 +2,10 @@
 
 # Generates scenario XML files for experiment 1.
 # Hard handover every 5s: disconnect+crash, then reconnect after random 45–120ms.
-# Only the bottleneck link (router1<->router2, pppg$o[1]) changes RTT+BW.
-# Client/router and router/server links are fixed: 0ms delay, 10Gbps.
+# RTT is equally spread across ALL THREE links:
+#   client<->router1 (pppg$o[0]), router1<->router2 (pppg$o[1]), router2<->server (pppg$o[0])
+# So each link one-way delay = RTT/6.
+# Access links are fixed 10Gbps; bottleneck BW changes.
 # Keeps loss-rate RNG draw (currentPer) to keep random sequence consistent.
 
 import json
@@ -21,12 +23,11 @@ def main() -> None:
     simLength = 300     # seconds
     simSeed = 1
 
-    handoverEvery = 5      # seconds
+    handoverEvery = 5       # seconds
     minHandoverMs = 45      # ms
     maxHandoverMs = 120     # ms
 
     fixed_access_bw = "10Gbps"
-    fixed_access_delay = "0ms"
 
     folderScenario = Path("../../paperExperiments/scenarios/experiment1/")
     folderBaseRtts = Path("../../paperExperiments/baseRtts/experiment1/")
@@ -57,31 +58,33 @@ def main() -> None:
             # ---- Initial conditions at t=0 ----
             currentBw = rng.randint(minBw, maxBw)     # Mbps
             currentRtt = rng.randint(minRtt, maxRtt)  # ms
-            currentPer = round(rng.uniform(0, 0.01), 4)  # keep for RNG consistency (even if unused)
+            currentPer = round(rng.uniform(0, 0.01), 4)  # keep RNG consistency (unused here)
 
-            # RTT applied ONLY on the bottleneck link: RTT = 2 * one_way_delay
-            bottleneckDelay = (currentRtt / 2.0)
+            # Equal spread across 3 links:
+            # RTT = 2 * (d + d + d) = 6d => d = RTT/6 (one-way per link)
+            linkDelay = currentRtt / 6.0
 
             w('    <at t="0">')
             block([
-                # Fix access links (client<->router1 and router2<->server) to 0ms, 10Gbps
-                f'        <set-channel-param src-module="client[0]" src-gate="pppg$o[0]" par="delay" value="{fixed_access_delay}"/>',
-                f'        <set-channel-param src-module="router1"   src-gate="pppg$o[0]" par="delay" value="{fixed_access_delay}"/>',
-                f'        <set-channel-param src-module="server[0]" src-gate="pppg$o[0]" par="delay" value="{fixed_access_delay}"/>',
-                f'        <set-channel-param src-module="router2"   src-gate="pppg$o[0]" par="delay" value="{fixed_access_delay}"/>',
+                # ---- Set equal per-link one-way delays ----
+                f'        <set-channel-param src-module="client[0]" src-gate="pppg$o[0]" par="delay" value="{linkDelay}ms"/>',
+                f'        <set-channel-param src-module="router1"   src-gate="pppg$o[0]" par="delay" value="{linkDelay}ms"/>',
                 "",
+                f'        <set-channel-param src-module="router1" src-gate="pppg$o[1]" par="delay" value="{linkDelay}ms"/>',
+                f'        <set-channel-param src-module="router2" src-gate="pppg$o[1]" par="delay" value="{linkDelay}ms"/>',
+                "",
+                f'        <set-channel-param src-module="router2"   src-gate="pppg$o[0]" par="delay" value="{linkDelay}ms"/>',
+                f'        <set-channel-param src-module="server[0]" src-gate="pppg$o[0]" par="delay" value="{linkDelay}ms"/>',
+                "",
+                # ---- Access links fixed 10Gbps ----
                 f'        <set-channel-param src-module="client[0]" src-gate="pppg$o[0]" par="datarate" value="{fixed_access_bw}"/>',
                 f'        <set-channel-param src-module="router1"   src-gate="pppg$o[0]" par="datarate" value="{fixed_access_bw}"/>',
-                f'        <set-channel-param src-module="server[0]" src-gate="pppg$o[0]" par="datarate" value="{fixed_access_bw}"/>',
                 f'        <set-channel-param src-module="router2"   src-gate="pppg$o[0]" par="datarate" value="{fixed_access_bw}"/>',
+                f'        <set-channel-param src-module="server[0]" src-gate="pppg$o[0]" par="datarate" value="{fixed_access_bw}"/>',
                 "",
-                # Set bottleneck BW at t=0 (link exists already, so set-channel-param is fine)
+                # ---- Bottleneck BW at t=0 ----
                 f'        <set-channel-param src-module="router1" src-gate="pppg$o[1]" par="datarate" value="{currentBw}Mbps"/>',
                 f'        <set-channel-param src-module="router2" src-gate="pppg$o[1]" par="datarate" value="{currentBw}Mbps"/>',
-                "",
-                # Set bottleneck one-way delay to represent RTT on this link only
-                f'        <set-channel-param src-module="router1" src-gate="pppg$o[1]" par="delay" value="{bottleneckDelay}ms"/>',
-                f'        <set-channel-param src-module="router2" src-gate="pppg$o[1]" par="delay" value="{bottleneckDelay}ms"/>',
             ])
             w("    </at>")
 
@@ -95,7 +98,7 @@ def main() -> None:
                 dur_s = dur_ms / 1000.0
                 reconnect_t = t + dur_s
 
-                # Start hard handover: disconnect + crash the bottleneck PPPs
+                # Start hard handover: disconnect + crash bottleneck PPPs
                 w(f'    <at t="{t}">')
                 block([
                     '        <disconnect src-module="router1" src-gate="pppg$o[1]"/>',
@@ -110,26 +113,33 @@ def main() -> None:
                 currentRtt = rng.randint(minRtt, maxRtt)
                 currentPer = round(rng.uniform(0, 0.01), 4)  # keep RNG sequence consistent
 
-                bottleneckDelay = (currentRtt / 2.0)
+                linkDelay = currentRtt / 6.0
 
-                # Reconnect bottleneck with NEW BW and NEW delay directly in connect params
+                # Reconnect bottleneck with NEW BW and NEW bottleneck delay
                 w(f'    <at t="{reconnect_t}">')
                 block([
                     '        <connect src-module="router1" src-gate="pppg$o[1]"',
                     '                 dest-module="router2" dest-gate="pppg$i[1]"',
                     '                 channel-type="ned.DatarateChannel">',
                     f'                 <param name="datarate" value="{currentBw}Mbps" />',
-                    f'                 <param name="delay" value="{bottleneckDelay}ms" />',
+                    f'                 <param name="delay" value="{linkDelay}ms" />',
                     "        </connect>",
                     '        <connect src-module="router2" src-gate="pppg$o[1]"',
                     '                 dest-module="router1" dest-gate="pppg$i[1]"',
                     '                 channel-type="ned.DatarateChannel">',
                     f'                 <param name="datarate" value="{currentBw}Mbps" />',
-                    f'                 <param name="delay" value="{bottleneckDelay}ms" />',
+                    f'                 <param name="delay" value="{linkDelay}ms" />',
                     "        </connect>",
                     '        <start module="router1.ppp[1]"/>',
                     '        <start module="router2.ppp[1]"/>',
                     '        <update module="configurator" />',
+                    "",
+                    # Update the other two links' delays to keep equal spread
+                    f'        <set-channel-param src-module="client[0]" src-gate="pppg$o[0]" par="delay" value="{linkDelay}ms"/>',
+                    f'        <set-channel-param src-module="router1"   src-gate="pppg$o[0]" par="delay" value="{linkDelay}ms"/>',
+                    "",
+                    f'        <set-channel-param src-module="router2"   src-gate="pppg$o[0]" par="delay" value="{linkDelay}ms"/>',
+                    f'        <set-channel-param src-module="server[0]" src-gate="pppg$o[0]" par="delay" value="{linkDelay}ms"/>',
                 ])
                 w("    </at>")
 
