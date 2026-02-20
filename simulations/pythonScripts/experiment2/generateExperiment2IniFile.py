@@ -73,6 +73,7 @@ def main() -> None:
         "**.**.tcp.conn-*.rtt:vector(removeRepeats).vector-recording = true",
         "**.**.tcp.conn-*.srtt:vector(removeRepeats).vector-recording = true",
         "**.**.tcp.conn-*.throughput:vector(removeRepeats).vector-recording = true",
+        "**.**.tcp.conn-*.retransmissionRate:vector(removeRepeats).vector-recording = true",
         "**.**.tcp.conn-*.**.result-recording-modes = vector(removeRepeats)",
         "",
         "**.**.queue.queueLength:vector(removeRepeats).vector-recording = true",
