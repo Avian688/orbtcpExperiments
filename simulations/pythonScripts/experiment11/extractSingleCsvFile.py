@@ -2,6 +2,7 @@
 
 # Generates a single csv file for given experiment name
 # generateSingleCsvFile experimentName protocolName runNumber
+# 
 
 import sys
 import pandas as pd
@@ -35,9 +36,12 @@ if __name__ == "__main__":
     filePath = ""
     exp = ""
     protocol = ""
+    bufferName = ""
+    rtt = ""
     run = 0
     argNum = 0
-    vectorsToExtract = ["goodput", "rtt", "cwnd", "queueLength", "throughput", "tau", "mbytesInFlight", "srtt", "retransmissionRate"]
+    vectorsToExtract = ["goodput", "rtt", "cwnd", "queueLength", "throughput"]
+    extracted = False
     
     for arg in sys.argv[1:]:
         if(argNum == 0):
@@ -47,9 +51,13 @@ if __name__ == "__main__":
         elif(argNum == 2):
             protocol = str(arg)
         elif(argNum == 3):
+            bufferName = str(arg)
+        elif(argNum == 4):
+            rtt = str(arg)
+        elif(argNum == 5):
             run = int(arg)
         argNum = argNum + 1
-            
+    
     rawResults = getResults(filePath)
     for vec in vectorsToExtract:    
         results = rawResults.loc[rawResults['name'] == str(vec)+":vector(removeRepeats)"]
@@ -61,15 +69,19 @@ if __name__ == "__main__":
                 if 'thread' in modName:
                     modName = re.sub(r'\.thread_\d+', '', modName)
                 modName = re.sub(r'(conn)-\d+', r'\1', modName)
-
+                
                 finallist = pd.DataFrame({'time': time, str(vec): val})
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs", shell=True).communicate(timeout=40) 
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol, shell=True).communicate(timeout=40) 
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/run'+ str(run), shell=True).communicate(timeout=40) 
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/run'+ str(run) + "/" + str(modName), shell=True).communicate(timeout=40)
-                finallist.to_csv('../../paperExperiments/'+ exp +'/csvs/' + protocol + '/run'+ str(run) + '/' + str(modName) + '/' + vec + '.csv', index=False)
-    termTime.sleep(1)          
-
+                subprocess.Popen("mkdir -p ../../paperExperiments/" + exp + "/csvs", shell=True).communicate(timeout=40) 
+                subprocess.Popen("mkdir -p ../../paperExperiments/" + exp + "/csvs/" + protocol, shell=True).communicate(timeout=40) 
+                subprocess.Popen("mkdir -p ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName, shell=True).communicate(timeout=40) 
+                subprocess.Popen("mkdir -p ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms', shell=True).communicate(timeout=40) 
+                subprocess.Popen("mkdir -p ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms' + '/run'+ str(run), shell=True).communicate(timeout=40)
+                subprocess.Popen("mkdir -p ../../paperExperiments/" + exp + "/csvs/" + protocol + '/' + bufferName + '/' + rtt + 'ms' + '/run'+ str(run) + "/" + str(modName), shell=True).communicate(timeout=40)
+                
+                
+                finallist.to_csv('../../paperExperiments/'+ exp +'/csvs/' + protocol + '/' + bufferName + '/'+ rtt + 'ms' + '/run'+ str(run) + '/' + str(modName) + '/' + vec + '.csv', index=False)
+                extracted = True
+    termTime.sleep(1)            
     
         
     
