@@ -133,7 +133,7 @@ if __name__ == "__main__":
         for file in os.listdir(folderLoc):
             if(file.endswith(".vec")):
                 f = os.path.join(folderLoc, file)
-                processList.append(subprocess.Popen("opp_scavetool export -o "+ "results/"+ file[:-4] + ".csv -F CSV-R " + "results/" + file , shell=True, cwd='../../paperExperiments/experiment11/'))
+                processList.append(subprocess.Popen("opp_scavetool export -o "+ "results/"+ file[:-7] + ".csv -F CSV-R " + "results/" + file , shell=True, cwd='../../paperExperiments/experiment11/'))
                 currentProc = currentProc + 1
                 print("Generating CSV file for [" + file + "]... (Run #" + str(currentProc) + ")")
                 fileList.append(file)

@@ -259,9 +259,18 @@ if __name__ == "__main__":
         p.wait(timeout=3600)
         time.sleep(1)
     currStep += 1
+
+    if(currStep <= endStep and currStep >= startStep): #STEP 8
+        print("Plotting Retransmissions distribution!\n")
+        subprocess.Popen("mkdir experiment1and2Cumulative", shell=True, cwd='../../plots/').communicate(timeout=10)
+        time.sleep(3)
+        p = subprocess.Popen("python3 ../../pythonScripts/experiment1/plotRetransmissionsCumulativeDistribution.py", shell=True, cwd='../../plots/experiment1and2Cumulative/')
+        p.wait(timeout=3600)
+        time.sleep(1)
+    currStep += 1
     
         
-    if(currStep <= endStep and currStep >= startStep): #STEP 8
+    if(currStep <= endStep and currStep >= startStep): #STEP 9
         subprocess.Popen("mkdir ../../plots/experiment1", shell=True).communicate(timeout=10)
         subprocess.Popen("mkdir ../../plots/experiment2", shell=True).communicate(timeout=10)
         for exp in experiments:
