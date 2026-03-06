@@ -3,26 +3,38 @@ import matplotlib.lines as mlines
 import os, sys
 import scienceplots
 
+# Use the science style
 plt.style.use('science')
-plt.rcParams['text.usetex'] = True
+plt.rcParams['text.usetex'] = False
+plt.rcParams.update({
+    "font.family": "serif",
+    "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
+})
+
 plt.rcParams['axes.labelsize'] = "large"
 plt.rcParams['xtick.labelsize'] = "large"
 plt.rcParams['ytick.labelsize'] = "large"
 
-PROTOCOLS_LEO = ['cubic', 'bbr', 'bbr3', 'orbtcp']
+PROTOCOLS_LEO = ['optimal', 'cubic', 'bbr', 'bbr3', 'satcp', 'leocc','orbtcp']
 
 COLORS_LEO = {
-        'cubic':   '#0C5DA5',
-        'bbr':    '#00B945',
-        'orbtcp':    '#FF9500',
-        'bbr3':    '#eb0909'
-    }
+    'optimal':'#000000',
+    'cubic':'#0C5DA5',
+    'bbr':'#00B945',
+    'orbtcp':'#FF9500',
+    'bbr3':'#eb0909',
+    'satcp':'#8c5cff',
+    'leocc':'#00b7c7'
+}
 
 PROTOCOLS_FRIENDLY_NAME_LEO = {
+        'optimal':   'Optimal',
         'cubic':   'Cubic',
         'bbr':    'BBRv1',
-        'orbtcp':    'LeoTCP',
-        'bbr3':    'BBRv3'    
+        'orbtcp':    'OrbCC',
+        'bbr3':    'BBRv3',
+        'satcp': 'SaTCP',
+        'leocc': 'LeoCC'  
     }
 
 # Setup paths
@@ -55,9 +67,9 @@ legend = ax.legend(
     loc='center',
     bbox_to_anchor=(0.52, 0.5),  # nudge horizontally (x=0.5 is center)
     ncol=len(handles),
-    columnspacing=6,
+    columnspacing=4,
     handletextpad=0.5,
-    fontsize=350,
+    fontsize=200,
     frameon=False,
     borderaxespad=1
 )

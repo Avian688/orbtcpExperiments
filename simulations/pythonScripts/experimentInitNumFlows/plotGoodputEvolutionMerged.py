@@ -34,8 +34,8 @@ protocol_colors = {
 
 # Display names for legend
 display_names = {
-    "Orbtcp":            "LeoTCP",
-    "OrbtcpNoInitFlows": "LeoTCP No InitPhase",
+    "Orbtcp":            "OrbCC",
+    "OrbtcpNoInitFlows": "OrbCC No InitPhase",
 }
 
 plt.figure(figsize=(4.5, 1.2))

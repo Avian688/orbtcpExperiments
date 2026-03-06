@@ -64,7 +64,7 @@ if __name__ == "__main__":
     startStep = 5
     endStep = 5
     currStep = 1
-    cores = 30
+    cores = 1
     currentProc = 0
     processList = []
     congControlList = ["orbtcp", "orbtcpNoAvgRTT"]

@@ -61,10 +61,10 @@ def merge_pdfs_in_folders(root_folder):
 
 if __name__ == "__main__":
     
-    startStep = 1
-    endStep = 8
+    startStep = 5
+    endStep = 5
     currStep = 1
-    cores = 4
+    cores = 1
     currentProc = 0
     processList = []
     congControlList = ["orbtcp", "cubic","bbr3", "bbr", "satcp", "leocc"]
@@ -212,8 +212,16 @@ if __name__ == "__main__":
         time.sleep(5)
     currStep += 1
     
-
     if(currStep <= endStep and currStep >= startStep): #STEP 5
+        print("Plotting Scatter Util vs Delay!\n")
+        subprocess.Popen("mkdir cumulative", shell=True, cwd='../../plots/experiment11/').communicate(timeout=10)
+        time.sleep(3)
+        p = subprocess.Popen("python3 ../../../pythonScripts/experiment11/plotScatterUtilDelay.py", shell=True, cwd='../../plots/experiment11/cumulative')
+        p.wait(timeout=3600)
+        time.sleep(1)
+    currStep += 1
+
+    if(currStep <= endStep and currStep >= startStep): #STEP 6
         print("\nPlotting!")
         processListStr = []
         for protocol in congControlList:
@@ -301,13 +309,13 @@ if __name__ == "__main__":
     currStep += 1
     
 
-    if(currStep <= endStep and currStep >= startStep): #STEP 6
+    if(currStep <= endStep and currStep >= startStep): #STEP 7
         print("\n Attempting to merge PDFs!\n")
         merge_pdfs_in_folders("../../plots/experiment11")
 
     currStep += 1
 
-    if(currStep <= endStep and currStep >= startStep): #STEP 7
+    if(currStep <= endStep and currStep >= startStep): #STEP 8
         print("\nExperiment 11 complete!\n")
         print("Protocols: " + str(congControlList))
         print("Flow batches: " + str(flowBatches))

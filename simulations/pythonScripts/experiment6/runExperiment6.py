@@ -64,13 +64,13 @@ if __name__ == "__main__":
     startStep = 5
     endStep = 5
     currStep = 1
-    cores = 30
+    cores = 1
     numOfRibFlows = 3
     currentProc = 0
     processList = []
     congControlList = ["bbr", "orbtcp", "cubic", "bbr3"]
     experiment = "experiment6"
-    buffersizes = ["smallbuffer", "mediumbuffer", "largebuffer"]
+    buffersizes = ["mediumbuffer"]#["smallbuffer", "mediumbuffer", "largebuffer"]
     clientsRtts = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP
     runs = 5
     runList = list(range(1,runs+1))

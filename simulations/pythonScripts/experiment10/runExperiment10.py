@@ -61,10 +61,10 @@ def merge_pdfs_in_folders(root_folder):
 
 if __name__ == "__main__":
     
-    startStep = 8
+    startStep = 1
     endStep = 8
     currStep = 1
-    cores = 5
+    cores = 8
     currentProc = 0
     processList = []
     congControlList = ["orbtcp", "cubic", "bbr", "bbr3"]
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     listPairs = ["Pair1", "Pair2", "Pair3"]
     
     if(currStep <= endStep and currStep >= startStep): #STEP 1
-        subprocess.Popen("python3 generateexperiment10IniFile.py", shell=True).communicate(timeout=30)
+        subprocess.Popen("python3 generateExperiment10IniFile.py", shell=True).communicate(timeout=30)
         exp1RunNum = 1
         for cc in congControlList:
             fileName =  '../../paperExperiments/experiment10/experiment10_' + cc + '.ini'
@@ -177,30 +177,30 @@ if __name__ == "__main__":
                 processList.clear()               
     currStep += 1
     
-    if(currStep <= endStep and currStep >= startStep): #STEP 4
-        currentProc = 0
-        print("Extracting CSV data!!\n")
-        print("------------ Extracting Ping CSV Files for experiment 8------------")
-        processListStr = []
-        filePath = '../../paperExperiments/experiment10/results/ping_isl.csv'
-        if os.path.exists(filePath):
-            print("Extracting CSV file for " + experiment + " Ping" )
-            processListStr.append("python3 extractSingleCsvFilePing.py " + filePath + " " + experiment + " " + "isl" + " ")
-        time.sleep(10)
-        currentProc = 0
-        while(len(processListStr) > 0):
-            process = processListStr.pop()
-            print(process + "\n")
-            processList.append(subprocess.Popen(process, shell=True))
-            currentProc += 1
-            if(currentProc >= cores):
-                for proc in processList:
-                    proc.wait(timeout=4000)
-                currentProc = 0
-                print("Csv Extraction batch complete!\n")
-                print("Extracting next batch!\n")
-                processList.clear()               
-    currStep += 1
+    # if(currStep <= endStep and currStep >= startStep): #STEP 4
+    #     currentProc = 0
+    #     print("Extracting CSV data!!\n")
+    #     print("------------ Extracting Ping CSV Files for experiment 10------------")
+    #     processListStr = []
+    #     filePath = '../../paperExperiments/experiment10/results/ping_isl.csv'
+    #     if os.path.exists(filePath):
+    #         print("Extracting CSV file for " + experiment + " Ping" )
+    #         processListStr.append("python3 extractSingleCsvFilePing.py " + filePath + " " + experiment + " " + "isl" + " ")
+    #     time.sleep(10)
+    #     currentProc = 0
+    #     while(len(processListStr) > 0):
+    #         process = processListStr.pop()
+    #         print(process + "\n")
+    #         processList.append(subprocess.Popen(process, shell=True))
+    #         currentProc += 1
+    #         if(currentProc >= cores):
+    #             for proc in processList:
+    #                 proc.wait(timeout=4000)
+    #             currentProc = 0
+    #             print("Csv Extraction batch complete!\n")
+    #             print("Extracting next batch!\n")
+    #             processList.clear()               
+    # currStep += 1
     
     if(currStep <= endStep and currStep >= startStep): #STEP 4
     #     subprocess.Popen("mkdir ../../plots/experiment10", shell=True).communicate(timeout=10) 

@@ -61,10 +61,10 @@ def merge_pdfs_in_folders(root_folder):
 
 if __name__ == "__main__":
     
-    startStep = 1
-    endStep = 8
+    startStep = 5
+    endStep = 6
     currStep = 1
-    cores = 10
+    cores = 1
     currentProc = 0
     processList = []
     congControlList = ["orbtcp", "cubic", "bbr", "bbr3"]

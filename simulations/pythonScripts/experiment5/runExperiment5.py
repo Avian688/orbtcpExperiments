@@ -61,15 +61,15 @@ def merge_pdfs_in_folders(root_folder):
 
 if __name__ == "__main__":
     
-    startStep = 1
-    endStep = 8
+    startStep = 5
+    endStep = 5
     currStep = 1
-    cores = 30
+    cores = 1
     currentProc = 0
     processList = []
     congControlList = ["bbr3", "bbr", "orbtcp", "cubic"]
     experiment = "experiment5"
-    buffersizes = ["smallbuffer", "mediumbuffer", "largebuffer"]
+    buffersizes = ["mediumbuffer"]#["smallbuffer", "mediumbuffer", "largebuffer"]
     clientsRtts = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP
     runs = 5
     runList = list(range(1,runs+1))

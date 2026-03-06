@@ -44,7 +44,7 @@ if __name__ == "__main__":
     numOfRuns = 5
     groundStationsCsv = 'ground_stations.csv'
     algorithms = ["orbtcp", "bbr", "cubic", "bbr3"]
-    queueSizes = [0.2, 1, 4]
+    queueSizes = [1] #[0.2, 1, 4]
     cities_coordinates = {
         "San Diego": {"latitude": 32.7157, "longitude": -117.1611},
         "Seattle": {"latitude": 47.6062, "longitude": -122.3321},

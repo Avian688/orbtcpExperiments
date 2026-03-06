@@ -16,10 +16,10 @@ import time
            
 if __name__ == "__main__":
     
-    startStep = 1
+    startStep = 6
     endStep = 8
     currStep = 1
-    cores = 30
+    cores = 1
     currentProc = 0
     processList = []
     congControlList = ["bbr3","bbr", "orbtcp", "cubic", "leocc", "satcp"]

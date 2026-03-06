@@ -13,7 +13,7 @@ plt.rcParams['text.usetex'] = True
 
 # ─── Directory Roots ──────────────────────────────────────────────────────────
 BASE_DIR  = os.path.join("..", "..", "..", "paperExperiments")
-PING_ROOT = os.path.join(BASE_DIR, "experiment10", "csvs", "ping")
+PING_ROOT = os.path.join(BASE_DIR, "experiment8", "csvs", "ping")
 SRTT_ROOT = os.path.join(BASE_DIR, "experiment10", "csvs")
 
 # ─── Experiment Parameters ────────────────────────────────────────────────────
@@ -24,7 +24,7 @@ RUNS        = [1, 2, 3, 4, 5]
 PROTOCOLS_FRIENDLY_NAME_LEO = {
     'cubic':  'Cubic',
     'bbr':    'BBRv1',
-    'orbtcp': 'LeoTCP',
+    'orbtcp': 'OrbCC',
     'bbr3':   'BBRv3'
 }
 

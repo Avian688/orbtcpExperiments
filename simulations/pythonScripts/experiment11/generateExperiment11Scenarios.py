@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     # These should match your experiment 11 bottleneck settings
     bottleneckDelayMs = 0.5
-    bottleneckDataRate = "200Mbps"
+    bottleneckDataRate = "100Mbps"
 
     for numOfClients in batchSizes:
         folderName = '../../paperExperiments/scenarios/experiment11/' + str(numOfClients) + 'flows'

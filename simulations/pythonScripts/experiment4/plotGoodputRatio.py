@@ -132,7 +132,7 @@ for mult in QMULTS:
         legend_map.get('bbr3'),
         legend_map.get('orbtcp')
     ]
-    labels_top = ['Cubic', 'BBRv1', 'BBRv3', 'LeoTCP']
+    labels_top = ['Cubic', 'BBRv1', 'BBRv3', 'OrbCC']
     legend_top = plt.legend(
         handles_top, labels_top,
         ncol=4,

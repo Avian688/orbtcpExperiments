@@ -21,7 +21,7 @@ MSS_BYTES = 1448
 
 def main() -> None:
     simSeed = 1999
-    bandwidth_mbps = 200
+    bandwidth_mbps = 100
     queue_bdp_multiplier = 5
     numOfRuns = 5
     batchSizes = [5, 10, 20]

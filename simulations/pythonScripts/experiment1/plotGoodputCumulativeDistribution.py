@@ -8,6 +8,21 @@ import matplotlib.pyplot as plt
 import scienceplots
 from matplotlib.lines import Line2D
 
+def make_cdf_axes(xlabel, show_ylabel=True):
+    fig = plt.figure(figsize=(5, 2))
+    # Fixed axes rectangle -> identical plotting box in every output
+    ax = fig.add_axes([0.16, 0.28, 0.82, 0.66])
+
+    ax.set_xlabel(xlabel)
+    ax.set_ylim(0, 105)
+    ax.set_yticks([0, 50, 100])
+
+    # Reserve identical left margin space in every plot
+    if show_ylabel:
+        ax.set_ylabel(r"\% of Trials")
+
+    return fig, ax
+
 if __name__ == "__main__":
     plt.style.use("science")
     pd.set_option("display.max_rows", None)
@@ -73,7 +88,7 @@ if __name__ == "__main__":
         "leocc": "#17BECF",   # teal/cyan
     }
 
-    fig, ax = plt.subplots(figsize=(3, 1.5))
+    fig, ax = make_cdf_axes("Average Goodput (Mbps)", show_ylabel=True)
 
     # "Optimal" curve: use optimal_goodput distribution (kept as original behaviour)
     optimals = bw_rtt_data[bw_rtt_data["protocol"] == "bbr"]["optimal_goodput"]
@@ -94,8 +109,8 @@ if __name__ == "__main__":
         cumulative = np.cumsum(values)
         ax.plot(base[:-1], cumulative / 50 * 100, c=colours[protocol], linestyle="dashed")
 
-    ax.set_xlabel("Average Goodput (Mbps)")
-    ax.set_ylabel("Percent of Trials (\%)")
+    #ax.set_xlabel("Average Goodput (Mbps)")
+    #ax.set_ylabel("\% of Trials")
 
     protocol_label_map = {
         "orbtcp": "OrbCC",
@@ -121,14 +136,14 @@ if __name__ == "__main__":
     ]
 
     # Keep your current style legend placement
-    ax.legend(
-        handles=style_legend_handles,
-        loc="upper left",
-        bbox_to_anchor=(0.06, 1.0),
-        fontsize="x-small",
-    )
+    # ax.legend(
+    #     handles=style_legend_handles,
+    #     loc="upper left",
+    #     bbox_to_anchor=(0.06, 1.0),
+    #     fontsize="x-small",
+    # )
 
     plt.subplots_adjust(top=1)
 
     for format in ["pdf"]:
-        fig.savefig(f"joined_goodput_cdf.{format}", dpi=1080, bbox_inches="tight")
+        fig.savefig(f"joined_goodput_cdf.{format}", dpi=1080, bbox_inches="tight", pad_inches=0.02)

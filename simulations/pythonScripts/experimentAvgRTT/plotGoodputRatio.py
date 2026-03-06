@@ -142,7 +142,7 @@ for axis in (ax.xaxis, ax.yaxis):
 # Build legend with line+marker proxies (no variance)
 markers = ['x', '.']
 colors  = [protocol_colors[p] for p in PROTOCOLS]
-labels  = ["LeoTCP", "LeoTCP No AvgRTT"]
+labels  = ["OrbCC", "OrbCC No AvgRTT"]
 proxy_lines = [
     Line2D([0], [0],
            marker=mk,

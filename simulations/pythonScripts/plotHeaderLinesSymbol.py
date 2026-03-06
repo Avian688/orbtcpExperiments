@@ -21,7 +21,7 @@ COLORS    = {
 FRIENDLY  = {
     'cubic':  'Cubic',
     'bbr':    'BBRv1',
-    'orbtcp': 'LeoTCP',
+    'orbtcp': 'OrbCC',
     'bbr3':   'BBRv3'
 }
 MARKERS   = {

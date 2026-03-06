@@ -36,7 +36,7 @@ def int_to_word(num):
 if __name__ == "__main__":
     simSeed = 1999
     bandwidth = 100
-    queueSizes = [0.2, 1, 4]
+    queueSizes = [1]
     numOfRuns = 5
     numOfClients = 2
     algorithms = ["orbtcp", "bbr", "cubic", "bbr3"]

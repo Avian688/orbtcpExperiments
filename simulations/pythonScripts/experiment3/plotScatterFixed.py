@@ -21,7 +21,7 @@ AQM = "fifo"
 BWS = [100]       # in Mbit/s
 BANDWIDTH = 100
 DELAYS = [10]     # base delays in ms; final stored as [20,40] in DF
-QMULTS = [0.2,1,4]
+QMULTS = [1]#[0.2,1,4]
 QMULTDICT = {0.2 : "smallbuffer", 1 : "mediumbuffer", 4 : "largebuffer" }
 PROTOCOLS = ['cubic','bbr','orbtcp', 'bbr3']
 FLOWS = 2
@@ -217,6 +217,7 @@ def plot_dd_scatter_jains_vs_util(df, delays=[10,20], qmults=[0.2,1,4]):
 
     for q in qmults:
         fig, ax = plt.subplots(figsize=(4.5,1.2))
+        ax.grid(True, which="major", alpha=0.2, linewidth=0.6)
         for prot in df['protocol'].unique():
             sub_df = df[(df['qmult']==q) & (df['protocol']==prot)]
             if sub_df.empty:
@@ -263,7 +264,7 @@ def plot_dd_scatter_jains_vs_util(df, delays=[10,20], qmults=[0.2,1,4]):
             Line2D([0], [0], color=COLORS_LEO[p], lw=1)
             for p in ['cubic', 'bbr', 'bbr3', 'orbtcp']
         ]
-        proto_labels = ['Cubic', 'BBRv1', 'BBRv3', 'LeoTCP']
+        proto_labels = ['Cubic', 'BBRv1', 'BBRv3', 'OrbCC']
         proto_legend = ax.legend(proxy_lines, proto_labels,
                                  ncol=4, loc='upper center',
                                  bbox_to_anchor=(0.5, 1.2),
@@ -275,9 +276,8 @@ def plot_dd_scatter_jains_vs_util(df, delays=[10,20], qmults=[0.2,1,4]):
         ax.set_ylabel("Norm. Goodput", fontsize="medium")
         ax.set_xlim(0.4, 1.05)
         ax.set_ylim(0.4, 1.05)
-
         plt.savefig(f"jains_vs_goodput_qmult_{q}.pdf",
-                    dpi=1080, bbox_inches='tight')
+                    dpi=1080, bbox_inches='tight', pad_inches=0.02)
         plt.close(fig)
 
 

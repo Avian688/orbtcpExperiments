@@ -19,7 +19,7 @@ pair_labels = {'Pair1': 'Pair1', 'Pair3': 'Pair2'}
 protocols   = ['cubic', 'bbr', 'bbr3', 'orbtcp']  # LeoTCP last
 RUNS        = [1, 2, 3, 4, 5]
 
-FRIENDLY    = {'cubic':'Cubic', 'bbr':'BBRv1', 'bbr3':'BBRv3', 'orbtcp':'LeoTCP'}
+FRIENDLY    = {'cubic':'Cubic', 'bbr':'BBRv1', 'bbr3':'BBRv3', 'orbtcp':'OrbCC'}
 
 # ─── Data Extraction ──────────────────────────────────────────────────────────
 def fairness_ratio(proto, pair):
