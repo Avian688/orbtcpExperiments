@@ -12,7 +12,7 @@ plt.rcParams['font.size'] = 40
 plt.rcParams['text.usetex'] = False
 
 
-protocols = ['cubic', 'bbr', 'orbtcp', 'bbr3']
+protocols = ['cubic', 'bbr', 'orbtcp', 'bbr3', 'leocc']
 
 bent_pipe_link_bandwidth = 100
 num_flows               = 1
@@ -23,8 +23,9 @@ QMULTDICT = {0.2 : "smallbuffer", 1 : "mediumbuffer", 4 : "largebuffer" }
 PROTOCOLS_FRIENDLY_NAME_LEO = {
         'cubic':   'Cubic',
         'bbr':    'BBRv1',
-        'orbtcp':    'OrbTCP',
-        'bbr3':    'BBRv3'    
+        'orbtcp':    'OrbCC',
+        'bbr3':    'BBRv3',
+        'leocc':   'LeoCC'
     }
 
 # Combine “basename (no .log)” → {queue, label}
@@ -39,45 +40,13 @@ paths_info = {
     "SanDiegoShanghai_isl":{ "queue": 740, "label": "San Diego to Shanghai (ISL)" }
 }
 
-
-# Mapping from second location to ground station index
-location_to_gs_index = {
-    "NewYork": 2,
-    "London": 3,
-    "Shanghai": 4,
-    "Seattle": 1
-}
-
 path_keys  = list(paths_info.keys())
 row_labels = [paths_info[k]["label"] for k in path_keys]
 
 def compute_mean_std(path_key, proto, m):
-    base_q    = paths_info[path_key]["queue"]
-    switch_q  = int(base_q * m)
     run_values = []
     for run in RUNS:
-        # Split the path_key into two parts
         path_key_before, path_key_after = path_key.split("_", 1)
-
-        # Split the path_key into before and after underscore
-        path_key_before, path_key_after = path_key.split("_", 1)
-
-        # Extract second location from path_key_before
-        # Assumes format like "SanDiegoSeattle"
-        # Split using known prefixes or use regex or fixed length to extract second city
-        # Here we assume camel case split (i.e., from a known position or pattern)
-        # If it's always two concatenated city names, you could do:
-        for loc in location_to_gs_index:
-            if path_key_before.endswith(loc):
-                second_location = loc
-                break
-        else:
-            raise ValueError(f"Unknown second location in path_key: {path_key_before}")
-
-        gs_index = location_to_gs_index[second_location]
-
-        # Build the full path to the CSV
-        PATH = f"../../../paperExperiments/experiment8/csvs/{proto.title()}/{path_key_before}/{path_key_after}/{QMULTDICT.get(m)}/run{run}/leoconstellation.groundStation[{gs_index}].app[0]/goodput.csv"
         csv_file = os.path.join(
             "..", "..", "..",
             "paperExperiments", "experiment8", "csvs", proto.title(),
@@ -85,19 +54,16 @@ def compute_mean_std(path_key, proto, m):
             path_key_after,
             QMULTDICT.get(m),
             f"run{run}",
-            f"leoconstellation.groundStation[{gs_index}].app[0]",
+            "leoconstellation.userTerminal[1].app[0]",
             "goodput.csv" 
         )
 
-        if not os.path.exists(PATH):
+        if not os.path.exists(csv_file):
             print("NOT FOUND: " + csv_file)
             continue
-        #else:
-            #print("FOUND: " + csv_file)
-
 
         file_means = []
-        df = pd.read_csv(PATH)
+        df = pd.read_csv(csv_file)
         if "goodput" in df.columns:
             file_means.append(df["goodput"].mean()//1000000)
 

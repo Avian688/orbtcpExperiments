@@ -19,13 +19,14 @@ SRTT_ROOT = os.path.join(BASE_DIR, "experiment10", "csvs")
 # ─── Experiment Parameters ────────────────────────────────────────────────────
 pairs       = ['Pair1', 'Pair3']
 pair_labels = {'Pair1': 'Pair1', 'Pair3': 'Pair2'}
-protocols   = ['cubic', 'bbr', 'bbr3', 'orbtcp']
+protocols   = ['cubic', 'bbr', 'bbr3', 'orbtcp', 'leocc']
 RUNS        = [1, 2, 3, 4, 5]
 PROTOCOLS_FRIENDLY_NAME_LEO = {
     'cubic':  'Cubic',
     'bbr':    'BBRv1',
     'orbtcp': 'OrbCC',
-    'bbr3':   'BBRv3'
+    'bbr3':   'BBRv3',
+    'leocc':  'LeoCC'
 }
 
 # Define which ping modules correspond to each pair (gs_index, app_index)
@@ -68,7 +69,7 @@ def compute_mean_std_normalised(pair, proto):
     base_rtt = np.mean(base_rtts)
     print(f"[DEBUG] base_rtts for {pair}: {base_rtts}, mean={base_rtt:.4f} s")
 
-    # Collect SRTT from client flows
+    # Collect SRTT from user terminal flows
     flow_runs = {0: [], 1: []}
     for run in RUNS:
         for flow in [0, 1]:
@@ -77,7 +78,7 @@ def compute_mean_std_normalised(pair, proto):
                 proto.title(),
                 pair,
                 f"run{run}",
-                f"leoconstellation.client[{flow}].tcp.conn",
+                f"leoconstellation.userTerminal[{flow}].tcp.conn",
                 'rtt.csv'
             )
             print(f"[DEBUG] Checking SRTT file: {rtt_file}")

@@ -17,7 +17,7 @@ PING_ROOT = os.path.join(BASE_DIR, "experiment8", "csvs", "ping")
 SRTT_ROOT = os.path.join(BASE_DIR, "experiment9", "csvs")
 
 # Experiment parameters
-protocols = ['cubic', 'bbr', 'bbr3', 'orbtcp']
+protocols = ['cubic', 'bbr', 'bbr3', 'orbtcp', 'leocc']
 RUNS      = [1, 2, 3, 4, 5]
 QMULTS    = [1]
 QMULTDICT = {0.2: "smallbuffer", 1: "mediumbuffer", 4: "largebuffer"}
@@ -25,7 +25,8 @@ PROTOCOLS_FRIENDLY_NAME_LEO = {
     'cubic':  'Cubic',
     'bbr':    'BBRv1',
     'orbtcp': 'OrbCC',
-    'bbr3':   'BBRv3'
+    'bbr3':   'BBRv3',
+    'leocc':  'LeoCC'
 }
 
 # Paths and labels
@@ -82,7 +83,7 @@ def compute_mean_std_normalised(key, proto, m):
                 after,
                 QMULTDICT[m],
                 f"run{run}",
-                f"leoconstellation.client[{flow}].tcp.conn",
+                f"leoconstellation.userTerminal[{flow}].tcp.conn",
                 'rtt.csv'
             )
             if not os.path.exists(rtt_file):

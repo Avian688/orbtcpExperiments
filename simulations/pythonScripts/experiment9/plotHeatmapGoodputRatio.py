@@ -12,7 +12,7 @@ plt.rcParams['font.size'] = 40
 plt.rcParams['text.usetex'] = True
 
 # Protocols and runs
-protocols = ['cubic', 'bbr', 'bbr3', 'orbtcp']
+protocols = ['cubic', 'bbr', 'bbr3', 'orbtcp', 'leocc']
 RUNS = [1, 2, 3, 4, 5]
 QMULTS = [1]  # only medium buffer
 QMULTDICT = {0.2: "smallbuffer", 1: "mediumbuffer", 4: "largebuffer"}
@@ -20,7 +20,8 @@ PROTOCOLS_FRIENDLY_NAME_LEO = {
     'cubic': 'Cubic',
     'bbr': 'BBRv1',
     'orbtcp': 'OrbCC',
-    'bbr3': 'BBRv3'
+    'bbr3': 'BBRv3',
+    'leocc': 'LeoCC'
 }
 
 # Path information
@@ -47,8 +48,8 @@ def compute_mean_std_normalised_ratio(path_key, proto, m):
     ratios = []
     for run in RUNS:
         run_path = os.path.join(base_path, f"run{run}")
-        gp0 = os.path.join(run_path, "leoconstellation.server[0].app[0]", "goodput.csv")
-        gp1 = os.path.join(run_path, "leoconstellation.server[1].app[0]", "goodput.csv")
+        gp0 = os.path.join(run_path, "leoconstellation.userTerminal[2].app[0]", "goodput.csv")
+        gp1 = os.path.join(run_path, "leoconstellation.userTerminal[3].app[0]", "goodput.csv")
         if not os.path.exists(gp0) or not os.path.exists(gp1):
             print(f"Missing goodput file: {gp0 if not os.path.exists(gp0) else gp1}")
             continue

@@ -14,7 +14,7 @@ if __name__ == "__main__":
     numOfRuns = 5
     numOfClients = 2
     groundStationsCsv = 'ground_stations.csv'
-    algorithms = ["orbtcp", "bbr", "cubic", "bbr3"]
+    algorithms = ["orbtcp", "bbr", "cubic", "bbr3", "leocc"]
     cities_coordinates = {
         "San Diego": {"latitude": 32.7157, "longitude": -117.1611},
         "Seattle": {"latitude": 47.6062, "longitude": -122.3321},
@@ -54,6 +54,8 @@ if __name__ == "__main__":
             algFlavour = "BbrFlavour"
         elif alg == "bbr3":
             algFlavour = "Bbr3Flavour"
+        elif alg == "leocc":
+            algFlavour = "LeoccFlavour"
         else:
             algFlavour = "OrbtcpFlavour"
 
@@ -109,6 +111,9 @@ if __name__ == "__main__":
             f.write('\n' + '**.groundStation[*].mobility.typename = "GroundStationMobility"')
             f.write('\n' + '*.groundStation[*].mobility.initFromDisplayString = false')
             f.write('\n' + '*.groundStation[*].mobility.updateFromDisplayString  = false\n')
+            f.write('\n' + '**.userTerminal[*].mobility.typename = "GroundStationMobility"')
+            f.write('\n' + '*.userTerminal[*].mobility.initFromDisplayString = false')
+            f.write('\n' + '*.userTerminal[*].mobility.updateFromDisplayString  = false\n')
             
             f.write('\n' + '*.configurator.config = xml("<config><interface hosts=\'**\' address=\'10.x.x.x\' netmask=\'255.x.x.x\'/><autoroute metric=\'delay\'/></config>")')
             f.write('\n' + '*.configurator.addStaticRoutes = true')
@@ -135,6 +140,19 @@ if __name__ == "__main__":
             with open(groundStationsCsv, mode='r', newline='', encoding='utf-8') as gscsvfile:
                 reader = csv.DictReader(gscsvfile)
                 entries = list(reader)
+            location_entries = []
+            for key, value in cities_coordinates.items():
+                location_entries.append({
+                    "name": key,
+                    "latitude": value["latitude"],
+                    "longitude": value["longitude"]
+                })
+            for entry in entries:
+                location_entries.append({
+                    "name": entry['Location Comment'],
+                    "latitude": float(entry['Latitude']),
+                    "longitude": float(entry['Longitude'])
+                })
                 
             f.write('\n' + '**.numOfSats = 1584')
             f.write('\n' + '**.satsPerPlane = 22')
@@ -212,6 +230,28 @@ if __name__ == "__main__":
                     f.write('\n' + '**.tcp.mss = 1448')
                     f.write('\n' + '**.tcp.sackSupport = true')
                     f.write('\n' + '**.tcp.initialSsthresh = ' + str(4000*1448) + '\n')  
+            elif(algFlavour == "LeoccFlavour"):
+                f.write('\n' + '**.tcp.typename = "Leocc"')
+                f.write('\n' + '**.tcp.tcpAlgorithmClass = "LeoccFlavour"')
+                f.write('\n' + '**.tcp.advertisedWindow = 200000000')
+                f.write('\n' + '**.tcp.windowScalingSupport = true')
+                f.write('\n' + '**.tcp.windowScalingFactor = -1')
+                f.write('\n' + '**.tcp.increasedIWEnabled = true')
+                f.write('\n' + '**.tcp.delayedAcksEnabled = false')
+                f.write('\n' + '**.tcp.timestampSupport = true')
+                f.write('\n' + '**.tcp.ecnWillingness = false')
+                f.write('\n' + '**.tcp.nagleEnabled = true')
+                f.write('\n' + '**.tcp.stopOperationTimeout = 4000s')
+                f.write('\n' + '**.tcp.mss = 1448')
+                f.write('\n' + '**.tcp.sackSupport = true')
+                f.write('\n' + '**.interfaceType = "leocc.linklayer.ppp.LeoccInterface"')
+                f.write('\n' + '**.**.ppp[*].queue.typename = "LeoccQueue"\n')
+                f.write('\n' + '**.**.queue.typename = "DropTailQueue"\n')
+                f.write('\n' + '**.additiveIncreasePercent = 0.05')
+                f.write('\n' + '**.eta = 0.95\n')
+                f.write('\n' + '**.alpha = ' + str(0.01))
+                f.write('\n' + '**.fixedAvgRTTVal = '+ str(0) + '\n')
+                f.write('\n' + '**.tcp.initialSsthresh = ' + str(4000*1448) + '\n')
             else:
                 f.write('\n' + '**.tcp.typename = "Orbtcp"')
                 f.write('\n' + '**.tcp.tcpAlgorithmClass = "OrbtcpFlavour"')
@@ -238,35 +278,51 @@ if __name__ == "__main__":
             for i in range(numOfRuns):
                 for pathNum, path in enumerate(custom_city_paths):
                     configName = f"{alg.title()}_Pair{pathNum+1}_Run{i+1}"
+                    random.seed(simSeed + i + pathNum)
 
                     f.write(f'\n[Config {configName}]')
                     f.write('\nextends = General')
-                    f.write(f'\n**.numOfClients = {numOfClients}')
+                    f.write('\n**.numOfClients = 0')
+                    f.write(f'\n**.numOfUserTerminals = {numOfClients * 2}')
                     f.write(f'\n**.numberOfFlows = {numOfClients}')
+                    f.write('\n**.userTerminalUpdateInterval = 5s')
 
                     bufferSize = fixed_buffer_sizes[pathNum]
                     f.write(f'\n**.queueSize = {bufferSize}\n')
 
                     for clientNum, route in enumerate(path):
-                        sourceIndex = route["sourceIndex"]
-                        destIndex = route["destIndex"]
+                        sourceLocation = location_entries[route["sourceIndex"]]
+                        destLocation = location_entries[route["destIndex"]]
+                        sourceIndex = clientNum
+                        destIndex = clientNum + numOfClients
                         groundStationStart = random.uniform(0, 1.5)
+                        if algFlavour == "LeoccFlavour":
+                            f.write(f'\n**.userTerminal[{sourceIndex}].numApps = 2')
+                        else:
+                            f.write(f'\n**.userTerminal[{sourceIndex}].numApps = 1')
+                        f.write(f'\n**.userTerminal[{sourceIndex}].mobility.latitude = {sourceLocation["latitude"]}')
+                        f.write(f'\n**.userTerminal[{sourceIndex}].mobility.longitude = {sourceLocation["longitude"]}')
+                        f.write(f'\n**.userTerminal[{sourceIndex}].terminalName = "{sourceLocation["name"]} UT {clientNum}"')
+                        f.write(f'\n**.userTerminal[{sourceIndex}].app[0].typename = "TcpGoodputSessionApp"')
+                        f.write(f'\n*.userTerminal[{sourceIndex}].app[0].tClose = -1s')
+                        f.write(f'\n*.userTerminal[{sourceIndex}].app[0].sendBytes = 2GB')
+                        f.write(f'\n*.userTerminal[{sourceIndex}].app[0].dataTransferMode = "bytecount"')
+                        f.write(f'\n*.userTerminal[{sourceIndex}].app[0].statistic-recording = true')
+                        f.write(f'\n*.userTerminal[{sourceIndex}].app[0].connectAddress = "userTerminal[{destIndex}]"')
+                        f.write(f'\n*.userTerminal[{sourceIndex}].app[0].tOpen = {groundStationStart}s')
+                        f.write(f'\n*.userTerminal[{sourceIndex}].app[0].tSend = {groundStationStart}s\n')
+                        if algFlavour == "LeoccFlavour":
+                            f.write(f'\n**.userTerminal[{sourceIndex}].app[1].typename = "LeoccPingApp"')
+                            f.write(f'\n**.userTerminal[{sourceIndex}].app[1].startTime = 0s')
+                            f.write(f'\n**.userTerminal[{sourceIndex}].app[1].destAddr = "userTerminal[{destIndex}]"')
+                            f.write(f'\n**.userTerminal[{sourceIndex}].app[1].sendInterval = 10ms')
+                            f.write(f'\n**.userTerminal[{sourceIndex}].app[1].packetSize = 1B\n')
 
-                        f.write(f'\n**.client[{clientNum}].connectModule = "groundStation[{sourceIndex}]"')
-                        f.write(f'\n**.client[{clientNum}].numApps = 1')
-                        f.write(f'\n**.client[{clientNum}].app[0].typename = "TcpGoodputSessionApp"')
-                        f.write(f'\n*.client[{clientNum}].app[0].tClose = -1s')
-                        f.write(f'\n*.client[{clientNum}].app[0].sendBytes = 2GB')
-                        f.write(f'\n*.client[{clientNum}].app[0].dataTransferMode = "bytecount"')
-                        f.write(f'\n*.client[{clientNum}].app[0].statistic-recording = true\n')
-
-                        f.write(f'\n**.server[{clientNum}].connectModule = "groundStation[{destIndex}]"')
-                        f.write(f'\n**.server[{clientNum}].numApps = 1')
-                        f.write(f'\n**.server[{clientNum}].app[0].typename = "TcpSinkApp"')
-                        f.write(f'\n**.server[{clientNum}].app[0].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
-
-                        f.write(f'\n*.client[{clientNum}].app[0].connectAddress = "server[{clientNum}]"')
-                        f.write(f'\n*.client[{clientNum}].app[0].tOpen = {groundStationStart}s')
-                        f.write(f'\n*.client[{clientNum}].app[0].tSend = {groundStationStart}s\n')
+                        f.write(f'\n**.userTerminal[{destIndex}].mobility.latitude = {destLocation["latitude"]}')
+                        f.write(f'\n**.userTerminal[{destIndex}].mobility.longitude = {destLocation["longitude"]}')
+                        f.write(f'\n**.userTerminal[{destIndex}].terminalName = "{destLocation["name"]} UT {clientNum}"')
+                        f.write(f'\n**.userTerminal[{destIndex}].numApps = 1')
+                        f.write(f'\n**.userTerminal[{destIndex}].app[0].typename = "TcpSinkApp"')
+                        f.write(f'\n**.userTerminal[{destIndex}].app[0].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
 
         print(f"INI file written to {fileName}")

@@ -4,14 +4,7 @@
 # generateIniFile congestionCongAlg ... congestionCongAlgN
 # 
 
-import sys
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import random
-from pathlib import Path
-import os
-import re
 import math
 import csv
 
@@ -43,7 +36,7 @@ if __name__ == "__main__":
     bandwidth = 12500000
     numOfRuns = 5
     groundStationsCsv = 'ground_stations.csv'
-    algorithms = ["orbtcp", "bbr", "cubic", "bbr3"]
+    algorithms = ["orbtcp", "bbr", "cubic", "bbr3", "leocc"]
     queueSizes = [1] #[0.2, 1, 4]
     cities_coordinates = {
         "San Diego": {"latitude": 32.7157, "longitude": -117.1611},
@@ -84,6 +77,8 @@ if __name__ == "__main__":
             algFlavour = "BbrFlavour"
         elif(alg == "bbr3"):
             algFlavour = "Bbr3Flavour"
+        elif(alg == "leocc"):
+            algFlavour = "LeoccFlavour"
         else:
             algFlavour = "OrbtcpFlavour"
             
@@ -139,6 +134,9 @@ if __name__ == "__main__":
             f.write('\n' + '**.groundStation[*].mobility.typename = "GroundStationMobility"')
             f.write('\n' + '*.groundStation[*].mobility.initFromDisplayString = false')
             f.write('\n' + '*.groundStation[*].mobility.updateFromDisplayString  = false\n')
+            f.write('\n' + '**.userTerminal[*].mobility.typename = "GroundStationMobility"')
+            f.write('\n' + '*.userTerminal[*].mobility.initFromDisplayString = false')
+            f.write('\n' + '*.userTerminal[*].mobility.updateFromDisplayString  = false\n')
             
             f.write('\n' + '*.configurator.config = xml("<config><interface hosts=\'**\' address=\'10.x.x.x\' netmask=\'255.x.x.x\'/><autoroute metric=\'delay\'/></config>")')
             f.write('\n' + '*.configurator.addStaticRoutes = true')
@@ -241,6 +239,28 @@ if __name__ == "__main__":
                     f.write('\n' + '**.tcp.mss = 1448')
                     f.write('\n' + '**.tcp.sackSupport = true')
                     f.write('\n' + '**.tcp.initialSsthresh = ' + str(4000*1448) + '\n')  
+            elif(algFlavour == "LeoccFlavour"):
+                f.write('\n' + '**.tcp.typename = "Leocc"')
+                f.write('\n' + '**.tcp.tcpAlgorithmClass = "LeoccFlavour"')
+                f.write('\n' + '**.tcp.advertisedWindow = 200000000')
+                f.write('\n' + '**.tcp.windowScalingSupport = true')
+                f.write('\n' + '**.tcp.windowScalingFactor = -1')
+                f.write('\n' + '**.tcp.increasedIWEnabled = true')
+                f.write('\n' + '**.tcp.delayedAcksEnabled = false')
+                f.write('\n' + '**.tcp.timestampSupport = true')
+                f.write('\n' + '**.tcp.ecnWillingness = false')
+                f.write('\n' + '**.tcp.nagleEnabled = true')
+                f.write('\n' + '**.tcp.stopOperationTimeout = 4000s')
+                f.write('\n' + '**.tcp.mss = 1448')
+                f.write('\n' + '**.tcp.sackSupport = true')
+                f.write('\n' + '**.interfaceType = "leocc.linklayer.ppp.LeoccInterface"')
+                f.write('\n' + '**.**.ppp[*].queue.typename = "LeoccQueue"\n')
+                f.write('\n' + '**.**.queue.typename = "DropTailQueue"\n')
+                f.write('\n' + '**.additiveIncreasePercent = 0.05')
+                f.write('\n' + '**.eta = 0.95\n')
+                f.write('\n' + '**.alpha = ' + str(0.01))
+                f.write('\n' + '**.fixedAvgRTTVal = '+ str(0) + '\n')
+                f.write('\n' + '**.tcp.initialSsthresh = ' + str(4000*1448) + '\n')
             else:
                 f.write('\n' + '**.tcp.typename = "Orbtcp"')
                 f.write('\n' + '**.tcp.tcpAlgorithmClass = "OrbtcpFlavour"')
@@ -286,51 +306,51 @@ if __name__ == "__main__":
                             random.seed(simSeed + i)
                             configName = f"{alg.title()}_{source}To{destination}_{mode}_{queueIniTitle}"
                             
-                            groundStationStart = random.uniform(0, 1)
+                            userTerminalStart = random.uniform(0, 1)
             
                             f.write('\n' + f'[Config {configName}_Run{i+1}]')
                             f.write('\n' + 'extends = General \n')
             
+                            f.write('\n' + '**.numOfClients = 0 \n')
+                            f.write('\n' + '**.numOfUserTerminals = 2 \n')
                             f.write('\n' + '**.numberOfFlows = 1 \n')
+                            f.write('\n' + '**.userTerminalUpdateInterval = 5s \n')
                             if mode == "isl":
                                 f.write('\n' + '**.enableInterSatelliteLinks = true\n')
                             else:
                                 f.write('\n' + '**.enableInterSatelliteLinks = false\n')
-            
-                            # Resolve indices
-                            sourceNum = 0
-                            sourceNumFound = False
-                            destNum = 0
-                            destNumFound = False
-                            for key in cities_coordinates:
-                                if sourceName == key:
-                                    sourceNumFound = True
-                                elif destinationName == key:
-                                    destNumFound = True
-                                if not sourceNumFound:
-                                    sourceNum += 1
-                                if not destNumFound:
-                                    destNum += 1
                             
                             bufferSize = math.ceil(bs * qs)     
-                            # Set buffer size (this is the key part you’re adding)
-                            f.write('\n' + f'**.groundStation[{sourceNum}].app[0].packetBufferSize = {bufferSize} \n')
                             f.write('\n' + f'**.queueSize = {bufferSize}')
+                            
+                            f.write('\n' + f'**.userTerminal[0].mobility.latitude = {cities_coordinates[sourceName]["latitude"]}')
+                            f.write('\n' + f'**.userTerminal[0].mobility.longitude = {cities_coordinates[sourceName]["longitude"]}')
+                            f.write('\n' + f'**.userTerminal[0].terminalName = "{sourceName} UT"')
+                            if algFlavour == "LeoccFlavour":
+                                f.write('\n' + '**.userTerminal[0].numApps = 2')
+                            else:
+                                f.write('\n' + '**.userTerminal[0].numApps = 1')
+                            f.write('\n' + '**.userTerminal[0].app[0].typename  = "TcpGoodputSessionApp"')
+                            f.write('\n' + '*.userTerminal[0].app[0].tClose = -1s')
+                            f.write('\n' + '*.userTerminal[0].app[0].sendBytes = 2GB')
+                            f.write('\n' + '*.userTerminal[0].app[0].dataTransferMode = "bytecount"')
+                            f.write('\n' + '*.userTerminal[0].app[0].statistic-recording = true')
+                            f.write('\n' + '*.userTerminal[0].app[0].connectAddress = "userTerminal[1]"')
+                            f.write('\n' + f'*.userTerminal[0].app[0].tOpen  = {userTerminalStart}s')
+                            f.write('\n' + f'*.userTerminal[0].app[0].tSend = {userTerminalStart}s\n')
+                            if algFlavour == "LeoccFlavour":
+                                f.write('\n' + '**.userTerminal[0].app[1].typename = "LeoccPingApp"')
+                                f.write('\n' + '**.userTerminal[0].app[1].startTime = 0s')
+                                f.write('\n' + '**.userTerminal[0].app[1].destAddr = "userTerminal[1]"')
+                                f.write('\n' + '**.userTerminal[0].app[1].sendInterval = 10ms')
+                                f.write('\n' + '**.userTerminal[0].app[1].packetSize = 1B\n')
 
-                            f.write('\n' + f'**.groundStation[{sourceNum}].numApps = 1')
-                            f.write('\n' + f'**.groundStation[{sourceNum}].app[0].typename  = "TcpGoodputSessionApp"')
-                            f.write('\n' + f'*.groundStation[{sourceNum}].app[0].tClose = -1s')
-                            f.write('\n' + f'*.groundStation[{sourceNum}].app[0].sendBytes = 2GB')
-                            f.write('\n' + f'*.groundStation[{sourceNum}].app[0].dataTransferMode = "bytecount"')
-                            f.write('\n' + f'*.groundStation[{sourceNum}].app[0].statistic-recording = true\n')
-            
-                            f.write('\n' + f'**.groundStation[{destNum}].numApps = 1')
-                            f.write('\n' + f'**.groundStation[{destNum}].app[0].typename  = "TcpSinkApp"')
-                            f.write('\n' + f'**.groundStation[{destNum}].app[0].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
-            
-                            f.write('\n' + f'*.groundStation[{sourceNum}].app[0].connectAddress = "groundStation[{destNum}]"')
-                            f.write('\n' + f'*.groundStation[{sourceNum}].app[0].tOpen  = {groundStationStart}s')
-                            f.write('\n' + f'*.groundStation[{sourceNum}].app[0].tSend = {groundStationStart}s\n')
+                            f.write('\n' + f'**.userTerminal[1].mobility.latitude = {cities_coordinates[destinationName]["latitude"]}')
+                            f.write('\n' + f'**.userTerminal[1].mobility.longitude = {cities_coordinates[destinationName]["longitude"]}')
+                            f.write('\n' + f'**.userTerminal[1].terminalName = "{destinationName} UT"')
+                            f.write('\n' + '**.userTerminal[1].numApps = 1')
+                            f.write('\n' + '**.userTerminal[1].app[0].typename  = "TcpSinkApp"')
+                            f.write('\n' + '**.userTerminal[1].app[0].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
     print('\nINI files generated!')
                 
                     
@@ -338,5 +358,3 @@ if __name__ == "__main__":
             
             
             
-
-

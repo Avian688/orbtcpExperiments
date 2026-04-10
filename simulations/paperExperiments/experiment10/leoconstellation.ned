@@ -3,6 +3,7 @@ package orbtcpexperiments.simulations.paperExperiments.experiment10;
 import leosatellites.base.LaserSatellitePPP;
 import leosatellites.base.GroundStationPPP;
 import leosatellites.base.EndUser;
+import leosatellites.base.UserTerminal;
 import os3.base.MissionControlCenter;
 import inet.physicallayer.wireless.common.contract.packetlevel.IRadioMedium;
 import inet.physicallayer.wireless.apsk.packetlevel.ApskScalarRadioMedium;
@@ -31,6 +32,7 @@ network leoconstellation
         int numOfSats; // Number of satellites
         int numOfGS; // Number of Ground Stations
         int numOfClients = default(2); // Number of Clients
+        int numOfUserTerminals = default(0); // Number of dynamically attached user terminals
         double incl;
         double alt;
         int satsPerPlane;
@@ -57,6 +59,10 @@ network leoconstellation
         }
         channelConstructor: LeoChannelConstructor {
             @display("p=2009.815,979.21;i=abstract/person,#17FF39;b=105.495,89.265,rect;is=vl;t=Channel Constructor");
+        }
+        userTerminal[numOfUserTerminals]: UserTerminal {
+            parameters:
+                @display("p=460.04,250.535,m,n,numOfUserTerminals;r=10;i=device/laptop");
         }
         client[numOfClients]: EndUser {
             parameters:

@@ -67,7 +67,7 @@ if __name__ == "__main__":
     cores = 8
     currentProc = 0
     processList = []
-    congControlList = ["orbtcp", "cubic", "bbr", "bbr3"]
+    congControlList = ["orbtcp", "cubic", "bbr", "bbr3", "leocc"]
     experiment = "experiment10"
     runs = 5
     runList = list(range(1,runs+1))
@@ -88,7 +88,7 @@ if __name__ == "__main__":
                         configName = (line[8:])[:-2]
                         print(configName)
                         progStart = time.time()
-                        processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../leosatellites/src:../../../../leosatellites/simulations:../../../../os3/simulations:../../../../os3/src:../../../../orbtcp/simulations:../../../../orbtcp/src --image-path=../../../../inet4.5/images:../../../../os3/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../leosatellites/src/leosatellites -l ../../../../os3/src/os3 -l ../../../../orbtcp/src/orbtcp  experiment10_" + cc + ".ini", shell=True, cwd='../../paperExperiments/experiment10', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+                        processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../leosatellites/src:../../../../leosatellites/simulations:../../../../os3/simulations:../../../../os3/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../leocc/simulations:../../../../leocc/src --image-path=../../../../inet4.5/images:../../../../os3/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../leosatellites/src/leosatellites -l ../../../../os3/src/os3 -l ../../../../orbtcp/src/orbtcp -l ../../../../leocc/src/leocc  experiment10_" + cc + ".ini", shell=True, cwd='../../paperExperiments/experiment10', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
                         
                         currentProc = currentProc + 1
                         print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")

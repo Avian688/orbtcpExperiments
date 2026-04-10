@@ -2,15 +2,13 @@
 # OMNeT++/OMNEST Makefile for $(LIB_PREFIX)orbtcpExperiments
 #
 # This file was generated with the command:
-#  opp_makemake --make-so -f --deep -KBBR_PROJ=../../bbr -KINET4_5_PROJ=../../inet4.5 -KTCPGOODPUTAPPLICATIONS_PROJ=../../tcpGoodputApplications -KTCPPACED_PROJ=../../tcpPaced -KCUBIC_PROJ=../../cubic -KLEOCC_PROJ=../../leocc -KLEOSATELLITES_PROJ=../../leosatellites -KOS3_PROJ=../../os3 -KORBTCP_PROJ=../../orbtcp -KSATCP_PROJ=../../satcp -DINET_IMPORT -I/usr/include/boost -I/usr/local/Cellar/boost/1.87.0/include/boost -I$$\(INET4_5_PROJ\)/src -I/opt/homebrew/Cellar/igraph/0.10.15_1/include/igraph -I$$\(OS3_PROJ\)/src -I/opt/homebrew/opt/curl/include/curl -L$$\(BBR_PROJ\)/src -L$$\(CUBIC_PROJ\)/src -L$$\(INET4_5_PROJ\)/src -L$$\(LEOCC_PROJ\)/src -L$$\(LEOSATELLITES_PROJ\)/src -L$$\(ORBTCP_PROJ\)/src -L$$\(OS3_PROJ\)/src -L$$\(SATCP_PROJ\)/src -L$$\(TCPGOODPUTAPPLICATIONS_PROJ\)/src -L$$\(TCPPACED_PROJ\)/src -lbbr$$\(D\) -lcubic$$\(D\) -lINET$$\(D\) -lleocc$$\(D\) -lleosatellites$$\(D\) -lorbtcp$$\(D\) -los3$$\(D\) -lsatcp$$\(D\) -ltcpGoodputApplications$$\(D\) -ltcpPaced$$\(D\)
+#  opp_makemake --make-so -f --deep -KBBR_PROJ=../../bbr -KINET4_5_PROJ=../../inet4.5 -KTCPGOODPUTAPPLICATIONS_PROJ=../../tcpGoodputApplications -KTCPPACED_PROJ=../../tcpPaced -KCUBIC_PROJ=../../cubic -KLEOCC_PROJ=../../leocc -KLEOSATELLITES_PROJ=../../leosatellites -KOS3_PROJ=../../os3 -KORBTCP_PROJ=../../orbtcp -KSATCP_PROJ=../../satcp -DINET_IMPORT -I/usr/include/boost -I/usr/local/Cellar/boost/1.87.0/include/boost -I$$\(INET4_5_PROJ\)/src -I/opt/homebrew/Cellar/igraph/0.10.15_1/include/igraph -I/Users/av288/omnetpp-6.1/samples/os3/src -I/opt/homebrew/opt/curl/include/curl -L$$\(BBR_PROJ\)/src -L$$\(CUBIC_PROJ\)/src -L$$\(INET4_5_PROJ\)/src -L$$\(LEOCC_PROJ\)/src -L$$\(LEOSATELLITES_PROJ\)/src -L$$\(ORBTCP_PROJ\)/src -L$$\(OS3_PROJ\)/src -L$$\(SATCP_PROJ\)/src -L$$\(TCPGOODPUTAPPLICATIONS_PROJ\)/src -L$$\(TCPPACED_PROJ\)/src -lbbr$$\(D\) -lcubic$$\(D\) -lINET$$\(D\) -lleocc$$\(D\) -lleosatellites$$\(D\) -lorbtcp$$\(D\) -los3$$\(D\) -lsatcp$$\(D\) -ltcpGoodputApplications$$\(D\) -ltcpPaced$$\(D\)
 #
 
 # Name of target to be created (-o option)
 TARGET_DIR = .
 TARGET_NAME = $(LIB_PREFIX)orbtcpExperiments$(D)
 TARGET = $(TARGET_NAME)$(SHARED_LIB_SUFFIX)
-TARGET_IMPLIB = $(TARGET_NAME)$(IMPLIB_SUFFIX)
-TARGET_IMPDEF = $(TARGET_NAME)$(IMPDEF_SUFFIX)
 TARGET_FILES = $(TARGET_DIR)/$(TARGET)
 
 # C++ include paths (with -I)
@@ -19,7 +17,7 @@ INCLUDE_PATH = \
     -I/usr/local/Cellar/boost/1.87.0/include/boost \
     -I$(INET4_5_PROJ)/src \
     -I/opt/homebrew/Cellar/igraph/0.10.15_1/include/igraph \
-    -I$(OS3_PROJ)/src \
+    -I/Users/av288/omnetpp-6.1/samples/os3/src \
     -I/opt/homebrew/opt/curl/include/curl
 
 # Additional object and library files to link with
@@ -91,8 +89,11 @@ endif
 
 # On Windows, the target has additional file(s). An import lib and an optional debug symbol file is created too.
 ifeq ($(PLATFORM),win32)
+  TARGET_IMPLIB = $(TARGET_NAME)$(IMPLIB_SUFFIX)
+  TARGET_IMPDEF = $(TARGET_NAME)$(IMPDEF_SUFFIX)
   TARGET_FILES+= $(TARGET_DIR)/$(TARGET_IMPLIB)
   LDFLAGS+= $(LDFLAG_IMPLIB)$O/$(TARGET_IMPLIB)
+  OUT_TARGET_EXTRA_FILES = $O/$(TARGET_IMPLIB)
   ifeq ($(TOOLCHAIN_NAME),clang-msabi)
     ifeq ($(MODE),debug)
       TARGET_FILES+=$(TARGET_DIR)/$(TARGET_NAME).pdb
@@ -100,6 +101,7 @@ ifeq ($(PLATFORM),win32)
   else
     TARGET_FILES+= $(TARGET_DIR)/$(TARGET_IMPDEF)
     LDFLAGS+= $(LDFLAG_IMPDEF)$O/$(TARGET_IMPDEF)
+    OUT_TARGET_EXTRA_FILES+= $O/$(TARGET_IMPDEF)
   endif
 endif
 
@@ -121,7 +123,7 @@ ifeq ($(TOOLCHAIN_NAME),clang-msabi)
 $O/$(TARGET_NAME).pdb: $O/$(TARGET)
 endif
 
-$O/$(TARGET) $O/$(TARGET_IMPDEF) $O/$(TARGET_IMPLIB) &: $(OBJS)  $(wildcard $(EXTRA_OBJS)) Makefile $(CONFIGFILE)
+$O/$(TARGET) $(OUT_TARGET_EXTRA_FILES) &: $(OBJS)  $(wildcard $(EXTRA_OBJS)) Makefile $(CONFIGFILE)
 	@$(MKPATH) $O
 	@echo Creating shared library: $@
 	$(Q)$(SHLIB_LD) -o $O/$(TARGET) $(OBJS) $(EXTRA_OBJS) $(AS_NEEDED_OFF) $(WHOLE_ARCHIVE_ON) $(LIBS) $(WHOLE_ARCHIVE_OFF) $(OMNETPP_LIBS) $(LDFLAGS)
@@ -143,11 +145,11 @@ $O/%.o: %.cc $(COPTS_FILE) | msgheaders smheaders
 
 %_m.cc %_m.h: %.msg
 	$(qecho) MSGC: $<
-	$(Q)$(MSGC) -s _m.cc -MD -MP -MF $O/$(basename $<)_m.h.d $(MSGCOPTS) $?
+	$(Q)$(MSGC) -s _m.cc -MD -MP -MF $O/$(basename $<)_m.h.d $(MSGCOPTS) $<
 
 %_sm.cc %_sm.h: %.sm
 	$(qecho) SMC: $<
-	$(Q)$(SMC) -c++ -suffix cc $(SMCOPTS) $?
+	$(Q)$(SMC) -c++ -suffix cc $(SMCOPTS) $<
 
 msgheaders: $(MSGFILES:.msg=_m.h)
 

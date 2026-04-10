@@ -16,10 +16,10 @@ plt.rcParams['text.usetex'] = True
 pairs2      = ['Pair1', 'Pair3']
 pair_labels = {'Pair1': 'Pair1', 'Pair3': 'Pair2'}
 
-protocols   = ['cubic', 'bbr', 'bbr3', 'orbtcp']  # LeoTCP last
+protocols   = ['cubic', 'bbr', 'bbr3', 'orbtcp', 'leocc']
 RUNS        = [1, 2, 3, 4, 5]
 
-FRIENDLY    = {'cubic':'Cubic', 'bbr':'BBRv1', 'bbr3':'BBRv3', 'orbtcp':'OrbCC'}
+FRIENDLY    = {'cubic':'Cubic', 'bbr':'BBRv1', 'bbr3':'BBRv3', 'orbtcp':'OrbCC', 'leocc':'LeoCC'}
 
 # ─── Data Extraction ──────────────────────────────────────────────────────────
 def fairness_ratio(proto, pair):
@@ -27,8 +27,8 @@ def fairness_ratio(proto, pair):
                         proto.title(), pair)
     vals = []
     for run in RUNS:
-        p0 = os.path.join(base, f"run{run}", "leoconstellation.server[0].app[0]", "goodput.csv")
-        p1 = os.path.join(base, f"run{run}", "leoconstellation.server[1].app[0]", "goodput.csv")
+        p0 = os.path.join(base, f"run{run}", "leoconstellation.userTerminal[2].app[0]", "goodput.csv")
+        p1 = os.path.join(base, f"run{run}", "leoconstellation.userTerminal[3].app[0]", "goodput.csv")
         if not (os.path.exists(p0) and os.path.exists(p1)):
             continue
         df0, df1 = pd.read_csv(p0), pd.read_csv(p1)
@@ -47,7 +47,7 @@ def avg_goodput(proto, pair):
         for srv in [0, 1]:
             fpath = os.path.join(base,
                                  f"run{run}",
-                                 f"leoconstellation.server[{srv}].app[0]",
+                                 f"leoconstellation.userTerminal[{srv + 2}].app[0]",
                                  "goodput.csv")
             if os.path.exists(fpath):
                 df = pd.read_csv(fpath)

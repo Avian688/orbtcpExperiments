@@ -10,15 +10,16 @@ plt.rcParams['font.weight'] = 'bold'
 plt.rcParams['font.size'] = 40
 plt.rcParams['text.usetex'] = False
 
-protocols = ['cubic', 'bbr', 'orbtcp', 'bbr3']
+protocols = ['cubic', 'bbr', 'orbtcp', 'bbr3', 'leocc']
 RUNS = [1, 2, 3, 4, 5]
 QMULTS = [1]
 QMULTDICT = {0.2: "smallbuffer", 1: "mediumbuffer", 4: "largebuffer"}
 PROTOCOLS_FRIENDLY_NAME_LEO = {
     'cubic': 'Cubic',
     'bbr': 'BBRv1',
-    'orbtcp': 'LeoTCP',
-    'bbr3': 'BBRv3'
+    'orbtcp': 'OrbCC',
+    'bbr3': 'BBRv3',
+    'leocc': 'LeoCC'
 }
 
 # Abbreviated path labels, with ISL/BP suffix
@@ -86,7 +87,7 @@ def compute_mean_std_normalised(path_key, proto, m):
             path_key_after,
             QMULTDICT.get(m),
             f"run{run}",
-            f"leoconstellation.groundStation[{gs_index}].tcp.conn",
+            "leoconstellation.userTerminal[0].tcp.conn",
             "srtt.csv"
         )
 
