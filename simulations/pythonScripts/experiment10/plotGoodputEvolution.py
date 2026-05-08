@@ -15,12 +15,13 @@ plt.rcParams['text.usetex'] = True
 pairs2      = ['Pair1', 'Pair3']
 pair_labels = {'Pair1': 'Pair1', 'Pair3': 'Pair2'}
 
-protocols   = ['cubic', 'bbr', 'bbr3', 'orbtcp', 'leocc']
+protocols   = ['cubic', 'bbr', 'bbr3', 'satcp', 'orbtcp', 'leocc']
 RUNS        = [1, 2, 3, 4, 5]
 
 FRIENDLY    = {'cubic':'Cubic',
                'bbr':'BBRv1',
                'bbr3':'BBRv3',
+               'satcp':'SaTCP',
                'orbtcp':'OrbCC',
                'leocc':'LeoCC'}
 

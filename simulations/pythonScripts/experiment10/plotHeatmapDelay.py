@@ -19,13 +19,14 @@ SRTT_ROOT = os.path.join(BASE_DIR, "experiment10", "csvs")
 # ─── Experiment Parameters ────────────────────────────────────────────────────
 pairs       = ['Pair1', 'Pair3']
 pair_labels = {'Pair1': 'Pair1', 'Pair3': 'Pair2'}
-protocols   = ['cubic', 'bbr', 'bbr3', 'orbtcp', 'leocc']
+protocols   = ['cubic', 'bbr', 'bbr3', 'satcp', 'orbtcp', 'leocc']
 RUNS        = [1, 2, 3, 4, 5]
 PROTOCOLS_FRIENDLY_NAME_LEO = {
     'cubic':  'Cubic',
     'bbr':    'BBRv1',
-    'orbtcp': 'OrbCC',
     'bbr3':   'BBRv3',
+    'satcp':  'SaTCP',
+    'orbtcp': 'OrbCC',
     'leocc':  'LeoCC'
 }
 

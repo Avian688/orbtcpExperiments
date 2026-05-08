@@ -9,12 +9,19 @@ import csv
 import random
 import math
 
+PACKET_SIZE_BYTES = 1448
+BANDWIDTH_BYTES_PER_SECOND = 12500000
+
+def calculate_bdp_packets(bandwidthBytesPerSecond, rttMs):
+    bdpBytes = bandwidthBytesPerSecond * (rttMs / 1000.0)
+    return math.ceil((bdpBytes / PACKET_SIZE_BYTES) - 1e-9)
+
 if __name__ == "__main__":
     simSeed = 1999
     numOfRuns = 5
     numOfClients = 2
     groundStationsCsv = 'ground_stations.csv'
-    algorithms = ["orbtcp", "bbr", "cubic", "bbr3", "leocc"]
+    algorithms = ["orbtcp", "bbr", "cubic", "bbr3", "satcp", "leocc"]
     cities_coordinates = {
         "San Diego": {"latitude": 32.7157, "longitude": -117.1611},
         "Seattle": {"latitude": 47.6062, "longitude": -122.3321},
@@ -38,10 +45,10 @@ if __name__ == "__main__":
         ]
     ]
 
-    fixed_buffer_sizes = {
-        0: 372,  # Exp 1
-        1: 128,  # Exp 2
-        2: 288   # Exp3
+    path_rtts_ms = {
+        0: 43.092480,  # Pair 1
+        1: 14.827520,  # Pair 2
+        2: 33.361920   # Pair 3
     }
 
     for alg in algorithms:
@@ -50,6 +57,8 @@ if __name__ == "__main__":
 
         if alg == "cubic":
             algFlavour = "TcpCubic"
+        elif alg == "satcp":
+            algFlavour = "SatcpFlavour"
         elif alg == "bbr":
             algFlavour = "BbrFlavour"
         elif alg == "bbr3":
@@ -200,6 +209,25 @@ if __name__ == "__main__":
                 f.write('\n' + '**.tcp.sackSupport = true')
                 f.write('\n' + '**.tcp.initialSsthresh = ' + str(400*1448) + '\n')  
                 
+            elif(algFlavour == "SatcpFlavour"):
+                f.write('\n' + '**.tcp.typename = "Satcp"')
+                f.write('\n' + '**.useLeosatellitesHandoverOracle = true')
+                f.write('\n' + '**.handoverFreezeDuration = 1.3s')
+                f.write('\n' + '**.handoverReportLeadTime = 0.5s')
+                f.write('\n' + '**.tcp.tcpAlgorithmClass = "SatcpFlavour"')
+                f.write('\n' + '**.tcp.advertisedWindow = 200000000')
+                f.write('\n' + '**.tcp.windowScalingSupport = true')
+                f.write('\n' + '**.tcp.windowScalingFactor = -1')
+                f.write('\n' + '**.tcp.increasedIWEnabled = true')
+                f.write('\n' + '**.tcp.delayedAcksEnabled = false')
+                f.write('\n' + '**.tcp.timestampSupport = true')
+                f.write('\n' + '**.tcp.ecnWillingness = false')
+                f.write('\n' + '**.tcp.nagleEnabled = true')
+                f.write('\n' + '**.tcp.stopOperationTimeout = 4000s')
+                f.write('\n' + '**.tcp.mss = 1448')
+                f.write('\n' + '**.tcp.sackSupport = true')
+                f.write('\n' + '**.tcp.initialSsthresh = ' + str(400*1448) + '\n')  
+                
             elif(algFlavour == "BbrFlavour"):
                 f.write('\n' + '**.tcp.typename = "Bbr"')
                 f.write('\n' + '**.tcp.tcpAlgorithmClass = "BbrFlavour"')
@@ -287,7 +315,7 @@ if __name__ == "__main__":
                     f.write(f'\n**.numberOfFlows = {numOfClients}')
                     f.write('\n**.userTerminalUpdateInterval = 5s')
 
-                    bufferSize = fixed_buffer_sizes[pathNum]
+                    bufferSize = calculate_bdp_packets(BANDWIDTH_BYTES_PER_SECOND, path_rtts_ms[pathNum])
                     f.write(f'\n**.queueSize = {bufferSize}\n')
 
                     for clientNum, route in enumerate(path):

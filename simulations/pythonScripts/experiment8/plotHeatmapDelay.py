@@ -10,15 +10,16 @@ plt.rcParams['font.weight'] = 'bold'
 plt.rcParams['font.size'] = 40
 plt.rcParams['text.usetex'] = False
 
-protocols = ['cubic', 'bbr', 'orbtcp', 'bbr3', 'leocc']
+protocols = ['cubic', 'bbr', 'bbr3', 'satcp', 'orbtcp', 'leocc']
 RUNS = [1, 2, 3, 4, 5]
 QMULTS = [1]
 QMULTDICT = {0.2: "smallbuffer", 1: "mediumbuffer", 4: "largebuffer"}
 PROTOCOLS_FRIENDLY_NAME_LEO = {
     'cubic': 'Cubic',
     'bbr': 'BBRv1',
-    'orbtcp': 'OrbCC',
     'bbr3': 'BBRv3',
+    'satcp': 'SaTCP',
+    'orbtcp': 'OrbCC',
     'leocc': 'LeoCC'
 }
 
@@ -32,7 +33,7 @@ paths_info = {
     "SanDiegoShanghai_isl": {"queue": 740, "label": "SD to SHA (ISL)", "ping_app_index": 2}
 }
 
-location_to_gs_index = {
+location_to_terminal_index = {
     "NewYork": 2,
     "London": 3,
     "SanDiego": 0,
@@ -43,11 +44,11 @@ location_to_gs_index = {
 path_keys = list(paths_info.keys())
 row_labels = [paths_info[k]["label"] for k in path_keys]
 
-def get_base_rtt_avg(path_key_after, gs_index, app_index):
+def get_base_rtt_avg(path_key_after, terminal_index, app_index):
     ping_path = os.path.join(
         "../../../paperExperiments/experiment8/csvs/ping",
         path_key_after,
-        f"leoconstellation.groundStation[{gs_index}].app[{app_index}]",
+        f"leoconstellation.userTerminal[{terminal_index}].app[{app_index}]",
         "rtt.csv"
     )
     if not os.path.exists(ping_path):
@@ -65,16 +66,16 @@ def get_base_rtt_avg(path_key_after, gs_index, app_index):
 def compute_mean_std_normalised(path_key, proto, m):
     path_key_before, path_key_after = path_key.split("_", 1)
 
-    for loc in location_to_gs_index:
+    for loc in location_to_terminal_index:
         if path_key_before.startswith(loc):
             first_location = loc
             break
     else:
         raise ValueError(f"Unknown first location in path_key: {path_key_before}")
 
-    gs_index = location_to_gs_index[first_location]
+    terminal_index = location_to_terminal_index[first_location]
     app_index = paths_info[path_key]["ping_app_index"]
-    base_rtt = get_base_rtt_avg(path_key_after, gs_index, app_index)
+    base_rtt = get_base_rtt_avg(path_key_after, terminal_index, app_index)
     if base_rtt is None or base_rtt == 0:
         print(f"Skipping {path_key} due to missing base RTT")
         return 0.0, 0.0

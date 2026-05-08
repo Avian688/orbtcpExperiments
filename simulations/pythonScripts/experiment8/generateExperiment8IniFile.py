@@ -8,6 +8,12 @@ import random
 import math
 import csv
 
+PACKET_SIZE_BYTES = 1448
+
+def calculate_bdp_packets(bandwidthBytesPerSecond, rttMs, queueMultiplier=1):
+    bdpBytes = bandwidthBytesPerSecond * (rttMs / 1000.0)
+    return math.ceil(((bdpBytes * queueMultiplier) / PACKET_SIZE_BYTES) - 1e-9)
+
 def int_to_word(num):
     d = { 0 : 'zero', 1 : 'one', 2 : 'two', 3 : 'three', 4 : 'four', 5 : 'five',
           6 : 'six', 7 : 'seven', 8 : 'eight', 9 : 'nine', 10 : 'ten',
@@ -36,7 +42,7 @@ if __name__ == "__main__":
     bandwidth = 12500000
     numOfRuns = 5
     groundStationsCsv = 'ground_stations.csv'
-    algorithms = ["orbtcp", "bbr", "cubic", "bbr3", "leocc"]
+    algorithms = ["orbtcp", "bbr", "cubic", "bbr3", "satcp", "leocc"]
     queueSizes = [1] #[0.2, 1, 4]
     cities_coordinates = {
         "San Diego": {"latitude": 32.7157, "longitude": -117.1611},
@@ -48,22 +54,22 @@ if __name__ == "__main__":
     
     city_pairs = [
         ("San Diego", "Seattle", {
-            "isl": 157,
-            "bentpipe": 157
+            "isl": 18.186880,
+            "bentpipe": 18.186880
         }),
         ("Seattle", "New York", {
-            "isl": 287,
-            "bentpipe": 311
+            "isl": 33.246080,
+            "bentpipe": 36.026240
         }),
         ("San Diego", "New York", {
-            "isl": 287,
-            "bentpipe": 317
+            "isl": 33.246080,
+            "bentpipe": 36.721280
         }),
         ("New York", "London", {
-            "isl": 371
+            "isl": 42.976640
         }),
         ("San Diego", "Shanghai", {
-            "isl": 707
+            "isl": 81.898880
         })
     ]
     
@@ -73,6 +79,8 @@ if __name__ == "__main__":
         
         if(alg == "cubic"):
             algFlavour = "TcpCubic"
+        elif(alg == "satcp"):
+            algFlavour = "SatcpFlavour"
         elif(alg == "bbr"):
             algFlavour = "BbrFlavour"
         elif(alg == "bbr3"):
@@ -209,6 +217,25 @@ if __name__ == "__main__":
                 f.write('\n' + '**.tcp.sackSupport = true')
                 f.write('\n' + '**.tcp.initialSsthresh = ' + str(400*1448) + '\n')  
                 
+            elif(algFlavour == "SatcpFlavour"):
+                f.write('\n' + '**.tcp.typename = "Satcp"')
+                f.write('\n' + '**.useLeosatellitesHandoverOracle = true')
+                f.write('\n' + '**.handoverFreezeDuration = 1.3s')
+                f.write('\n' + '**.handoverReportLeadTime = 0.5s')
+                f.write('\n' + '**.tcp.tcpAlgorithmClass = "SatcpFlavour"')
+                f.write('\n' + '**.tcp.advertisedWindow = 200000000')
+                f.write('\n' + '**.tcp.windowScalingSupport = true')
+                f.write('\n' + '**.tcp.windowScalingFactor = -1')
+                f.write('\n' + '**.tcp.increasedIWEnabled = true')
+                f.write('\n' + '**.tcp.delayedAcksEnabled = false')
+                f.write('\n' + '**.tcp.timestampSupport = true')
+                f.write('\n' + '**.tcp.ecnWillingness = false')
+                f.write('\n' + '**.tcp.nagleEnabled = true')
+                f.write('\n' + '**.tcp.stopOperationTimeout = 4000s')
+                f.write('\n' + '**.tcp.mss = 1448')
+                f.write('\n' + '**.tcp.sackSupport = true')
+                f.write('\n' + '**.tcp.initialSsthresh = ' + str(400*1448) + '\n')  
+                
             elif(algFlavour == "BbrFlavour"):
                 f.write('\n' + '**.tcp.typename = "Bbr"')
                 f.write('\n' + '**.tcp.tcpAlgorithmClass = "BbrFlavour"')
@@ -297,12 +324,12 @@ if __name__ == "__main__":
                     for pair in city_pairs:
                         sourceName = pair[0]
                         destinationName = pair[1]
-                        mode_to_buffer = pair[2]  # Now a dictionary like {"isl": 173, "bentpipe": 173}
+                        mode_to_rtt = pair[2]
                         
                         source = sourceName.replace(" ", "")
                         destination = destinationName.replace(" ", "")
             
-                        for mode, bs in mode_to_buffer.items():
+                        for mode, rttMs in mode_to_rtt.items():
                             random.seed(simSeed + i)
                             configName = f"{alg.title()}_{source}To{destination}_{mode}_{queueIniTitle}"
                             
@@ -320,7 +347,7 @@ if __name__ == "__main__":
                             else:
                                 f.write('\n' + '**.enableInterSatelliteLinks = false\n')
                             
-                            bufferSize = math.ceil(bs * qs)     
+                            bufferSize = calculate_bdp_packets(bandwidth, rttMs, qs)
                             f.write('\n' + f'**.queueSize = {bufferSize}')
                             
                             f.write('\n' + f'**.userTerminal[0].mobility.latitude = {cities_coordinates[sourceName]["latitude"]}')

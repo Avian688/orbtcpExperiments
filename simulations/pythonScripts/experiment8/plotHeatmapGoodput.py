@@ -12,7 +12,7 @@ plt.rcParams['font.size'] = 40
 plt.rcParams['text.usetex'] = False
 
 
-protocols = ['cubic', 'bbr', 'orbtcp', 'bbr3', 'leocc']
+protocols = ['cubic', 'bbr', 'bbr3', 'satcp', 'orbtcp', 'leocc']
 
 bent_pipe_link_bandwidth = 100
 num_flows               = 1
@@ -23,8 +23,9 @@ QMULTDICT = {0.2 : "smallbuffer", 1 : "mediumbuffer", 4 : "largebuffer" }
 PROTOCOLS_FRIENDLY_NAME_LEO = {
         'cubic':   'Cubic',
         'bbr':    'BBRv1',
-        'orbtcp':    'OrbCC',
         'bbr3':    'BBRv3',
+        'satcp':  'SaTCP',
+        'orbtcp':    'OrbCC',
         'leocc':   'LeoCC'
     }
 

@@ -12,15 +12,16 @@ plt.rcParams['font.size'] = 40
 plt.rcParams['text.usetex'] = True
 
 # Protocols and runs
-protocols = ['cubic', 'bbr', 'bbr3', 'orbtcp', 'leocc']
+protocols = ['cubic', 'bbr', 'bbr3', 'satcp', 'orbtcp', 'leocc']
 RUNS = [1, 2, 3, 4, 5]
 QMULTS = [1]  # only medium buffer
 QMULTDICT = {0.2: "smallbuffer", 1: "mediumbuffer", 4: "largebuffer"}
 PROTOCOLS_FRIENDLY_NAME_LEO = {
     'cubic': 'Cubic',
     'bbr': 'BBRv1',
-    'orbtcp': 'OrbCC',
     'bbr3': 'BBRv3',
+    'satcp': 'SaTCP',
+    'orbtcp': 'OrbCC',
     'leocc': 'LeoCC'
 }
 

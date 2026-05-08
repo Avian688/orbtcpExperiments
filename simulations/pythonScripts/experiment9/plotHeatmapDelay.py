@@ -17,15 +17,16 @@ PING_ROOT = os.path.join(BASE_DIR, "experiment8", "csvs", "ping")
 SRTT_ROOT = os.path.join(BASE_DIR, "experiment9", "csvs")
 
 # Experiment parameters
-protocols = ['cubic', 'bbr', 'bbr3', 'orbtcp', 'leocc']
+protocols = ['cubic', 'bbr', 'bbr3', 'satcp', 'orbtcp', 'leocc']
 RUNS      = [1, 2, 3, 4, 5]
 QMULTS    = [1]
 QMULTDICT = {0.2: "smallbuffer", 1: "mediumbuffer", 4: "largebuffer"}
 PROTOCOLS_FRIENDLY_NAME_LEO = {
     'cubic':  'Cubic',
     'bbr':    'BBRv1',
-    'orbtcp': 'OrbCC',
     'bbr3':   'BBRv3',
+    'satcp':  'SaTCP',
+    'orbtcp': 'OrbCC',
     'leocc':  'LeoCC'
 }
 
@@ -38,7 +39,7 @@ t_paths = {
     "NewYorkLondon_isl":       {"label": "NY to LDN (ISL)","ping_app_index": 0},
     "SanDiegoShanghai_isl":    {"label": "SD to SHA (ISL)","ping_app_index": 2}
 }
-location_to_gs_index = {
+location_to_terminal_index = {
     "NewYork":  2,
     "London":   3,
     "SanDiego": 0,
@@ -58,14 +59,14 @@ def avg_per_100ms(filepath, col):
 # Compute normalized mean±std delay
 def compute_mean_std_normalised(key, proto, m):
     before, after = key.split('_', 1)
-    gs_idx  = next(idx for loc, idx in location_to_gs_index.items() if before.startswith(loc))
+    terminal_idx  = next(idx for loc, idx in location_to_terminal_index.items() if before.startswith(loc))
     app_idx = t_paths[key]['ping_app_index']
 
     # Base RTT avg per 100ms
     ping_file = os.path.join(
         PING_ROOT,
         after,
-        f"leoconstellation.groundStation[{gs_idx}].app[{app_idx}]",
+        f"leoconstellation.userTerminal[{terminal_idx}].app[{app_idx}]",
         'rtt.csv'
     )
     if not os.path.exists(ping_file):

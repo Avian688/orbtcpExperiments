@@ -16,6 +16,47 @@ import time
 import re
 from PyPDF2 import PdfMerger
 
+def collect_config_entries(paperExperimentDir, congControlList, runList):
+    configEntries = []
+
+    for cc in congControlList:
+        fileName = paperExperimentDir / ("experiment9_" + cc + ".ini")
+        iniFile = open(fileName, 'r').readlines()
+        for line in iniFile:
+            if line.find('[Config') != -1:
+                match = re.search(r'Run(\d{1,5})\]', line)
+                if match and int(match.group(1)) in runList:
+                    configName = (line[8:])[:-2]
+                    configEntries.append((cc, configName))
+
+    return configEntries
+
+def has_expected_vec_file(resultsDir, configName):
+    expectedFiles = list(resultsDir.glob(configName + "*.vec"))
+    return len(expectedFiles) > 0
+
+def run_config_batch(configEntries, cores, paperExperimentDir):
+    currentProc = 0
+    processList = []
+
+    for cc, configName in configEntries:
+        processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../leosatellites/src:../../../../leosatellites/simulations:../../../../os3/simulations:../../../../os3/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../satcp/simulations:../../../../satcp/src:../../../../leocc/simulations:../../../../leocc/src --image-path=../../../../inet4.5/images:../../../../os3/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../leosatellites/src/leosatellites -l ../../../../os3/src/os3 -l ../../../../orbtcp/src/orbtcp -l ../../../../satcp/src/satcp -l ../../../../leocc/src/leocc  experiment9_" + cc + ".ini", shell=True, cwd=str(paperExperimentDir), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+
+        currentProc = currentProc + 1
+        print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
+        if(currentProc == cores):
+            procCompleteNum = 0
+            for proc in processList:
+                proc.wait()
+                procCompleteNum = procCompleteNum + 1
+                print("\tRun #" + str(procCompleteNum) + " is complete!")
+            currentProc = 0
+            processList.clear()
+            print(" ... Running next batch of simulations! ...\n")
+
+    for proc in processList:
+        proc.wait()
+
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
         protocol_path = os.path.join(root_folder, protocol)
@@ -67,11 +108,14 @@ if __name__ == "__main__":
     cores = 1
     currentProc = 0
     processList = []
-    congControlList = ["orbtcp", "cubic", "bbr", "bbr3", "leocc"]
+    congControlList = ["orbtcp", "cubic", "bbr", "bbr3", "satcp", "leocc"]
     experiment = "experiment9"
     buffersizes = ["mediumbuffer"]
     runs = 5
     runList = list(range(1,runs+1))
+    scriptDir = Path(__file__).resolve().parent
+    paperExperimentDir = (scriptDir / "../../paperExperiments/experiment9").resolve()
+    plotsExperimentDir = (scriptDir / "../../plots/experiment9").resolve()
 
     city_pairs = [
         ("San Diego", "Seattle", ["isl", "bentpipe"]),
@@ -83,38 +127,30 @@ if __name__ == "__main__":
     
     if(currStep <= endStep and currStep >= startStep): #STEP 1
         subprocess.Popen("python3 generateExperiment9IniFile.py", shell=True).communicate(timeout=30)
-        exp1RunNum = 1
-        for cc in congControlList:
-            fileName =  '../../paperExperiments/experiment9/experiment9_' + cc + '.ini'
-            iniFile = open(fileName, 'r').readlines()
-            print("----------experiment 9 " + cc + " simulations------------")
-            for line in iniFile:
-                if line.find('[Config') != -1:
-                    match = re.search(r'Run(\d{1,5})\]', line)
-                    if match and int(match.group(1)) in runList:
-                        configName = (line[8:])[:-2]
-                        print(configName)
-                        progStart = time.time()
-                        processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../leosatellites/src:../../../../leosatellites/simulations:../../../../os3/simulations:../../../../os3/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../leocc/simulations:../../../../leocc/src --image-path=../../../../inet4.5/images:../../../../os3/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../leosatellites/src/leosatellites -l ../../../../os3/src/os3 -l ../../../../orbtcp/src/orbtcp -l ../../../../leocc/src/leocc  experiment9_" + cc + ".ini", shell=True, cwd='../../paperExperiments/experiment9', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
-                        
-                        currentProc = currentProc + 1
-                        print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
-                        if(currentProc == cores):
-                            procCompleteNum = 0
-                            for proc in processList:
-                                proc.wait()
-                                now = time.time()
-                                procCompleteNum = procCompleteNum + 1
-                                print("\tRun #" + str(procCompleteNum) + " is complete!")
-                                exp1RunNum += 1
-                            currentProc = 0
-                            processList.clear()
-                            print(" ... Running next batch of simulations! ...\n")
-                    else:
-                        continue
-    
-        for proc in processList:
-            proc.wait()
+        resultsDir = paperExperimentDir / "results"
+        os.makedirs(resultsDir, exist_ok=True)
+
+        configEntries = collect_config_entries(paperExperimentDir, congControlList, runList)
+        run_config_batch(configEntries, cores, paperExperimentDir)
+
+        maxRetryRounds = 3
+        retryRound = 1
+        missingConfigs = [entry for entry in configEntries if not has_expected_vec_file(resultsDir, entry[1])]
+
+        while(len(missingConfigs) > 0 and retryRound <= maxRetryRounds):
+            print("\nMissing vec files for " + str(len(missingConfigs)) + " configs after batch run. Retrying missing configs (attempt " + str(retryRound) + "/" + str(maxRetryRounds) + ")...\n")
+            for _, configName in missingConfigs:
+                print("Missing vec for [" + configName + "]")
+
+            run_config_batch(missingConfigs, cores, paperExperimentDir)
+            missingConfigs = [entry for entry in configEntries if not has_expected_vec_file(resultsDir, entry[1])]
+            retryRound += 1
+
+        if(len(missingConfigs) > 0):
+            print("\nWARNING: The following configs are still missing vec files after retries:\n")
+            for _, configName in missingConfigs:
+                print("  " + configName)
+            print("")
     
     currStep += 1
     currentProc = 0
@@ -189,27 +225,38 @@ if __name__ == "__main__":
     currStep += 1
     
     if(currStep <= endStep and currStep >= startStep): #STEP 4
-    #     subprocess.Popen("mkdir ../../plots/experiment9", shell=True).communicate(timeout=10) 
-         print("\n-----Making plot directories for " + experiment + "-----\n")
-         subprocess.Popen("mkdir " + experiment, shell=True, cwd='../../plots/').communicate(timeout=10)
-    #     for cc in congControlList:
-    #         print("\n-----Making plot directories for " + cc + "-----\n")
-    #         subprocess.Popen("mkdir " + cc, shell=True, cwd='../../plots/' + experiment + '/').communicate(timeout=10)
-            
-    #         for buf in buffersizes:
-    #             for rtt in rtts:
-    #                 for di in disruptionIntervals:
-    #                     for run in runList:
-    #                         subprocess.Popen("mkdir " + str(buf), shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' ).communicate(timeout=10)
-    #                         subprocess.Popen("mkdir " + str(rtt) + 'ms', shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf).communicate(timeout=10)
-    #                         subprocess.Popen("mkdir DI" + str(di) + 'ms', shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms').communicate(timeout=10)
-    #                         subprocess.Popen("mkdir run" + str(run), shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms' + '/DI' + str(di) + 'ms').communicate(timeout=10)
-                            
-    #                         subprocess.Popen("mkdir client", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/DI ' + str(di) + 'ms/run' + str(run)).communicate(timeout=10)
-    #                         subprocess.Popen("mkdir server", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/DI ' + str(di) + 'ms/run' + str(run)).communicate(timeout=10)
-    #                         subprocess.Popen("mkdir router1", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/DI ' + str(di) + 'ms/run' + str(run)).communicate(timeout=10)
-    #                         subprocess.Popen("mkdir router2", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/DI ' + str(di) + 'ms/run' + str(run)).communicate(timeout=10)
-    #                         subprocess.Popen("mkdir aggPlots", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/DI ' + str(di) + 'ms/run' + str(run)).communicate(timeout=10)
+        currentProc = 0
+        processList.clear()
+        print("\n-----Generating user terminal plot PDFs for " + experiment + "-----\n")
+        os.makedirs(plotsExperimentDir, exist_ok=True)
+        plotSingleRunScript = scriptDir / "plotSingleRun.py"
+
+        for protocol in congControlList:
+            protocolTitle = protocol.title()
+            for buf in buffersizes:
+                for city1, city2, modes in city_pairs:
+                    sourceDestination = city1.replace(" ", "") + city2.replace(" ", "")
+                    for mode in modes:
+                        for run in runList:
+                            csvRunDir = paperExperimentDir / "csvs" / protocolTitle / sourceDestination / mode / buf / ("run" + str(run))
+                            if(not csvRunDir.is_dir()):
+                                continue
+
+                            plotRunDir = plotsExperimentDir / protocolTitle / sourceDestination / mode / buf / ("run" + str(run))
+                            os.makedirs(plotRunDir, exist_ok=True)
+                            processList.append(subprocess.Popen(["python3", str(plotSingleRunScript), str(csvRunDir)], cwd=str(plotRunDir)))
+                            currentProc += 1
+                            print("Generating merged PDF for [" + protocolTitle + " " + sourceDestination + " " + mode + " " + buf + " run" + str(run) + "]")
+
+                            if(currentProc == cores):
+                                for proc in processList:
+                                    proc.wait()
+                                currentProc = 0
+                                processList.clear()
+
+        for proc in processList:
+            proc.wait()
+        processList.clear()
     currStep += 1
     
     if(currStep <= endStep and currStep >= startStep): #STEP 5
