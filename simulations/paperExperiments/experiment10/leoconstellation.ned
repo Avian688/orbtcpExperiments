@@ -20,6 +20,7 @@ import inet.environment.objectcache.GridObjectCache;
 
 import leosatellites.common.LeoChannelConstructor;
 import leosatellites.common.UserTerminalHandoverOracle;
+import RLComponents.Broker;
 //
 // Network SatSGP4 enables satellite movement on worldmap. This is the primary satellite network that
 // is testing throughout the project by Aiden Valentine. The network has been largely adpated from the
@@ -76,5 +77,6 @@ network leoconstellation
             parameters:
                 @display("p=350.04,200.535,m,n,numOfClients;r=10;i=device/receiverdish");
         }
+        broker: Broker;
     connections allowunconnected:
 }

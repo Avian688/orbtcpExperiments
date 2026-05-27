@@ -5,12 +5,12 @@
 # 
 
 import sys
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import random
 from pathlib import Path
 import os
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from raynetExperimentSupport import clone_raynet_ini_variants
 
 def int_to_word(num):
     d = { 0 : 'zero', 1 : 'one', 2 : 'two', 3 : 'three', 4 : 'four', 5 : 'five',
@@ -311,6 +311,18 @@ if __name__ == "__main__":
                         
                         f.write('\n' + '**.ppp[*].queue.packetCapacity = ' + str(int(queueLength*qs)) + '\n')
                         f.write('\n' + '*.scenarioManager.script = xmldoc("../scenarios/experiment3/'+ str(scenarioName) + '.xml")\n')
+    out_dir = Path('../../paperExperiments/experiment3')
+    for qs in queueSizes:
+        if(qs == 0.2):
+            queueIniTitle = "smallbuffer"
+        elif(qs == 1):
+            queueIniTitle = "mediumbuffer"
+        elif(qs == 4):
+            queueIniTitle = "largebuffer"
+        else:
+            queueIniTitle = f"buffer{qs}"
+        clone_raynet_ini_variants(out_dir / f"experiment3_bbr_{queueIniTitle}.ini")
+
     print('\nINI files generated!')
                     
                         

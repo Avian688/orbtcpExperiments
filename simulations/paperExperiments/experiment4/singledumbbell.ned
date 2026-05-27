@@ -7,6 +7,7 @@ import inet.node.inet.Router;
 import ned.DatarateChannel;
 import ned.IBidirectionalChannel;
 import inet.common.scenario.ScenarioManager;
+import RLComponents.Broker;
 
 network singledumbbell
 {
@@ -44,6 +45,7 @@ network singledumbbell
         scenarioManager: ScenarioManager {
             @display("p=100,300;is=s");
         }
+        broker: Broker;
     connections:
         for i=0..sizeof(client)-1 {
             client[i].pppg++ <--> standardLine <--> router1.pppg++;

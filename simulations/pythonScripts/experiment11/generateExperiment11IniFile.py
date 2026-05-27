@@ -6,6 +6,10 @@
 
 from pathlib import Path
 import random
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from raynetExperimentSupport import clone_raynet_ini_variants, common_ned_path
 
 ALG_FLAVOUR = {
     "cubic": ("TcpPaced", "TcpCubic"),
@@ -76,6 +80,7 @@ def main() -> None:
 
             # ---------------- [General] ----------------
             w("[General]")
+            w(common_ned_path())
             w()
             block([
                 "network = singledumbbell",
@@ -231,6 +236,7 @@ def main() -> None:
                         w(f"**.tcp.scenario = {scenario_doc}")
                     w()
 
+    clone_raynet_ini_variants(out_dir / "experiment11_bbr.ini")
     print("\nINI files generated!")
 
 

@@ -5,24 +5,24 @@
 # 
 
 import sys
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import random
 from pathlib import Path
 import os
 import subprocess
 import time
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from raynetExperimentSupport import build_simulation_command, with_raynet_protocols
            
 if __name__ == "__main__":
     
-    startStep = 6
+    startStep = 1
     endStep = 8
     currStep = 1
     cores = 1
     currentProc = 0
     processList = []
-    congControlList = ["bbr3","bbr", "orbtcp", "cubic", "leocc", "satcp"]
+    congControlList = with_raynet_protocols(["bbr3","bbr", "orbtcp", "cubic", "leocc", "satcp"])
     experiments = ["experiment1", "experiment2"]
     runs = 50
     runList = list(range(1,runs+1))
@@ -53,29 +53,8 @@ if __name__ == "__main__":
                         configName = (line[8:])[:-2]
                         progStart = time.time()
                         processList.append(subprocess.Popen(
-                            "opp_run -r 0 -m -u Cmdenv -c " + configName +
-                            " -n ../..:../../../src:"
-                            "../../../../bbr/simulations:../../../../bbr/src:"
-                            "../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:"
-                            "../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:"
-                            "../../../../tcpPaced/src:../../../../tcpPaced/simulations:"
-                            "../../../../cubic/simulations:../../../../cubic/src:"
-                            "../../../../orbtcp/simulations:../../../../orbtcp/src:"
-                            "../../../../satcp/simulations:../../../../satcp/src:"
-                            "../../../../leocc/simulations:../../../../leocc/src:"
-                            "../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src"
-                            " --image-path=../../../../inet4.5/images"
-                            " -l ../../../src/orbtcpExperiments"
-                            " -l ../../../../bbr/src/bbr"
-                            " -l ../../../../inet4.5/src/INET"
-                            " -l ../../../../tcpPaced/src/tcpPaced"
-                            " -l ../../../../cubic/src/cubic"
-                            " -l ../../../../orbtcp/src/orbtcp"
-                            " -l ../../../../satcp/src/satcp"
-                            " -l ../../../../leocc/src/leocc"
-                            " -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications"
-                            " experiment1_" + cc + ".ini",
-                            shell=True, cwd='../../paperExperiments/experiment1', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+                            build_simulation_command(cc, "experiment1_" + cc + ".ini", configName),
+                            cwd='../../paperExperiments/experiment1', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
                         currentProc = currentProc + 1
                         print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
                         if(currentProc == cores):
@@ -113,29 +92,8 @@ if __name__ == "__main__":
                         configName = (line[8:])[:-2]
                         progStart = time.time()
                         processList.append(subprocess.Popen(
-                            "opp_run -r 0 -m -u Cmdenv -c " + configName +
-                            " -n ../..:../../../src:"
-                            "../../../../bbr/simulations:../../../../bbr/src:"
-                            "../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:"
-                            "../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:"
-                            "../../../../tcpPaced/src:../../../../tcpPaced/simulations:"
-                            "../../../../cubic/simulations:../../../../cubic/src:"
-                            "../../../../orbtcp/simulations:../../../../orbtcp/src:"
-                            "../../../../satcp/simulations:../../../../satcp/src:"
-                            "../../../../leocc/simulations:../../../../leocc/src:"
-                            "../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src"
-                            " --image-path=../../../../inet4.5/images"
-                            " -l ../../../src/orbtcpExperiments"
-                            " -l ../../../../bbr/src/bbr"
-                            " -l ../../../../inet4.5/src/INET"
-                            " -l ../../../../tcpPaced/src/tcpPaced"
-                            " -l ../../../../cubic/src/cubic"
-                            " -l ../../../../orbtcp/src/orbtcp"
-                            " -l ../../../../satcp/src/satcp"
-                            " -l ../../../../leocc/src/leocc"
-                            " -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications"
-                            " experiment2_" + cc + ".ini",
-                            shell=True, cwd='../../paperExperiments/experiment2', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+                            build_simulation_command(cc, "experiment2_" + cc + ".ini", configName),
+                            cwd='../../paperExperiments/experiment2', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
                         currentProc = currentProc + 1
                         print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
                         if(currentProc == cores):

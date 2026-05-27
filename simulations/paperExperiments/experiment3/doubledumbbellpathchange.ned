@@ -9,6 +9,7 @@ import inet.node.inet.Router;
 import ned.DatarateChannel;
 import ned.IBidirectionalChannel;
 import inet.common.scenario.ScenarioManager;
+import RLComponents.Broker;
 
 network doubledumbbellpathchange
 {
@@ -68,6 +69,7 @@ network doubledumbbellpathchange
         configurator: Ipv4NetworkConfiguratorUpdate{
             @display("p=494,17");
         }
+        broker: Broker;
     connections:
         for i=0..sizeof(constantClient)-1 {
             constantClient[i].pppg++ <--> standardLine <--> constantRouter1.pppg++;

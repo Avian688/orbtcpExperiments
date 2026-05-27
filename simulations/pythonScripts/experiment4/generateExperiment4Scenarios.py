@@ -6,9 +6,6 @@
 # 
 
 import sys
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import random
 from pathlib import Path
 import json
@@ -65,4 +62,3 @@ if __name__ == "__main__":
             f.write('\n    </at>')
             
             f.write('\n</scenario>')
-

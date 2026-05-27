@@ -5,9 +5,6 @@
 # 
 
 import sys
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import random
 from pathlib import Path
 import os
@@ -15,6 +12,9 @@ import subprocess
 import time
 import re
 from PyPDF2 import PdfMerger
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from raynetExperimentSupport import build_simulation_command, with_raynet_protocols
 
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     cores = 20
     currentProc = 0
     processList = []
-    congControlList = ["orbtcp", "cubic", "bbr", "bbr3", "satcp", "leocc"]
+    congControlList = with_raynet_protocols(["orbtcp", "cubic", "bbr", "bbr3", "satcp", "leocc"])
     experiment = "experiment8"
     buffersizes = ["mediumbuffer"]#["mediumbuffer", "smallbuffer", "largebuffer"]
     runs = 5
@@ -98,7 +98,9 @@ if __name__ == "__main__":
                         configName = (line[8:])[:-2]
                         print(configName)
                         progStart = time.time()
-                        processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../leosatellites/src:../../../../leosatellites/simulations:../../../../os3/simulations:../../../../os3/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../satcp/simulations:../../../../satcp/src:../../../../leocc/simulations:../../../../leocc/src --image-path=../../../../inet4.5/images:../../../../os3/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../leosatellites/src/leosatellites -l ../../../../os3/src/os3 -l ../../../../orbtcp/src/orbtcp -l ../../../../satcp/src/satcp -l ../../../../leocc/src/leocc  experiment8_" + cc + ".ini", shell=True, cwd='../../paperExperiments/experiment8', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+                        processList.append(subprocess.Popen(
+                            build_simulation_command(cc, "experiment8_" + cc + ".ini", configName, include_leo=True),
+                            cwd='../../paperExperiments/experiment8', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
                         
                         currentProc = currentProc + 1
                         print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")

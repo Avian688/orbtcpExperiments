@@ -7,6 +7,7 @@ import inet.node.inet.Router;
 import ned.DatarateChannel;
 import ned.IBidirectionalChannel;
 import inet.common.scenario.ScenarioManager;
+import RLComponents.Broker;
 
 network parkinglot
 {
@@ -50,6 +51,7 @@ network parkinglot
         configurator: Ipv4NetworkConfigurator {
             @display("p=450,350");
         }
+        broker: Broker;
     connections:
         spineClient.pppg++ <--> standardLine <--> router[0].pppg++;
         spineServer.pppg++ <--> standardLine <--> router[numberOfRibFlows].pppg++;

@@ -5,9 +5,6 @@
 # 
 
 import sys
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import random
 from pathlib import Path
 import os
@@ -15,6 +12,9 @@ import subprocess
 import time
 import re
 from PyPDF2 import PdfMerger
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from raynetExperimentSupport import build_simulation_command, with_raynet_protocols
 
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     cores = 30
     currentProc = 0
     processList = []
-    congControlList = ["bbr3", "bbr", "orbtcp", "cubic"]
+    congControlList = with_raynet_protocols(["bbr3", "bbr", "orbtcp", "cubic"])
     experiment = "experiment7"
     buffersizes = ["mediumbuffer"]
     disruptionIntervals = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP
@@ -94,7 +94,9 @@ if __name__ == "__main__":
                             if match and int(match.group(1)) in runList:
                                 configName = (line[8:])[:-2]
                                 progStart = time.time()
-                                processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src --image-path=../../../../inet4.5/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../orbtcp/src/orbtcp -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications experiment7_" + cc + "_" + bs + ".ini", shell=True, cwd='../../paperExperiments/experiment7', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+                                processList.append(subprocess.Popen(
+                                    build_simulation_command(cc, "experiment7_" + cc + "_" + bs + ".ini", configName),
+                                    cwd='../../paperExperiments/experiment7', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
                                 
                                 currentProc = currentProc + 1
                                 print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")

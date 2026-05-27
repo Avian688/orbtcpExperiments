@@ -7,7 +7,11 @@
 # - Satcp: **.tcp.scenario points at the same xmldoc as scenarioManager.script
 # - Uses correct app indices (no app[*])
 
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from raynetExperimentSupport import clone_raynet_ini_variants, common_ned_path
 
 ALG_FLAVOUR = {
     "cubic": ("TcpPaced", "TcpCubic"),
@@ -114,6 +118,7 @@ def main() -> None:
 
             # -------- [General] --------
             w("[General]")
+            w(common_ned_path())
             w()
             block(general_block)
 
@@ -201,6 +206,7 @@ def main() -> None:
                     w(f"**.tcp.scenario = {scenario_doc}")
                 w()
 
+    clone_raynet_ini_variants(out_dir / "experiment2_bbr.ini")
     print("\nINI files generated!")
 
 

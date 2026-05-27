@@ -8,9 +8,6 @@
 # Reconnect uses the same bottleneck link characteristics as before.
 
 import sys
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import random
 from pathlib import Path
 import json

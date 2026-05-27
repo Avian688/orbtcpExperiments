@@ -3,8 +3,12 @@
 # Generate INI files for experiment 1 for each congestion control algorithm.
 # Uses scenario XMLs in ../../paperExperiments/scenarios/experiment1/
 
-from pathlib import Path
 import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from raynetExperimentSupport import clone_raynet_ini_variants, common_ned_path
 
 ALG_FLAVOUR = {
     "cubic": ("TcpPaced", "TcpCubic"),
@@ -28,7 +32,7 @@ def main() -> None:
     scenario_files = sorted(scenarios_dir.iterdir())
     
     # RayNet; NED sources must be included in the .ini. But there should be no harm in always including them.
-    common_ned = f"ned-path = ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpPaced/src:../../../../cubic/simulations:../../../../cubic/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../satcp/simulations:../../../../satcp/src:../../../../leocc/simulations:../../../../leocc/src:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src:{os.getenv('HOME')}/raynet/simlibs/RLComponents/src:{os.getenv('HOME')}/raynet/simlibs/Orca/src:"
+    common_ned = common_ned_path()
     
     common_tcp = [
         "**.tcp.advertisedWindow = 200000000",
@@ -194,6 +198,7 @@ def main() -> None:
                     w(f"**.tcp.scenario = {scenario_doc}")
                 w()
 
+    clone_raynet_ini_variants(out_dir / "experiment1_bbr.ini")
     print("\nINI files generated!")
 
 

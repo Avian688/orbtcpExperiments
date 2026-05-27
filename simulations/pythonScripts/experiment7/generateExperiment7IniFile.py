@@ -6,7 +6,11 @@
 import math
 import random
 import re
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from raynetExperimentSupport import clone_raynet_ini_variants, common_ned_path
 
 ALG_FLAVOUR = {
     "cubic": ("TcpPaced", "TcpCubic"),
@@ -88,6 +92,7 @@ def main() -> None:
 
                 # ---------------- [General] ----------------
                 w("[General]")
+                w(common_ned_path())
                 w()
                 block([
                     "network = singledumbbell",
@@ -212,6 +217,17 @@ def main() -> None:
                         if alg == "satcp":
                             w(f"**.tcp.scenario = {scenario_doc}")
                         w()
+
+    for qs in queueSizes:
+        if qs == 0.2:
+            queueIniTitle = "smallbuffer"
+        elif qs == 1:
+            queueIniTitle = "mediumbuffer"
+        elif qs == 4:
+            queueIniTitle = "largebuffer"
+        else:
+            queueIniTitle = f"buffer{qs}"
+        clone_raynet_ini_variants(out_dir / f"experiment7_bbr_{queueIniTitle}.ini")
 
     print("\nINI files generated!")
 

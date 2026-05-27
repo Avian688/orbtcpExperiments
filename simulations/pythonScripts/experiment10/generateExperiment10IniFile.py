@@ -8,6 +8,10 @@ import sys
 import csv
 import random
 import math
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from raynetExperimentSupport import clone_raynet_ini_variants
 
 PACKET_SIZE_BYTES = 1448
 BANDWIDTH_BYTES_PER_SECOND = 12500000
@@ -360,3 +364,5 @@ if __name__ == "__main__":
                         f.write(f'\n**.userTerminal[{destIndex}].app[0].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
 
         print(f"INI file written to {fileName}")
+
+    clone_raynet_ini_variants(Path('../../paperExperiments/experiment10/experiment10_bbr.ini'), include_leo=True)

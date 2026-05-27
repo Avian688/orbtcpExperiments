@@ -6,12 +6,8 @@
 # 
 
 import sys
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import random
 from pathlib import Path
-import json
 
 def int_to_word(num):
     d = { 0 : 'zero', 1 : 'one', 2 : 'two', 3 : 'three', 4 : 'four', 5 : 'five',
@@ -72,4 +68,3 @@ if __name__ == "__main__":
             f.write('\n    </at>')
             
             f.write('\n</scenario>')
-
