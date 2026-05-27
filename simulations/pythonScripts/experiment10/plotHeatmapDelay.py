@@ -1,8 +1,13 @@
 import os
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, Normalize
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
 
 # ─── Matplotlib Styling ───────────────────────────────────────────────────────
 plt.rcParams['font.family'] = 'serif'
@@ -19,16 +24,9 @@ SRTT_ROOT = os.path.join(BASE_DIR, "experiment10", "csvs")
 # ─── Experiment Parameters ────────────────────────────────────────────────────
 pairs       = ['Pair1', 'Pair3']
 pair_labels = {'Pair1': 'Pair1', 'Pair3': 'Pair2'}
-protocols   = ['cubic', 'bbr', 'bbr3', 'satcp', 'orbtcp', 'leocc']
+protocols   = LEO_PROTOCOLS
 RUNS        = [1, 2, 3, 4, 5]
-PROTOCOLS_FRIENDLY_NAME_LEO = {
-    'cubic':  'Cubic',
-    'bbr':    'BBRv1',
-    'bbr3':   'BBRv3',
-    'satcp':  'SaTCP',
-    'orbtcp': 'OrbCC',
-    'leocc':  'LeoCC'
-}
+PROTOCOLS_FRIENDLY_NAME_LEO = PROTOCOL_LABELS
 
 # Define which user-terminal ping modules correspond to each pair
 ping_modules = {
@@ -132,7 +130,7 @@ ax.set_xticklabels(
     [PROTOCOLS_FRIENDLY_NAME_LEO[p] for p in protocols],
     rotation=0,
     ha='center',
-    fontsize=24
+    fontsize=18
 )
 
 # Hide Y-axis ticks

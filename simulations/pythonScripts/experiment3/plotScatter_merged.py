@@ -11,7 +11,11 @@ import numpy as np
 from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 from matplotlib.lines import Line2D
+from pathlib import Path
 plt.rcParams['text.usetex'] = False
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS
 
 ROOT_PATH = "../../.."
 AQM = "fifo"
@@ -20,7 +24,11 @@ BANDWIDTH = 100
 DELAYS = [20]     # base delays in ms; final stored as [20,40] in DF
 QMULTS = [0.2,1,4]
 QMULTDICT = {0.2 : "smallbuffer", 1 : "mediumbuffer", 4 : "largebuffer" }
-PROTOCOLS = ['cubic','bbr','orbtcp', 'bbr3']
+PROTOCOLS = CORE_PROTOCOLS
+PROTOCOLS_LEO = CORE_PROTOCOLS
+COLORS_LEO = PROTOCOL_COLORS
+PROTOCOLS_FRIENDLY_NAME_LEO = PROTOCOL_LABELS
+HOME_DIR = os.path.expanduser("~")
 FLOWS = 2
 RUNS = [1,2,3,4,5]
 
@@ -274,7 +282,7 @@ if __name__ == "__main__":
             for delay in DELAYS:
                 if not (delay == 100 and protocol == 'aurora' and CONTROL_VAR == 4):
                     axes.scatter(data.loc[delay,CONTROL_VAR, protocol]['delay_mean']/ (delay*2), data.loc[delay,CONTROL_VAR, protocol]['util_mean']/100 - data.loc[delay,CONTROL_VAR, protocol]['retr_mean']/100, edgecolors=COLORS_LEO[protocol], marker=MARKER_MAP[delay], facecolors='none', alpha=0.25)
-                    axes.scatter(data.loc[delay,CONTROL_VAR, protocol]['delay_mean']/ (delay*2), data.loc[delay,CONTROL_VAR, protocol]['util_mean']/100, edgecolors=COLORS_LEO[protocol], marker=MARKER_MAP[delay], facecolors='none', label='%s-%s' % ((lambda p: 'bbrv1' if p == 'bbr' else 'bbrv3' if p == 'bbr3' else 'vivace' if p == 'pcc' else p)(protocol), delay*2))
+                    axes.scatter(data.loc[delay,CONTROL_VAR, protocol]['delay_mean']/ (delay*2), data.loc[delay,CONTROL_VAR, protocol]['util_mean']/100, edgecolors=COLORS_LEO[protocol], marker=MARKER_MAP[delay], facecolors='none', label='%s-%s' % (PROTOCOL_LABELS[protocol], delay*2))
                     subset = df[(df['protocol'] == protocol) & (df['qmult'] == CONTROL_VAR)  & (df['min_delay'] == delay)]
                     y = subset['util_mean'].values/100
                     x = subset['delay_mean'].values/(delay*2)

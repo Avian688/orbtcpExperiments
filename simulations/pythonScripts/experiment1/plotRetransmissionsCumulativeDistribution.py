@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import scienceplots
+from pathlib import Path
 from matplotlib.lines import Line2D
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import EXPERIMENT_1_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS
 
 def make_cdf_axes(xlabel, show_ylabel=True):
     fig = plt.figure(figsize=(5, 2))
@@ -34,8 +39,7 @@ if __name__ == "__main__":
     runs = list(range(1, 51))
     SIM_SECONDS = 300  # simulation length
 
-    # Same protocols as your other plots
-    protocols = ["orbtcp", "bbr", "cubic", "bbr3", "satcp", "leocc"]
+    protocols = EXPERIMENT_1_PROTOCOLS
 
     retransData = []
 
@@ -109,15 +113,7 @@ if __name__ == "__main__":
         columns=["protocol", "run_number", "average_retrans_mbps"]
     )
 
-    # Colour mapping (same as your other plots)
-    colours = {
-        "cubic": "#0C5DA5",   # blue
-        "bbr": "#00B945",     # green
-        "orbtcp": "#FF9500",  # orange
-        "bbr3": "#EB0909",    # red
-        "satcp": "#7E2F8E",   # purple
-        "leocc": "#17BECF",   # teal/cyan
-    }
+    colours = PROTOCOL_COLORS
 
     fig, ax = make_cdf_axes("Average Retr. Rate (Mbps)", show_ylabel=False)
 
@@ -136,14 +132,7 @@ if __name__ == "__main__":
     #ax.set_xlabel("Average Retr. Rate (Mbps)")
     #ax.set_ylabel("\% of Trials")
 
-    protocol_label_map = {
-        "orbtcp": "OrbCC",
-        "bbr": "BBRv1",
-        "cubic": "Cubic",
-        "bbr3": "BBRv3",
-        "satcp": "SatCP",
-        "leocc": "LeoCC",
-    }
+    protocol_label_map = PROTOCOL_LABELS
 
     protocol_legend_handles = [
         Line2D([0], [0], color=colours[p], lw=1.5, label=protocol_label_map[p])

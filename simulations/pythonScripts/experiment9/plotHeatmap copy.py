@@ -4,6 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 from matplotlib import font_manager
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
 
 libertine_reg_path = "/usr/share/fonts/opentype/linux-libertine/LinLibertine_R.otf"
 libertine_bold_path = "/usr/share/fonts/opentype/linux-libertine/LinLibertine_RB.otf"
@@ -24,7 +28,8 @@ sys.path.append(mymodule_dir)
 from core.config import *
 from core.plotting import *
 
-protocols = ['cubic', 'bbr', 'orbtcp', 'bbr3']
+protocols = LEO_PROTOCOLS
+PROTOCOLS_FRIENDLY_NAME_LEO = PROTOCOL_LABELS
 
 bent_pipe_link_bandwidth = 100
 num_flows               = 1

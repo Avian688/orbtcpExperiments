@@ -1,8 +1,13 @@
 import os
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, Normalize
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
 
 # Plot styling (same as previous script)
 import scienceplots
@@ -17,18 +22,11 @@ PING_ROOT = os.path.join(BASE_DIR, "experiment8", "csvs", "ping")
 SRTT_ROOT = os.path.join(BASE_DIR, "experiment9", "csvs")
 
 # Experiment parameters
-protocols = ['cubic', 'bbr', 'bbr3', 'satcp', 'orbtcp', 'leocc']
+protocols = LEO_PROTOCOLS
 RUNS      = [1, 2, 3, 4, 5]
 QMULTS    = [1]
 QMULTDICT = {0.2: "smallbuffer", 1: "mediumbuffer", 4: "largebuffer"}
-PROTOCOLS_FRIENDLY_NAME_LEO = {
-    'cubic':  'Cubic',
-    'bbr':    'BBRv1',
-    'bbr3':   'BBRv3',
-    'satcp':  'SaTCP',
-    'orbtcp': 'OrbCC',
-    'leocc':  'LeoCC'
-}
+PROTOCOLS_FRIENDLY_NAME_LEO = PROTOCOL_LABELS
 
 # Paths and labels
 t_paths = {
@@ -142,7 +140,7 @@ ax.set_xticklabels(
     [PROTOCOLS_FRIENDLY_NAME_LEO[p] for p in protocols],
     rotation=0,
     ha='center',
-    fontsize=27
+    fontsize=18
 )
 
 # Hide Y-axis labels

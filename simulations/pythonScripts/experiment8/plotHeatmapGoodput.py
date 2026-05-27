@@ -4,6 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 from matplotlib import font_manager
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
 
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = ["Times New Roman", "Times", "DejaVu Serif"]
@@ -12,7 +16,7 @@ plt.rcParams['font.size'] = 40
 plt.rcParams['text.usetex'] = False
 
 
-protocols = ['cubic', 'bbr', 'bbr3', 'satcp', 'orbtcp', 'leocc']
+protocols = LEO_PROTOCOLS
 
 bent_pipe_link_bandwidth = 100
 num_flows               = 1
@@ -20,14 +24,7 @@ num_flows               = 1
 RUNS = [1, 2, 3, 4, 5]
 QMULTS = [0.2, 1 ,4]
 QMULTDICT = {0.2 : "smallbuffer", 1 : "mediumbuffer", 4 : "largebuffer" }
-PROTOCOLS_FRIENDLY_NAME_LEO = {
-        'cubic':   'Cubic',
-        'bbr':    'BBRv1',
-        'bbr3':    'BBRv3',
-        'satcp':  'SaTCP',
-        'orbtcp':    'OrbCC',
-        'leocc':   'LeoCC'
-    }
+PROTOCOLS_FRIENDLY_NAME_LEO = PROTOCOL_LABELS
 
 # Combine “basename (no .log)” → {queue, label}
 paths_info = {
@@ -117,7 +114,7 @@ for idx, m in enumerate(QMULTS):
         [rf"\textbf{{{PROTOCOLS_FRIENDLY_NAME_LEO[p]}}}" for p in protocols],
         rotation=0,
         ha="center",
-        fontsize=18
+        fontsize=16
     )
 
     # Y‐axis: show path labels only on the leftmost subplot

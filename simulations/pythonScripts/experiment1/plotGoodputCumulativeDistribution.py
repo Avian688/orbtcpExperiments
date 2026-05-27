@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import scienceplots
+from pathlib import Path
 from matplotlib.lines import Line2D
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import EXPERIMENT_1_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS
 
 def make_cdf_axes(xlabel, show_ylabel=True):
     fig = plt.figure(figsize=(5, 2))
@@ -34,8 +39,7 @@ if __name__ == "__main__":
     BINS = 50
     runs = list(range(1, 51))
 
-    # Added satcp + leocc
-    protocols = ["orbtcp", "bbr", "cubic", "bbr3", "satcp", "leocc"]
+    protocols = EXPERIMENT_1_PROTOCOLS
 
     rttData = []
     lossData = []
@@ -77,16 +81,7 @@ if __name__ == "__main__":
     bw_rtt_data = pd.DataFrame(rttData, columns=["protocol", "run_number", "average_goodput", "optimal_goodput"])
     loss_data = pd.DataFrame(lossData, columns=["protocol", "run_number", "average_goodput", "optimal_goodput"])
 
-    # Colour mapping (added satcp + leocc)
-    # Picked distinct, readable colours that don't clash with existing ones.
-    colours = {
-        "cubic": "#0C5DA5",   # blue
-        "bbr": "#00B945",     # green
-        "orbtcp": "#FF9500",  # orange
-        "bbr3": "#EB0909",    # red
-        "satcp": "#7E2F8E",   # purple
-        "leocc": "#17BECF",   # teal/cyan
-    }
+    colours = PROTOCOL_COLORS
 
     fig, ax = make_cdf_axes("Average Goodput (Mbps)", show_ylabel=True)
 
@@ -112,14 +107,7 @@ if __name__ == "__main__":
     #ax.set_xlabel("Average Goodput (Mbps)")
     #ax.set_ylabel("\% of Trials")
 
-    protocol_label_map = {
-        "orbtcp": "OrbCC",
-        "bbr": "BBRv1",
-        "cubic": "Cubic",
-        "bbr3": "BBRv3",
-        "satcp": "SatCP",
-        "leocc": "LeoCC",
-    }
+    protocol_label_map = PROTOCOL_LABELS
 
     # Protocol legend (optional)
     protocol_legend_handles = [

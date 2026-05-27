@@ -6,13 +6,17 @@ plt.style.use('science')
 import os, sys
 from matplotlib.ticker import ScalarFormatter
 import numpy as np
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_LABELS, PROTOCOL_MARKERS
 
 plt.rcParams['text.usetex'] = True
 plt.rcParams['axes.labelsize'] = "medium"
 plt.rcParams['xtick.labelsize'] = "medium"
 plt.rcParams['ytick.labelsize'] = "medium"
 
-PROTOCOLS = ['cubic', 'bbr', 'bbr3', 'orbtcp']
+PROTOCOLS = CORE_PROTOCOLS
 BWS = [100]
 DELAYS = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
 QMULTS = [0.2, 1, 4]
@@ -122,20 +126,17 @@ for mult in QMULTS:
         ]
     )
 
-    cubic_data = summary_data[summary_data['protocol'] == 'cubic'].set_index('delay')
-    bbr_data   = summary_data[summary_data['protocol'] == 'bbr'].set_index('delay')
-    orbtcp_data= summary_data[summary_data['protocol'] == 'orbtcp'].set_index('delay')
-    bbr3_data  = summary_data[summary_data['protocol'] == 'bbr3'].set_index('delay')
-
     fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(4.5,1.2))
     ax = axes
 
-    plot_points_rtt(ax, cubic_data, 'goodput_ratio_total_mean', 'goodput_ratio_total_std', 'x', 'cubic')
-    plot_points_rtt(ax, bbr_data,   'goodput_ratio_total_mean', 'goodput_ratio_total_std', '.', 'bbr')
-    plot_points_rtt(ax, orbtcp_data,'goodput_ratio_total_mean', 'goodput_ratio_total_std', '^', 'orbtcp')
-    plot_points_rtt(ax, bbr3_data,  'goodput_ratio_total_mean', 'goodput_ratio_total_std', '_', 'bbr3')
-
-    print(cubic_data)
+    for proto in PROTOCOLS:
+        df = summary_data[summary_data['protocol'] == proto].set_index('delay')
+        plot_points_rtt(
+            ax, df,
+            'goodput_ratio_total_mean',
+            'goodput_ratio_total_std',
+            PROTOCOL_MARKERS[proto], proto
+        )
 
     # Add fairness reference lines:
     for y, label, offset, color in [
@@ -167,16 +168,11 @@ for mult in QMULTS:
     handles, labels = ax.get_legend_handles_labels()
     line_handles = [h[0] if isinstance(h, tuple) else h for h in handles]
     legend_map = dict(zip(labels, line_handles))
-    handles_top = [
-        legend_map.get('cubic'),
-        legend_map.get('bbr'),
-        legend_map.get('bbr3'),
-        legend_map.get('orbtcp')
-    ]
-    labels_top = ['Cubic', 'BBRv1', 'BBRv3', 'OrbCC']
+    handles_top = [legend_map[p] for p in PROTOCOLS if p in legend_map]
+    labels_top = [PROTOCOL_LABELS[p] for p in PROTOCOLS if p in legend_map]
     legend_top = plt.legend(
         handles_top, labels_top,
-        ncol=4,
+        ncol=max(1, min(5, len(labels_top))),
         loc='upper center',
         bbox_to_anchor=(0.5, 1.2),
         columnspacing=1.0,

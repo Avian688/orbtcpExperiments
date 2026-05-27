@@ -4,6 +4,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.lines import Line2D
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS, PROTOCOL_MARKERS
 
 # existing style & constants
 import scienceplots
@@ -18,10 +23,10 @@ DELAY = 50
 INTERRUPTS = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
 QMULTS = [0.2, 1, 4]
 QMULTDICT = {0.2: "smallbuffer", 1: "mediumbuffer", 4: "largebuffer"}
-PROTOCOLS = ['cubic', 'bbr', 'bbr3', 'orbtcp']
-PROT_MARK = {'cubic': 'x', 'bbr': '.', 'orbtcp': '^', 'bbr3': '_'}
-COLORS = {'cubic': '#0C5DA5', 'bbr': '#00B945', 'orbtcp': '#FF9500', 'bbr3': '#eb0909'}
-NAMES = {'cubic': 'Cubic', 'bbr': 'BBRv1', 'orbtcp': 'LeoTCP', 'bbr3': 'BBRv3'}
+PROTOCOLS = CORE_PROTOCOLS
+PROT_MARK = PROTOCOL_MARKERS
+COLORS = PROTOCOL_COLORS
+NAMES = PROTOCOL_LABELS
 
 LINEWIDTH = 0.30
 ELINEWIDTH = 0.75
@@ -134,7 +139,7 @@ for qmult in QMULTS:
     ax.legend(
         legend_items,
         [NAMES[p] for p in PROTOCOLS],
-        ncol=4, loc='upper center', bbox_to_anchor=(0.5, 1.25),
+        ncol=min(5, len(PROTOCOLS)), loc='upper center', bbox_to_anchor=(0.5, 1.25),
         frameon=False, fontsize='small'
     )
 

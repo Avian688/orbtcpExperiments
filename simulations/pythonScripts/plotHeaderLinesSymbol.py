@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 import scienceplots
+from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS, PROTOCOL_MARKERS
 
 # Use the science style
 plt.style.use('science')
@@ -10,26 +11,10 @@ plt.rcParams.update({
     "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
 })
 
-# Protocol definitions
-PROTOCOLS = ['cubic', 'bbr', 'bbr3', 'orbtcp']
-COLORS    = {
-    'cubic':  '#0C5DA5',
-    'bbr':    '#00B945',
-    'orbtcp': '#FF9500',
-    'bbr3':   '#eb0909'
-}
-FRIENDLY  = {
-    'cubic':  'Cubic',
-    'bbr':    'BBRv1',
-    'orbtcp': 'OrbCC',
-    'bbr3':   'BBRv3'
-}
-MARKERS   = {
-    'cubic':  'x',
-    'bbr':    '.',
-    'bbr3':   '_',
-    'orbtcp': '^'
-}
+PROTOCOLS = CORE_PROTOCOLS
+COLORS = PROTOCOL_COLORS
+FRIENDLY = PROTOCOL_LABELS
+MARKERS = PROTOCOL_MARKERS
 
 # Create a very thin figure for the legend strip
 fig, ax = plt.subplots(figsize=(40, 1))

@@ -1,8 +1,13 @@
 import os
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, Normalize
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
 
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = ["Times New Roman", "Times", "DejaVu Serif"]
@@ -10,18 +15,11 @@ plt.rcParams['font.weight'] = 'bold'
 plt.rcParams['font.size'] = 40
 plt.rcParams['text.usetex'] = False
 
-protocols = ['cubic', 'bbr', 'bbr3', 'satcp', 'orbtcp', 'leocc']
+protocols = LEO_PROTOCOLS
 RUNS = [1, 2, 3, 4, 5]
 QMULTS = [1]
 QMULTDICT = {0.2: "smallbuffer", 1: "mediumbuffer", 4: "largebuffer"}
-PROTOCOLS_FRIENDLY_NAME_LEO = {
-    'cubic': 'Cubic',
-    'bbr': 'BBRv1',
-    'bbr3': 'BBRv3',
-    'satcp': 'SaTCP',
-    'orbtcp': 'OrbCC',
-    'leocc': 'LeoCC'
-}
+PROTOCOLS_FRIENDLY_NAME_LEO = PROTOCOL_LABELS
 
 # Abbreviated path labels, with ISL/BP suffix
 paths_info = {
@@ -153,7 +151,7 @@ for idx, m in enumerate(QMULTS):
         [rf"\textbf{{{PROTOCOLS_FRIENDLY_NAME_LEO[p]}}}" for p in protocols],
         rotation=0,
         ha="center",
-        fontsize=18
+        fontsize=16
     )
 
     if idx == 0:

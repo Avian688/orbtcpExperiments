@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 import os, sys
 import scienceplots
+from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS
 
 # Use the science style
 plt.style.use('science')
@@ -15,27 +16,9 @@ plt.rcParams['axes.labelsize'] = "large"
 plt.rcParams['xtick.labelsize'] = "large"
 plt.rcParams['ytick.labelsize'] = "large"
 
-PROTOCOLS_LEO = ['optimal', 'cubic', 'bbr', 'bbr3', 'satcp', 'leocc','orbtcp']
-
-COLORS_LEO = {
-    'optimal':'#000000',
-    'cubic':'#0C5DA5',
-    'bbr':'#00B945',
-    'orbtcp':'#FF9500',
-    'bbr3':'#eb0909',
-    'satcp':'#8c5cff',
-    'leocc':'#00b7c7'
-}
-
-PROTOCOLS_FRIENDLY_NAME_LEO = {
-        'optimal':   'Optimal',
-        'cubic':   'Cubic',
-        'bbr':    'BBRv1',
-        'orbtcp':    'OrbCC',
-        'bbr3':    'BBRv3',
-        'satcp': 'SaTCP',
-        'leocc': 'LeoCC'  
-    }
+PROTOCOLS_LEO = ['optimal', *LEO_PROTOCOLS]
+COLORS_LEO = {'optimal': '#000000', **PROTOCOL_COLORS}
+PROTOCOLS_FRIENDLY_NAME_LEO = {'optimal': 'Optimal', **PROTOCOL_LABELS}
 
 # Setup paths
 script_dir = os.path.dirname(__file__)

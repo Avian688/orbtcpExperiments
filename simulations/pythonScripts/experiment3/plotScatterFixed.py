@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os, sys
+from pathlib import Path
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,6 +17,9 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS
+
 ROOT_PATH = "../../.."
 AQM = "fifo"
 BWS = [100]       # in Mbit/s
@@ -23,12 +27,12 @@ BANDWIDTH = 100
 DELAYS = [10]     # base delays in ms; final stored as [20,40] in DF
 QMULTS = [1]#[0.2,1,4]
 QMULTDICT = {0.2 : "smallbuffer", 1 : "mediumbuffer", 4 : "largebuffer" }
-PROTOCOLS = ['cubic','bbr','orbtcp', 'bbr3']
+PROTOCOLS = CORE_PROTOCOLS
 FLOWS = 2
 RUNS = [1,2,3,4,5]
 CHANGE1 = 101    # cross interval start time
 CHANGE2 = 201   # cross interval start time
-COLORS_LEO           = {'cubic':'#0C5DA5','bbr':'#00B945','orbtcp':'#FF9500','bbr3':'#eb0909'}
+COLORS_LEO = PROTOCOL_COLORS
 
 def confidence_ellipse(x, y, ax, n_std=1.0, facecolor='none', **kwargs):
     if x.size != y.size:
@@ -260,13 +264,10 @@ def plot_dd_scatter_jains_vs_util(df, delays=[10,20], qmults=[0.2,1,4]):
         ax.add_artist(marker_legend)
 
         # protocol legend (colored lines)
-        proxy_lines = [
-            Line2D([0], [0], color=COLORS_LEO[p], lw=1)
-            for p in ['cubic', 'bbr', 'bbr3', 'orbtcp']
-        ]
-        proto_labels = ['Cubic', 'BBRv1', 'BBRv3', 'OrbCC']
+        proxy_lines = [Line2D([0], [0], color=COLORS_LEO[p], lw=1) for p in PROTOCOLS]
+        proto_labels = [PROTOCOL_LABELS[p] for p in PROTOCOLS]
         proto_legend = ax.legend(proxy_lines, proto_labels,
-                                 ncol=4, loc='upper center',
+                                 ncol=min(5, len(PROTOCOLS)), loc='upper center',
                                  bbox_to_anchor=(0.5, 1.2),
                                  fontsize='small', columnspacing=1.0,
                                  handletextpad=0.5, borderaxespad=0.0)

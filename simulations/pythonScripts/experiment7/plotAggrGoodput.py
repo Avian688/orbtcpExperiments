@@ -7,6 +7,10 @@ import os, sys
 from matplotlib.ticker import ScalarFormatter
 import numpy as np
 from matplotlib.lines import Line2D
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS, PROTOCOL_MARKERS
 
 plt.rcParams['text.usetex'] = False
 
@@ -15,12 +19,12 @@ DELAY = 50
 INTERRUPTS = [20, 40 , 60, 80, 100, 120, 140, 160, 180, 200]
 QMULTS = [0.2,1,4]
 QMULTDICT = {0.2 : "smallbuffer", 1 : "mediumbuffer", 4 : "largebuffer" }
-PROTOCOLS = ['cubic', 'bbr', 'bbr3', 'orbtcp']
+PROTOCOLS = CORE_PROTOCOLS
 RUNS = [1, 2, 3, 4, 5]
 
-PROTOCOLS_MARKERS_LEO = {'cubic':'x','bbr':'.','orbtcp':'^','bbr3':'_'}
-COLORS_LEO           = {'cubic':'#0C5DA5','bbr':'#00B945','orbtcp':'#FF9500','bbr3':'#eb0909'}
-PROTOCOLS_FRIENDLY_NAME_LEO ={'cubic':'Cubic','bbr':'BBRv1','orbtcp':'LeoTCP','bbr3':'BBRv3'}
+PROTOCOLS_MARKERS_LEO = PROTOCOL_MARKERS
+COLORS_LEO = PROTOCOL_COLORS
+PROTOCOLS_FRIENDLY_NAME_LEO = PROTOCOL_LABELS
 
 LINEWIDTH = 0.30
 ELINEWIDTH = 0.75
@@ -119,7 +123,7 @@ for mult in QMULTS:
     ax.legend(
         handles=proxy_lines,
         labels=legend_labels,
-        ncol=4,
+        ncol=min(5, len(PROTOCOLS)),
         loc='upper center',
         bbox_to_anchor=(0.5, 1.2),
         frameon=False,

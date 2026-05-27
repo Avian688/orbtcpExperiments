@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 import os
+import sys
 import pandas as pd
 import numpy as np
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import CORE_PROTOCOLS
 
 # Configuration (adjust ROOT_PATH if needed)
 ROOT_PATH = "../.."
 QMULTS = [1]
 QMULTDICT = {0.2: "smallbuffer", 1: "mediumbuffer", 4: "largebuffer"}
-PROTOCOLS = ['cubic', 'bbr', 'orbtcp', 'bbr3']
+PROTOCOLS = CORE_PROTOCOLS
 FLOWS = 2
 RUNS = [1, 2, 3, 4, 5]
 CHANGE1 = 101  # first change time in seconds

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os, sys
+from pathlib import Path
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,6 +19,9 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS, PROTOCOL_REJOIN_COLORS
+
 ROOT_PATH = "../../.."
 AQM = "fifo"
 BWS = [100]       # in Mbit/s
@@ -25,7 +29,7 @@ BANDWIDTH = 100
 DELAYS = [20]     # base delays in ms; final stored as [20,40] in DF
 QMULTS = [0.2,1,4]
 QMULTDICT = {0.2 : "smallbuffer", 1 : "mediumbuffer", 4 : "largebuffer" }
-PROTOCOLS = ['cubic','bbr','orbtcp', 'bbr3']
+PROTOCOLS = CORE_PROTOCOLS
 FLOWS = 2
 RUNS = [1,2,3,4,5]
 CHANGE1 = 100     # cross interval start time
@@ -286,26 +290,9 @@ def data_to_dd_df(root_path, aqm, bws, delays, qmults, protocols,
 
 
 def plot_dd_scatter_jains_vs_util(df, delays=[10,20], qmults=[0.2,1,4]):
-    MARK_COLOR_MAP = {
-        'cubic':   '#0088ff',
-        'bbr':    '#00ff5f',
-        'orbtcp':    '#fd970c',
-        'bbr3':    '#ff0a0a'
-    }
-
-    COLOR_MAP = {
-        'cubic':   '#0C5DA5',
-        'bbr':    '#00B945',
-        'orbtcp':    '#FF9500',
-        'bbr3':    '#eb0909'
-    }
-
-    REJOIN_COLOR_MAP = {
-        'cubic':   '#07355e',
-        'bbr':    '#024c1d',
-        'orbtcp':    '#6d4102',
-        'bbr3':    '#ab0303'
-    }
+    MARK_COLOR_MAP = PROTOCOL_COLORS
+    COLOR_MAP = PROTOCOL_COLORS
+    REJOIN_COLOR_MAP = PROTOCOL_REJOIN_COLORS
 
     CROSS_MARKER   = '^'  # triangle for Cross
     REJOIN_MARKER  = '*'  # circle for Rejoin
@@ -355,7 +342,7 @@ def plot_dd_scatter_jains_vs_util(df, delays=[10,20], qmults=[0.2,1,4]):
 
         # 2) TOP LEGEND (protocols only) - in figure coords so it’s truly above
         proto_handles = [Line2D([], [], color=COLOR_MAP[p], linewidth=1) for p in PROTOCOLS]
-        proto_labels = PROTOCOLS
+        proto_labels = [PROTOCOL_LABELS[p] for p in PROTOCOLS]
         # leg1 = fig.legend(
         #     proto_handles[:3], proto_labels[:3],
         #     loc='upper center',

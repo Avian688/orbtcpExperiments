@@ -6,13 +6,17 @@ plt.style.use('science')
 import os, sys
 from matplotlib.ticker import ScalarFormatter
 import numpy as np
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_LABELS, PROTOCOL_MARKERS
 
 plt.rcParams['text.usetex'] = True
 plt.rcParams['axes.labelsize'] = "medium"
 plt.rcParams['xtick.labelsize'] = "medium"
 plt.rcParams['ytick.labelsize'] = "medium"
 
-PROTOCOLS = ['cubic', 'bbr', 'bbr3', 'orbtcp']
+PROTOCOLS = CORE_PROTOCOLS
 BWS = [100]
 DELAYS = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
 QMULTS = [0.2, 1, 4]
@@ -123,13 +127,13 @@ for mult in QMULTS:
     ax.set_ylim([0, 1.1])
     plt.margins(y=0.05)
 
-    for proto, marker in [('cubic', 'x'), ('bbr', '.'), ('orbtcp', '^'), ('bbr3', '_')]:
+    for proto in PROTOCOLS:
         df = summary_data[summary_data['protocol'] == proto].set_index('delay')
         plot_points_rtt(
             ax, df,
             'goodput_ratio_total_mean',
             'goodput_ratio_total_std',
-            marker, proto
+            PROTOCOL_MARKERS[proto], proto
         )
 
     ax.set(yscale='linear', xlabel='RTT (ms)', ylabel='Goodput Ratio')
@@ -140,16 +144,11 @@ for mult in QMULTS:
     handles, labels = ax.get_legend_handles_labels()
     line_handles = [h[0] if isinstance(h, tuple) else h for h in handles]
     legend_map = dict(zip(labels, line_handles))
-    handles_top = [
-        legend_map.get('cubic'),
-        legend_map.get('bbr'),
-        legend_map.get('bbr3'),
-        legend_map.get('orbtcp')
-    ]
-    labels_top = ['Cubic', 'BBRv1', 'BBRv3', 'OrbCC']
+    handles_top = [legend_map[p] for p in PROTOCOLS if p in legend_map]
+    labels_top = [PROTOCOL_LABELS[p] for p in PROTOCOLS if p in legend_map]
     legend_top = plt.legend(
         handles_top, labels_top,
-        ncol=4,
+        ncol=max(1, min(5, len(labels_top))),
         loc='upper center',
         bbox_to_anchor=(0.5, 1.2),
         columnspacing=1.0,

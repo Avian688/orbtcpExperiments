@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import scienceplots
 plt.style.use('science')
 import matplotlib as mpl
+from pathlib import Path
 mpl.rcParams['text.usetex'] = True
 pd.set_option('display.max_rows', None)
 plt.rcParams['axes.labelsize'] = "large"
@@ -16,6 +17,9 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS
+
 ROOT_PATH = "../../.."
 EXPERIMENT = "experiment11"
 
@@ -23,21 +27,14 @@ EXPERIMENT = "experiment11"
 BANDWIDTH = 100                  # Mbps
 BASE_RTT_MS = 50                 # ms
 FLOW_BATCHES = [5, 10, 20]
-PROTOCOLS = ['cubic','bbr','bbr3','satcp','leocc','orbtcp']
+PROTOCOLS = LEO_PROTOCOLS
 RUNS = [1,2,3,4,5]
 
 # Evaluate after all flows have joined (latest join ~= 100s), and before end
 EVAL_START = 105
 EVAL_END   = 155
 
-COLORS_LEO = {
-    'cubic':'#0C5DA5',
-    'bbr':'#00B945',
-    'orbtcp':'#FF9500',
-    'bbr3':'#eb0909',
-    'satcp':'#8c5cff',
-    'leocc':'#00b7c7'
-}
+COLORS_LEO = PROTOCOL_COLORS
 
 MARKERS_BATCH = {
     5: 'o',
@@ -243,13 +240,13 @@ def plot_exp11_scatter_norm_util_vs_norm_delay(df):
             )
 
     # Protocol legend (TOP, no frame) -- use figure legend so it won't get clipped by axes
-    proto_order = ['cubic', 'bbr', 'bbr3', 'satcp', 'leocc', 'orbtcp']
-    proto_labels = ['Cubic', 'BBRv1', 'BBRv3', 'SaTCP', 'LeoCC', 'OrbCC']
+    proto_order = PROTOCOLS
+    proto_labels = [PROTOCOL_LABELS[p] for p in proto_order]
     proxy_lines = [Line2D([0], [0], color=COLORS_LEO[p], lw=1.5) for p in proto_order]
 
     fig.legend(
         proxy_lines, proto_labels,
-        ncol=6,
+        ncol=min(5, len(proto_order)),
         loc='upper center',
         bbox_to_anchor=(0.56, 0.92),
         fontsize='small',

@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
 import os
+import sys
 import pandas as pd
 import numpy as np
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
 
 # ─── Experiment Setup ─────────────────────────────────────────────────────────
 # Analyze Pair1 and Pair3 (but label Pair3 as “Pair2” in the outputs)
 pairs2      = ['Pair1', 'Pair3']
 pair_labels = {'Pair1': 'Pair1', 'Pair3': 'Pair2'}
 
-protocols   = ['cubic', 'bbr', 'bbr3', 'orbtcp']  # LeoTCP last
+protocols   = LEO_PROTOCOLS
 RUNS        = [1, 2, 3, 4, 5]
 
 # Friendly names for printing
-FRIENDLY    = {'cubic':'Cubic', 'bbr':'BBRv1', 'bbr3':'BBRv3', 'orbtcp':'OrbCC'}
+FRIENDLY    = PROTOCOL_LABELS
 
 # ─── RTT Computation ──────────────────────────────────────────────────────────
 def avg_rtt(proto, pair):

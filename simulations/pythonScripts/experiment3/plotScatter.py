@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os, sys
+from pathlib import Path
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,6 +18,12 @@ mymodule_dir = os.path.join(script_dir, '../../..')
 sys.path.append(mymodule_dir)
 from core.config import *
 from core.plotting import *
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_COLORS
+
+PROTOCOLS_LEO = CORE_PROTOCOLS
+COLORS_LEO = PROTOCOL_COLORS
 
 def confidence_ellipse(x, y, ax, n_std=1.0, facecolor='none', **kwargs):
     if x.size != y.size:
