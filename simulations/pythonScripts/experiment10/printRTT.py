@@ -12,7 +12,7 @@ protocols   = ['cubic', 'bbr', 'bbr3', 'orbtcp']  # LeoTCP last
 RUNS        = [1, 2, 3, 4, 5]
 
 # Friendly names for printing
-FRIENDLY    = {'cubic':'Cubic', 'bbr':'BBRv1', 'bbr3':'BBRv3', 'orbtcp':'LeoTCP'}
+FRIENDLY    = {'cubic':'Cubic', 'bbr':'BBRv1', 'bbr3':'BBRv3', 'orbtcp':'OrbCC'}
 
 # ─── RTT Computation ──────────────────────────────────────────────────────────
 def avg_rtt(proto, pair):
@@ -29,7 +29,7 @@ def avg_rtt(proto, pair):
             # path to the TCP connection metrics directory
             conn_dir = os.path.join(base,
                                     f"run{run}",
-                                    f"leoconstellation.client[{srv}].tcp.conn")
+                                    f"leoconstellation.userTerminal[{srv}].tcp.conn")
             # assume the file is named "rtt.csv"
             fpath = os.path.join(conn_dir, "rtt.csv")
             if not os.path.exists(fpath):

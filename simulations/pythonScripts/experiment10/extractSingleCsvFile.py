@@ -39,7 +39,7 @@ if __name__ == "__main__":
     pair = ""
     run = 0
     argNum = 0
-    vectorsToExtract = ["goodput", "rtt", "srtt", "cwnd", "queueLength", "throughput"]
+    vectorsToExtract = ["goodput", "rtt", "srtt", "cwnd", "queueLength", "throughput", "retransmissionRate"]
     extracted = False
     
     for arg in sys.argv[1:]:

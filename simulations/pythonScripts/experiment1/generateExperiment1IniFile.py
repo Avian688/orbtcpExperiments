@@ -4,6 +4,7 @@
 # Uses scenario XMLs in ../../paperExperiments/scenarios/experiment1/
 
 from pathlib import Path
+import os
 
 ALG_FLAVOUR = {
     "cubic": ("TcpPaced", "TcpCubic"),
@@ -12,6 +13,7 @@ ALG_FLAVOUR = {
     "bbr3": ("Bbr", "Bbr3Flavour"),
     "orbtcp": ("Orbtcp", "OrbtcpFlavour"),
     "leocc": ("Leocc", "LeoccFlavour"),
+    "orca": ("OrcaTcp", "Orca"),
 }
 
 
@@ -24,7 +26,10 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     scenario_files = sorted(scenarios_dir.iterdir())
-
+    
+    # RayNet; NED sources must be included in the .ini. But there should be no harm in always including them.
+    common_ned = f"ned-path = ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpPaced/src:../../../../cubic/simulations:../../../../cubic/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../satcp/simulations:../../../../satcp/src:../../../../leocc/simulations:../../../../leocc/src:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src:{os.getenv('HOME')}/raynet/simlibs/RLComponents/src:{os.getenv('HOME')}/raynet/simlibs/Orca/src:"
+    
     common_tcp = [
         "**.tcp.advertisedWindow = 200000000",
         "**.tcp.windowScalingSupport = true",
@@ -69,6 +74,7 @@ def main() -> None:
 
             # ---------------- [General] ----------------
             w("[General]")
+            w(common_ned) # RayNet; NED sources must be included in the .ini
             w()
             block([
                 "network = singledumbbell",

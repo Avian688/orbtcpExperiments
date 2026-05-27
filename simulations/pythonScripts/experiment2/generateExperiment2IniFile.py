@@ -120,6 +120,10 @@ def main() -> None:
             # -------- Algorithm block --------
             w(f'**.tcp.typename = "{tcp_type}"')
             w(f'**.tcp.tcpAlgorithmClass = "{alg_class}"')
+            if alg == "satcp":
+                w("**.useLeosatellitesHandoverOracle = false")
+                w("**.handoverFreezeDuration = 1.3s")
+                w("**.handoverReportLeadTime = 0.5s")
             block(common_tcp)
             w()
 

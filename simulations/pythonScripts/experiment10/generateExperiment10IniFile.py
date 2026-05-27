@@ -16,6 +16,9 @@ def calculate_bdp_packets(bandwidthBytesPerSecond, rttMs):
     bdpBytes = bandwidthBytesPerSecond * (rttMs / 1000.0)
     return math.ceil((bdpBytes / PACKET_SIZE_BYTES) - 1e-9)
 
+def average_rtt_ms(*rttsMs):
+    return sum(rttsMs) / len(rttsMs)
+
 if __name__ == "__main__":
     simSeed = 1999
     numOfRuns = 5
@@ -45,10 +48,12 @@ if __name__ == "__main__":
         ]
     ]
 
+    # Experiment 10 has two competing flows per config, so use the average
+    # path RTT before converting to a shared 1 BDP packet queue.
     path_rtts_ms = {
-        0: 43.092480,  # Pair 1
-        1: 14.827520,  # Pair 2
-        2: 33.361920   # Pair 3
+        0: average_rtt_ms(54.4, 25),      # New York -> London / St John's family
+        1: average_rtt_ms(14.827520, 14.827520),  # London -> Italy family; no updated average supplied
+        2: average_rtt_ms(38, 22.4)         # San Diego/Lawrence -> New York family
     }
 
     for alg in algorithms:
@@ -85,6 +90,7 @@ if __name__ == "__main__":
             f.write('\n' + '**.**.tcp.conn-*.rtt:vector(removeRepeats).vector-recording = true')
             f.write('\n' + '**.**.tcp.conn-*.srtt:vector(removeRepeats).vector-recording = true')
             f.write('\n' + '**.**.tcp.conn-*.throughput:vector(removeRepeats).vector-recording = true')
+            f.write('\n' + '**.**.tcp.conn-*.retransmissionRate:vector(removeRepeats).vector-recording = true')
             f.write('\n' + '**.**.tcp.conn-*.**.result-recording-modes = vector(removeRepeats)')
             
             f.write('\n' + '**.**.queue.queueLength:vector(removeRepeats).vector-recording = false')

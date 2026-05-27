@@ -23,7 +23,7 @@ PING_START_TIME = "0s"
 PING_INTERVAL = "50ms"
 PING_PACKET_SIZE = "1B"
 
-CITY_TERMINALS = [
+BASE_CITY_GROUND_STATIONS = [
     ("SanDiego", "San Diego", 32.7157, -117.1611),
     ("Seattle", "Seattle", 47.6062, -122.3321),
     ("NewYork", "New York", 40.7128, -74.0060),
@@ -31,7 +31,12 @@ CITY_TERMINALS = [
     ("Shanghai", "Shanghai", 31.2304, 121.4737),
 ]
 
-CITY_TO_TERMINAL = {city_key: idx for idx, (city_key, _, _, _) in enumerate(CITY_TERMINALS)}
+PING_TERMINALS = BASE_CITY_GROUND_STATIONS + [
+    ("Lawrence", "Lawrence, KS", 39.014, -95.149),
+    ("StJohns", "St John's, Canada", 47.561, -52.775),
+]
+
+CITY_TO_TERMINAL = {city_key: idx for idx, (city_key, _, _, _) in enumerate(PING_TERMINALS)}
 
 # Keep these app indexes stable: the delay heatmap scripts use them to find
 # the baseline RTT for each source/destination pair.
@@ -46,6 +51,10 @@ PING_APPS = {
     ],
     "NewYork": [
         ("London", 0),
+        ("StJohns", 1),
+    ],
+    "Lawrence": [
+        ("NewYork", 0),
     ],
 }
 
@@ -119,7 +128,7 @@ def load_extra_ground_stations():
 
 def generate_ping_ini():
     extra_ground_stations = load_extra_ground_stations()
-    num_ground_stations = len(CITY_TERMINALS) + len(extra_ground_stations)
+    num_ground_stations = len(BASE_CITY_GROUND_STATIONS) + len(extra_ground_stations)
 
     PAPER_EXPERIMENT_DIR.mkdir(parents=True, exist_ok=True)
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -136,15 +145,13 @@ def generate_ping_ini():
         write_line(f, "cmdenv-event-banners = false")
         write_line(f, "**.cmdenv-log-level = off")
         write_line(f)
+        write_line(f, "**.rtt:vector.vector-recording = true")
+        write_line(f, "**.pingTxSeq:vector.vector-recording = true")
 
         write_line(f, "result-dir = results")
         write_line(f, "**.scalar-recording=false")
         write_line(f, "**.vector-recording=false")
         write_line(f, "**.bin-recording=false")
-        write_line(f, "**.rtt:vector.vector-recording = true")
-        write_line(f, "**.rtt.result-recording-modes = vector")
-        write_line(f, "**.pingTxSeq:vector.vector-recording = true")
-        write_line(f, "**.pingTxSeq.result-recording-modes = vector")
         write_line(f)
 
         write_line(f, "**.constraintAreaMinX = 0m")
@@ -205,7 +212,7 @@ def generate_ping_ini():
         write_line(f, "**.alt = 550")
         write_line(f, "**.satellite[*].NoradModule.altitude = 550")
         write_line(f, f"**.numOfGS = {num_ground_stations}")
-        write_line(f, f"**.numOfUserTerminals = {len(CITY_TERMINALS)}")
+        write_line(f, f"**.numOfUserTerminals = {len(PING_TERMINALS)}")
         write_line(f, "**.numOfClients = 0")
         write_line(f, "**.numberOfFlows = 1")
         write_line(f, "**.dataRate = 100Mbps")
@@ -214,14 +221,14 @@ def generate_ping_ini():
         write_line(f, "**.userTerminalUpdateInterval = 5s")
         write_line(f)
 
-        for idx, (_, label, latitude, longitude) in enumerate(CITY_TERMINALS):
+        for idx, (_, label, latitude, longitude) in enumerate(BASE_CITY_GROUND_STATIONS):
             write_line(f, f"# {label} Ground Station")
             write_line(f, f'**.groundStation[{idx}].cityName = "{label}"')
             write_line(f, f"**.groundStation[{idx}].mobility.latitude = {latitude}")
             write_line(f, f"**.groundStation[{idx}].mobility.longitude = {longitude}")
             write_line(f)
 
-        start_idx = len(CITY_TERMINALS)
+        start_idx = len(BASE_CITY_GROUND_STATIONS)
         for offset, entry in enumerate(extra_ground_stations):
             idx = start_idx + offset
             latitude = entry["Latitude"]
@@ -233,7 +240,7 @@ def generate_ping_ini():
             write_line(f, f"**.groundStation[{idx}].mobility.longitude = {longitude}")
             write_line(f)
 
-        for idx, (city_key, label, latitude, longitude) in enumerate(CITY_TERMINALS):
+        for idx, (city_key, label, latitude, longitude) in enumerate(PING_TERMINALS):
             apps = PING_APPS.get(city_key, [])
             write_line(f, f"# {label} User Terminal")
             write_line(f, f'**.userTerminal[{idx}].terminalName = "{label} UT"')

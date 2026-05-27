@@ -8,6 +8,7 @@ import ned.DatarateChannel;
 import ned.IBidirectionalChannel;
 import inet.common.scenario.ScenarioManager;
 import tcppaced.networklayer.configurator.ipv4.AutoNetworkConfigurator;
+import RLComponents.Broker; // RayNet: Broker must be imported
 
 network singledumbbell
 {
@@ -15,13 +16,13 @@ network singledumbbell
         @display("bgb=512,395");
         int numberOfFlows = default(1);
     types:
-        channel standardLine extends DatarateChannel //look at 
+        channel standardLine extends DatarateChannel //look at
         {
             delay = 4.75ms;
             datarate = 10Gbps;
         }
-        
-        channel bottleneckLine extends DatarateChannel //look at 
+
+        channel bottleneckLine extends DatarateChannel //look at
         {
             delay = 0.5ms;
             datarate = 100Mbps;
@@ -45,6 +46,7 @@ network singledumbbell
         scenarioManager: ScenarioManager {
             @display("p=100,300;is=s");
         }
+        broker: Broker; // RayNet: Broker must be present
     connections:
         for i=0..sizeof(client)-1 {
             client[i].pppg++ <--> standardLine <--> router1.pppg++;
@@ -53,7 +55,7 @@ network singledumbbell
         for n=0..sizeof(server)-1 {
             server[n].pppg++ <--> standardLine <--> router2.pppg++;
         }
-        
+
         router1.pppg++ <--> bottleneckLine <--> router2.pppg++;
 
 }

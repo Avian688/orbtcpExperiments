@@ -54,22 +54,22 @@ if __name__ == "__main__":
     
     city_pairs = [
         ("San Diego", "Seattle", {
-            "isl": 18.186880,
-            "bentpipe": 18.186880
+            "isl": 23,
+            "bentpipe": 23
         }),
         ("Seattle", "New York", {
-            "isl": 33.246080,
-            "bentpipe": 36.026240
+            "isl": 38,
+            "bentpipe": 43
         }),
         ("San Diego", "New York", {
-            "isl": 33.246080,
-            "bentpipe": 36.721280
+            "isl": 38.7,
+            "bentpipe": 44
         }),
         ("New York", "London", {
-            "isl": 42.976640
+            "isl": 51.7
         }),
         ("San Diego", "Shanghai", {
-            "isl": 81.898880
+            "isl": 90
         })
     ]
     

@@ -30,10 +30,10 @@ PROTOCOLS_FRIENDLY_NAME_LEO = {
     'leocc':  'LeoCC'
 }
 
-# Define which ping modules correspond to each pair (gs_index, app_index)
+# Define which user-terminal ping modules correspond to each pair
 ping_modules = {
-    'Pair1': [(2, 0), (2, 1)],  # groundStation[2].app[0] & [2].app[1]
-    'Pair3': [(0, 0), (29, 0)]   # groundStation[0].app[0] & [29].app[0]
+    'Pair1': [(2, 0), (2, 1)],  # New York -> London, New York -> St John's
+    'Pair3': [(0, 1), (5, 0)]   # San Diego -> New York, Lawrence -> New York
 }
 
 # Row labels for heatmap
@@ -53,11 +53,11 @@ def compute_mean_std_normalised(pair, proto):
     print(f"[DEBUG] Computing normalized delay for pair='{pair}', protocol='{proto}'")
     # Aggregate base RTT from multiple ping modules
     base_rtts = []
-    for gs_idx, app_idx in ping_modules[pair]:
+    for terminal_idx, app_idx in ping_modules[pair]:
         ping_file = os.path.join(
             PING_ROOT,
             'isl',
-            f"leoconstellation.groundStation[{gs_idx}].app[{app_idx}]",
+            f"leoconstellation.userTerminal[{terminal_idx}].app[{app_idx}]",
             'rtt.csv'
         )
         print(f"[DEBUG] Checking ping file: {ping_file}")
