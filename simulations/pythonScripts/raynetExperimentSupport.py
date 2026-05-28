@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 from pathlib import Path
 
-RAYNET_PROTOCOLS = ("orca", "cleanslate", "astrea")
+RAYNET_PROTOCOLS = ("orca")#, "cleanslate", "astrea")
 
 RAYNET_ALG_FLAVOUR = {
     "orca": ("OrcaTcp", "Orca"),
@@ -80,6 +81,17 @@ LEO_LIBS = (
 
 def is_raynet_protocol(protocol: str) -> bool:
     return protocol.lower() in RAYNET_PROTOCOLS
+
+
+def raynet_debug_output_enabled() -> bool:
+    value = os.environ.get("RAYNET_DEBUG_OUTPUT", os.environ.get("RAYNET_VERBOSE", ""))
+    return value.lower() in {"1", "true", "yes", "on", "debug", "verbose"}
+
+
+def simulation_output_kwargs(protocol: str):
+    if is_raynet_protocol(protocol) and raynet_debug_output_enabled():
+        return {}
+    return {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
 
 
 def with_raynet_protocols(protocols):

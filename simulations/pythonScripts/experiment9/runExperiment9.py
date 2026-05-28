@@ -14,7 +14,7 @@ import re
 from PyPDF2 import PdfMerger
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import build_simulation_command, with_raynet_protocols
+from raynetExperimentSupport import build_simulation_command, simulation_output_kwargs, with_raynet_protocols
 
 def collect_config_entries(paperExperimentDir, congControlList, runList):
     configEntries = []
@@ -42,7 +42,7 @@ def run_config_batch(configEntries, cores, paperExperimentDir):
     for cc, configName in configEntries:
         processList.append(subprocess.Popen(
             build_simulation_command(cc, "experiment9_" + cc + ".ini", configName, include_leo=True),
-            cwd=str(paperExperimentDir), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+            cwd=str(paperExperimentDir), **simulation_output_kwargs(cc)))
 
         currentProc = currentProc + 1
         print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")

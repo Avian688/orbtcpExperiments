@@ -21,8 +21,8 @@ def materialize_alias_ini(protocol: str, ini_path: Path, config_name: str) -> Pa
         text.rstrip()
         + f"\n\n[Config {alias}]\n"
         + f"extends = {config_name}\n"
-        + f"output-vector-file = results/{config_name}-#0.vec\n"
-        + f"output-scalar-file = results/{config_name}-#0.sca\n",
+        + f'output-vector-file = "results/{config_name}-#0.vec"\n'
+        + f'output-scalar-file = "results/{config_name}-#0.sca"\n',
         encoding="utf-8",
     )
     return generated

@@ -14,7 +14,7 @@ import re
 from PyPDF2 import PdfMerger
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import build_simulation_command, with_raynet_protocols
+from raynetExperimentSupport import build_simulation_command, simulation_output_kwargs, with_raynet_protocols
 
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
@@ -100,7 +100,7 @@ if __name__ == "__main__":
                         progStart = time.time()
                         processList.append(subprocess.Popen(
                             build_simulation_command(cc, "experiment8_" + cc + ".ini", configName, include_leo=True),
-                            cwd='../../paperExperiments/experiment8', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+                            cwd='../../paperExperiments/experiment8', **simulation_output_kwargs(cc)))
                         
                         currentProc = currentProc + 1
                         print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")

@@ -12,7 +12,7 @@ import subprocess
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import build_simulation_command, with_raynet_protocols
+from raynetExperimentSupport import build_simulation_command, simulation_output_kwargs, with_raynet_protocols
            
 if __name__ == "__main__":
     
@@ -54,7 +54,7 @@ if __name__ == "__main__":
                         progStart = time.time()
                         processList.append(subprocess.Popen(
                             build_simulation_command(cc, "experiment1_" + cc + ".ini", configName),
-                            cwd='../../paperExperiments/experiment1', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+                            cwd='../../paperExperiments/experiment1', **simulation_output_kwargs(cc)))
                         currentProc = currentProc + 1
                         print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
                         if(currentProc == cores):
@@ -93,7 +93,7 @@ if __name__ == "__main__":
                         progStart = time.time()
                         processList.append(subprocess.Popen(
                             build_simulation_command(cc, "experiment2_" + cc + ".ini", configName),
-                            cwd='../../paperExperiments/experiment2', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+                            cwd='../../paperExperiments/experiment2', **simulation_output_kwargs(cc)))
                         currentProc = currentProc + 1
                         print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
                         if(currentProc == cores):
