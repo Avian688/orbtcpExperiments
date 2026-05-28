@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-RAYNET_PROTOCOLS = ("orca")#, "cleanslate", "astrea")
+RAYNET_PROTOCOLS = ["orca"]#, "cleanslate", "astrea")
 
 RAYNET_ALG_FLAVOUR = {
     "orca": ("OrcaTcp", "Orca"),
@@ -20,7 +20,52 @@ _RAYNET_CONFIG_ALIAS = {
     "astrea": "Astrea",
 }
 
-RAYNET_HOME = Path(os.environ.get("RAYNET_HOME", Path.home() / "raynet")).expanduser()
+
+def _looks_like_raynet_home(path: Path) -> bool:
+    return (
+        (path / "raynet_paths.py").is_file()
+        and (path / "simlibs" / "RLComponents" / "src").is_dir()
+        and (path / "_scripts" / "run" / "raynet_runner.py").is_file()
+    )
+
+
+def _candidate_raynet_homes() -> list[Path]:
+    candidates: list[Path] = []
+    configured = os.environ.get("RAYNET_HOME")
+    if configured:
+        candidates.append(Path(configured).expanduser())
+
+    script_path = Path(__file__).resolve()
+    for parent in script_path.parents:
+        candidates.append(parent / "raynet")
+        if parent.name.startswith("omnetpp"):
+            candidates.append(parent.parent / "raynet")
+
+    candidates.extend(
+        [
+            Path.home() / "harddrive" / "raynet",
+            Path.home() / "raynet",
+        ]
+    )
+    return candidates
+
+
+def _resolve_raynet_home() -> Path:
+    candidates = _candidate_raynet_homes()
+    for candidate in candidates:
+        resolved = candidate.resolve(strict=False)
+        if _looks_like_raynet_home(resolved):
+            return resolved
+    return candidates[0].resolve(strict=False)
+
+
+RAYNET_HOME = _resolve_raynet_home()
+os.environ.setdefault("RAYNET_HOME", str(RAYNET_HOME))
+RAYNET_SIMULATION_ROOT = os.environ.get("RAYNET_SIMULATION_ROOT", "../../../../../../raynet")
+
+
+def _raynet_simulation_path(*parts: str) -> str:
+    return str(Path(RAYNET_SIMULATION_ROOT, *parts))
 
 BASE_NED_PATHS = (
     "../..",
@@ -55,10 +100,10 @@ LEO_NED_PATHS = (
 )
 
 RAYNET_NED_PATHS = (
-    RAYNET_HOME / "simlibs" / "RLComponents" / "src",
-    RAYNET_HOME / "simlibs" / "Orca" / "src",
-    RAYNET_HOME / "simlibs" / "CleanSlate" / "src",
-    RAYNET_HOME / "simlibs" / "Astrea" / "src",
+    _raynet_simulation_path("simlibs", "RLComponents", "src"),
+    _raynet_simulation_path("simlibs", "Orca", "src"),
+    _raynet_simulation_path("simlibs", "CleanSlate", "src"),
+    _raynet_simulation_path("simlibs", "Astrea", "src"),
 )
 
 BASE_LIBS = (
@@ -118,7 +163,7 @@ def build_opp_run_command(config_name: str, ini_file: str, include_leo: bool = F
     ned_paths = list(BASE_NED_PATHS)
     if include_leo:
         ned_paths.extend(LEO_NED_PATHS)
-    ned_paths.append(str(RAYNET_HOME / "simlibs" / "RLComponents" / "src"))
+    ned_paths.append(_raynet_simulation_path("simlibs", "RLComponents", "src"))
 
     image_path = "../../../../inet4.5/images"
     if include_leo:
@@ -127,7 +172,7 @@ def build_opp_run_command(config_name: str, ini_file: str, include_leo: bool = F
     libs = list(BASE_LIBS)
     if include_leo:
         libs.extend(LEO_LIBS)
-    libs.append(str(RAYNET_HOME / "simlibs" / "RLComponents" / "src" / "RLComponents"))
+    libs.append(_raynet_simulation_path("simlibs", "RLComponents", "src", "RLComponents"))
 
     command = [
         "opp_run",

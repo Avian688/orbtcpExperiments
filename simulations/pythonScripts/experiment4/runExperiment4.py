@@ -61,13 +61,13 @@ def merge_pdfs_in_folders(root_folder):
 
 if __name__ == "__main__":
     
-    startStep = 5
+    startStep = 1
     endStep = 5
     currStep = 1
     cores = 1
     currentProc = 0
     processList = []
-    congControlList = with_raynet_protocols(["orbtcp", "cubic","bbr3", "bbr"])
+    congControlList = with_raynet_protocols([]) #["orbtcp", "cubic","bbr3", "bbr"]
     experiment = "experiment4"
     buffersizes = ["mediumbuffer"]
     clientsRtts = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP

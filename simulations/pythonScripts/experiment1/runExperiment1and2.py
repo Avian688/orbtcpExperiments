@@ -22,7 +22,7 @@ if __name__ == "__main__":
     cores = 1
     currentProc = 0
     processList = []
-    congControlList = with_raynet_protocols(["bbr3","bbr", "orbtcp", "cubic", "leocc", "satcp"])
+    congControlList = with_raynet_protocols([])
     experiments = ["experiment1", "experiment2"]
     runs = 50
     runList = list(range(1,runs+1))
