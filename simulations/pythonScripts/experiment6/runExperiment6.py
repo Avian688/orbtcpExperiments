@@ -64,7 +64,7 @@ if __name__ == "__main__":
     startStep = 5
     endStep = 5
     currStep = 1
-    cores = 1
+    cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
     numOfRibFlows = 3
     currentProc = 0
     processList = []

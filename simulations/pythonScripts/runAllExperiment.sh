@@ -1,82 +1,142 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Save the absolute path to the script's root directory
-root_dir="$(pwd)"
+set -uo pipefail
 
-run_experiment() {
-  local i=$1
-  local folder="experiment$i"
-  local script
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+default_experiments=(1 3 4 5 6 7 8 9 10 11)
 
-  if [ "$i" -eq 1 ]; then
-    script="runExperiment1and2.py"
-  else
-    script="runExperiment$i.py"
-  fi
+usage() {
+  cat <<'EOF'
+Usage:
+  ./runAllExperiment.sh all
+  ./runAllExperiment.sh 1 3 5 9
+  EXPERIMENT_CORES=30 ./runAllExperiment.sh all
 
-  echo "==============================="
-  echo "Running $script in $folder..."
-
-  (
-    cd "$root_dir/$folder" || { echo "Failed to cd into $folder"; exit 1; }
-    echo "Current working directory: $(pwd)"
-    echo "Executing: python3 $script"
-    python3 "$script"
-  )
-
-  echo "Finished $script in $folder."
-  echo "==============================="
+Notes:
+  experiment2 is covered by experiment1/runExperiment1and2.py.
+  If no arguments are supplied, the script falls back to the interactive menu.
+EOF
 }
 
-echo "Choose an option:"
-echo "1) Run all experiments (excluding experiment2)"
-echo "2) Run specific experiments (e.g. 1 3 5)"
-read -rp "Enter 1 or 2: " choice
+valid_experiment() {
+  [[ "$1" =~ ^(1|2|3|4|5|6|7|8|9|10|11)$ ]]
+}
 
-if [ "$choice" == "1" ]; then
-  for i in {1..11}; do
-    if [ "$i" -eq 2 ]; then
+dedupe_experiments() {
+  local seen=" "
+  local selected=()
+  local num
+
+  for num in "$@"; do
+    if ! valid_experiment "$num"; then
+      echo "Invalid experiment number: $num" >&2
+      return 1
+    fi
+    if [[ "$num" == "2" ]]; then
+      echo "Skipping experiment2 because it is covered by experiment1." >&2
       continue
     fi
-    run_experiment "$i"
-  done
-  echo "All experiments completed."
-
-elif [ "$choice" == "2" ]; then
-  read -rp "Enter experiment numbers separated by space (e.g. 1 3 5): " -a selected
-  seen=()
-
-  include_exp1=false
-
-  for num in "${selected[@]}"; do
-    if ! [[ "$num" =~ ^[1-11]$ ]]; then
-      echo "Invalid experiment number: $num"
-      continue
-    fi
-    if [ "$num" -eq 2 ]; then
-      echo "Skipping experiment2 — it is covered by experiment1."
-      continue
-    fi
-    if [ "$num" -eq 1 ]; then
-      include_exp1=true
-    fi
-    # Avoid duplicates
-    if [[ ! " ${seen[*]} " =~ " $num " ]]; then
-      seen+=("$num")
+    if [[ "$seen" != *" $num "* ]]; then
+      selected+=("$num")
+      seen+="$num "
     fi
   done
 
-  # If 1 is in the list, skip 2 if present
-  if [ "$include_exp1" = true ]; then
-    seen=( "${seen[@]/2}" )  # Remove 2 if it’s there
+  if [[ "${#selected[@]}" -gt 0 ]]; then
+    printf '%s\n' "${selected[@]}"
+  fi
+}
+
+run_experiment() {
+  local i="$1"
+  local folder="experiment$i"
+  local script="runExperiment$i.py"
+
+  if [[ "$i" == "1" ]]; then
+    script="runExperiment1and2.py"
   fi
 
-  for exp in "${seen[@]}"; do
-    run_experiment "$exp"
-  done
+  echo "==============================="
+  echo "Running $script in $folder"
+  echo "Working directory: $script_dir/$folder"
+  if [[ -n "${EXPERIMENT_CORES:-}" ]]; then
+    echo "EXPERIMENT_CORES=$EXPERIMENT_CORES"
+  fi
 
-  echo "Selected experiments completed."
+  if [[ ! -d "$script_dir/$folder" ]]; then
+    echo "Missing experiment folder: $script_dir/$folder" >&2
+    return 1
+  fi
+  if [[ ! -f "$script_dir/$folder/$script" ]]; then
+    echo "Missing experiment script: $script_dir/$folder/$script" >&2
+    return 1
+  fi
+
+  (
+    cd "$script_dir/$folder" || exit 1
+    python3 "$script"
+  )
+  local status=$?
+
+  if [[ "$status" -eq 0 ]]; then
+    echo "Finished $script successfully."
+  else
+    echo "FAILED $script with exit code $status." >&2
+  fi
+  echo "==============================="
+  return "$status"
+}
+
+collect_interactive_selection() {
+  local choice
+  echo "Choose an option:" >&2
+  echo "1) Run all experiments (experiment2 is included via experiment1)" >&2
+  echo "2) Run specific experiments (e.g. 1 3 5)" >&2
+  read -rp "Enter 1 or 2: " choice
+
+  if [[ "$choice" == "1" ]]; then
+    printf '%s\n' "${default_experiments[@]}"
+  elif [[ "$choice" == "2" ]]; then
+    local selected=()
+    read -rp "Enter experiment numbers separated by space (e.g. 1 3 5): " -a selected
+    dedupe_experiments "${selected[@]}"
+  else
+    echo "Invalid choice." >&2
+    return 1
+  fi
+}
+
+experiments=()
+if [[ "$#" -eq 0 ]]; then
+  while IFS= read -r exp; do
+    experiments+=("$exp")
+  done < <(collect_interactive_selection)
+elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  usage
+  exit 0
+elif [[ "$1" == "all" ]]; then
+  experiments=("${default_experiments[@]}")
 else
-  echo "Invalid choice."
+  while IFS= read -r exp; do
+    experiments+=("$exp")
+  done < <(dedupe_experiments "$@")
+fi
+
+if [[ "${#experiments[@]}" -eq 0 ]]; then
+  echo "No experiments selected." >&2
   exit 1
 fi
+
+failures=()
+for exp in "${experiments[@]}"; do
+  if ! run_experiment "$exp"; then
+    failures+=("$exp")
+  fi
+done
+
+if [[ "${#failures[@]}" -gt 0 ]]; then
+  echo "The following experiment runner(s) failed: ${failures[*]}" >&2
+  exit 1
+fi
+
+echo "All selected experiments completed successfully."

@@ -2,7 +2,7 @@
 
 # Generates scenario XML files for experiment 2.
 # Same as experiment 1:
-# - Hard handover every 5s: disconnect+crash, then reconnect after random 45–120ms.
+# - Hard handover every 15s: disconnect+crash, then reconnect after random 45-120ms.
 # - Only the bottleneck link (router1<->router2, pppg$o[1]) changes RTT+BW.
 # - Client/router and router/server links are fixed: 0ms delay, 10Gbps.
 # PLUS experiment 2:
@@ -24,7 +24,7 @@ def main() -> None:
     simLength = 300     # seconds
     simSeed = 1
 
-    handoverEvery = 5       # seconds
+    handoverEvery = 15      # seconds
     minHandoverMs = 45      # ms
     maxHandoverMs = 120     # ms
 
@@ -92,7 +92,7 @@ def main() -> None:
             baseRttDict["0"] = currentRtt
             bwDict["0"] = currentBw
 
-            # ---- Handover loop: every 5 seconds ----
+            # ---- Handover loop: every 15 seconds ----
             t = handoverEvery
             while t <= simLength:
                 dur_ms = rng.randint(minHandoverMs, maxHandoverMs)

@@ -9,6 +9,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from raynetExperimentSupport import build_opp_run_command
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SIMULATIONS_DIR = SCRIPT_DIR.parent.parent
@@ -70,48 +72,6 @@ MODE_CONFIGS = {
         "enable_isl": "false",
     },
 }
-
-NED_PATH = (
-    "../..:"
-    "../../../src:"
-    "../../../../bbr/simulations:"
-    "../../../../bbr/src:"
-    "../../../../inet4.5/examples:"
-    "../../../../inet4.5/showcases:"
-    "../../../../inet4.5/src:"
-    "../../../../inet4.5/tests/validation:"
-    "../../../../inet4.5/tests/networks:"
-    "../../../../inet4.5/tutorials:"
-    "../../../../tcpGoodputApplications/simulations:"
-    "../../../../tcpGoodputApplications/src:"
-    "../../../../tcpPaced/src:"
-    "../../../../tcpPaced/simulations:"
-    "../../../../cubic/simulations:"
-    "../../../../cubic/src:"
-    "../../../../leosatellites/src:"
-    "../../../../leosatellites/simulations:"
-    "../../../../os3/simulations:"
-    "../../../../os3/src:"
-    "../../../../orbtcp/simulations:"
-    "../../../../orbtcp/src:"
-    "../../../../leocc/simulations:"
-    "../../../../leocc/src"
-)
-
-IMAGE_PATH = "../../../../inet4.5/images:../../../../os3/images"
-
-LIBRARIES = [
-    "../../../src/orbtcpExperiments",
-    "../../../../bbr/src/bbr",
-    "../../../../inet4.5/src/INET",
-    "../../../../tcpGoodputApplications/src/tcpGoodputApplications",
-    "../../../../tcpPaced/src/tcpPaced",
-    "../../../../cubic/src/cubic",
-    "../../../../leosatellites/src/leosatellites",
-    "../../../../os3/src/os3",
-    "../../../../orbtcp/src/orbtcp",
-    "../../../../leocc/src/leocc",
-]
 
 
 def write_line(handle, line=""):
@@ -276,25 +236,7 @@ def require_tool(tool_name):
 
 
 def opp_run_command(config_name):
-    command = [
-        "opp_run",
-        "-r",
-        "0",
-        "-m",
-        "-u",
-        "Cmdenv",
-        "-c",
-        config_name,
-        "-n",
-        NED_PATH,
-        f"--image-path={IMAGE_PATH}",
-    ]
-
-    for library in LIBRARIES:
-        command.extend(["-l", library])
-
-    command.append(INI_FILE.name)
-    return command
+    return build_opp_run_command(config_name, INI_FILE.name, include_leo=True)
 
 
 def run_ping_configs(modes):

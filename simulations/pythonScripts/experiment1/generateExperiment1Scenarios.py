@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Generates scenario XML files for experiment 1.
-# Hard handover every 5s: disconnect+crash, then reconnect after random 45–120ms.
+# Hard handover every 15s: disconnect+crash, then reconnect after random 45-120ms.
 # RTT is equally spread across ALL THREE links:
 #   client<->router1 (pppg$o[0]), router1<->router2 (pppg$o[1]), router2<->server (pppg$o[0])
 # So each link one-way delay = RTT/6.
@@ -23,7 +23,7 @@ def main() -> None:
     simLength = 300     # seconds
     simSeed = 1
 
-    handoverEvery = 5       # seconds
+    handoverEvery = 15      # seconds
     minHandoverMs = 45      # ms
     maxHandoverMs = 120     # ms
 
@@ -91,7 +91,7 @@ def main() -> None:
             baseRttDict["0"] = currentRtt
             bwDict["0"] = currentBw
 
-            # ---- Handover loop: every 5 seconds ----
+            # ---- Handover loop: every 15 seconds ----
             t = handoverEvery
             while t <= simLength:
                 dur_ms = rng.randint(minHandoverMs, maxHandoverMs)

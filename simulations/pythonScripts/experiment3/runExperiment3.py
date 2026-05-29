@@ -64,7 +64,7 @@ if __name__ == "__main__":
     startStep = 6
     endStep = 7
     currStep = 1
-    cores = 1
+    cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
     currentProc = 0
     processList = []
     congControlList = with_raynet_protocols(["bbr3","bbr", "orbtcp", "cubic"])

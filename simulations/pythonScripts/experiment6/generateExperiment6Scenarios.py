@@ -2,7 +2,8 @@
 
 # Generates a path change scenario XML file given sender->receiver base propagation delays (ms)
 # generatePathChangeScenario delayNum1 delayNum2... delayNumX
-# This will generate X flows for the use in the scenario manager which will change path at 10s
+# This will generate X flows for use in the scenario manager and add periodic
+# hard reconfigurations on the parking-lot bottleneck links.
 # 
 
 import sys
@@ -33,6 +34,11 @@ def int_to_word(num):
 if __name__ == "__main__":
     numOfRibFlows = 3
     simSeed = 1
+    handoverEvery = 15
+    minHandoverMs = 45
+    maxHandoverMs = 120
+    bottleneckDelayMs = 0
+    bottleneckDataRate = "100Mbps"
     #queueSizes = [0.2,1,4] #OF AVERAGE BDP AFFECTS INI FILE
     clientsRtts = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP
     random.seed(simSeed)
@@ -66,5 +72,51 @@ if __name__ == "__main__":
                 f.write('\n')
           
             f.write('\n    </at>')
+
+            # Hard reconfiguration on every router-router bottleneck every 15s.
+            # The ini files run each RTT case for RTT*2000 seconds, i.e.
+            # 2*RTT_ms seconds.
+            simLength = int(clientRtt) * 2
+            t = handoverEvery
+            while t <= simLength:
+                handoverMs = random.randint(minHandoverMs, maxHandoverMs)
+                reconnectT = t + (handoverMs / 1000.0)
+
+                f.write('\n    <at t="' + str(t) + '">')
+                for linkNum in range(numOfRibFlows):
+                    leftRouter = 'router[' + str(linkNum) + ']'
+                    rightRouter = 'router[' + str(linkNum + 1) + ']'
+                    leftGate = 2 if linkNum == 0 else 3
+                    rightGate = 2
+                    f.write('\n        <disconnect src-module="' + leftRouter + '" src-gate="pppg$o[' + str(leftGate) + ']"/>')
+                    f.write('\n        <disconnect src-module="' + rightRouter + '" src-gate="pppg$o[' + str(rightGate) + ']"/>')
+                    f.write('\n        <crash module="' + leftRouter + '.ppp[' + str(leftGate) + ']"/>')
+                    f.write('\n        <crash module="' + rightRouter + '.ppp[' + str(rightGate) + ']"/>')
+                f.write('\n    </at>')
+
+                f.write('\n    <at t="' + str(reconnectT) + '">')
+                for linkNum in range(numOfRibFlows):
+                    leftRouter = 'router[' + str(linkNum) + ']'
+                    rightRouter = 'router[' + str(linkNum + 1) + ']'
+                    leftGate = 2 if linkNum == 0 else 3
+                    rightGate = 2
+                    f.write('\n        <connect src-module="' + leftRouter + '" src-gate="pppg$o[' + str(leftGate) + ']"')
+                    f.write('\n                 dest-module="' + rightRouter + '" dest-gate="pppg$i[' + str(rightGate) + ']"')
+                    f.write('\n                 channel-type="ned.DatarateChannel">')
+                    f.write('\n                 <param name="datarate" value="' + str(bottleneckDataRate) + '" />')
+                    f.write('\n                 <param name="delay" value="' + str(bottleneckDelayMs) + 'ms" />')
+                    f.write('\n        </connect>')
+                    f.write('\n        <connect src-module="' + rightRouter + '" src-gate="pppg$o[' + str(rightGate) + ']"')
+                    f.write('\n                 dest-module="' + leftRouter + '" dest-gate="pppg$i[' + str(leftGate) + ']"')
+                    f.write('\n                 channel-type="ned.DatarateChannel">')
+                    f.write('\n                 <param name="datarate" value="' + str(bottleneckDataRate) + '" />')
+                    f.write('\n                 <param name="delay" value="' + str(bottleneckDelayMs) + 'ms" />')
+                    f.write('\n        </connect>')
+                    f.write('\n        <start module="' + leftRouter + '.ppp[' + str(leftGate) + ']"/>')
+                    f.write('\n        <start module="' + rightRouter + '.ppp[' + str(rightGate) + ']"/>')
+                f.write('\n        <update module="configurator" />')
+                f.write('\n    </at>')
+
+                t += handoverEvery
             
             f.write('\n</scenario>')

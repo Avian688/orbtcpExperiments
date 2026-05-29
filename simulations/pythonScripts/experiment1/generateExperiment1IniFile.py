@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import clone_raynet_ini_variants, common_ned_path
+from raynetExperimentSupport import clone_raynet_ini_variants, common_load_libs, common_ned_path
 
 ALG_FLAVOUR = {
     "cubic": ("TcpPaced", "TcpCubic"),
@@ -33,6 +33,7 @@ def main() -> None:
     
     # RayNet; NED sources must be included in the .ini. But there should be no harm in always including them.
     common_ned = common_ned_path()
+    common_libs = common_load_libs()
     
     common_tcp = [
         "**.tcp.advertisedWindow = 200000000",
@@ -79,6 +80,7 @@ def main() -> None:
             # ---------------- [General] ----------------
             w("[General]")
             w(common_ned) # RayNet; NED sources must be included in the .ini
+            w(common_libs) # RayNet; IDE runs need the shared libraries loaded from the .ini
             w()
             block([
                 "network = singledumbbell",

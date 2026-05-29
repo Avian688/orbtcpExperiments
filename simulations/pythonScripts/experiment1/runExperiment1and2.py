@@ -1,307 +1,515 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-# Runs experiment 1
-# runExperiment1
-# 
+# Runs experiment 1 and experiment 2.
+# The runner verifies every expected output before moving to the next stage so
+# high-parallelism runs cannot silently skip failed or missing processes.
 
-import sys
-import random
-from pathlib import Path
+from __future__ import annotations
+
+import argparse
 import os
+import re
+import shutil
 import subprocess
+import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import build_simulation_command, simulation_output_kwargs, with_raynet_protocols
-           
-if __name__ == "__main__":
-    
-    startStep = 1
-    endStep = 8
-    currStep = 1
-    cores = 1
-    currentProc = 0
-    processList = []
-    congControlList = with_raynet_protocols([])
-    experiments = ["experiment1", "experiment2"]
-    runs = 50
-    runList = list(range(1,runs+1))
+from raynetExperimentSupport import build_simulation_command, with_raynet_protocols
 
-    if(currStep <= endStep and currStep >= startStep and "experiment1" in experiments): #STEP 1
-        subprocess.Popen("python3 generateExperiment1Scenarios.py", shell=True).communicate(timeout=30)
-        subprocess.Popen("python3 generateExperiment1IniFile.py", shell=True).communicate(timeout=30)
-        subprocess.Popen("python3 ../experiment2/generateExperiment2Scenarios.py", shell=True).communicate(timeout=30)
-        subprocess.Popen("python3 ../experiment2/generateExperiment2IniFile.py", shell=True).communicate(timeout=30)
 
-        subprocess.Popen("rm experiment1runTimes.txt", shell=True).communicate(timeout=30)
-        subprocess.Popen("rm experiment2runTimes.txt", shell=True).communicate(timeout=30)
-        for c in congControlList:
-            subprocess.Popen("rm -r ../../paperExperiments/experiment1/csvs/" + c, shell=True).communicate(timeout=30)
-            subprocess.Popen("rm -r ../../paperExperiments/experiment2/csvs/" + c, shell=True).communicate(timeout=30)
-            
-        #subprocess.Popen("rm ../../paperExperiments/experiment1/results/*", shell=True).communicate(timeout=30)
-        #subprocess.Popen("rm ../../paperExperiments/experiment2/results/*", shell=True).communicate(timeout=30)
-        with open('experiment1runTimes.txt', 'w') as f1:
-            exp1RunNum = 1
-            f1.write("--Experiment 1 Runtimes (s)--")
-            for cc in congControlList:
-                fileName =  '../../paperExperiments/experiment1/experiment1_' + cc +'.ini'
-                iniFile = open(fileName, 'r').readlines()
-                print("----------experiment 1 " + cc + " simulations------------")
-                for line in iniFile:
-                    if line.find('[Config') != -1:
-                        configName = (line[8:])[:-2]
-                        progStart = time.time()
-                        processList.append(subprocess.Popen(
-                            build_simulation_command(cc, "experiment1_" + cc + ".ini", configName),
-                            cwd='../../paperExperiments/experiment1', **simulation_output_kwargs(cc)))
-                        currentProc = currentProc + 1
-                        print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
-                        if(currentProc == cores):
-                            procCompleteNum = 0
-                            for proc in processList:
-                                proc.wait()
-                                now = time.time()
-                                f1.write("Run "+ str(exp1RunNum) + ": " + str(now-progStart)) 
-                                procCompleteNum = procCompleteNum + 1
-                                print("\tRun #" + str(procCompleteNum) + " is complete!")
-                                exp1RunNum += 1
-                            currentProc = 0
-                            processList.clear()
-                            print(" ... Running next batch of simulations! ...\n")
-        
-        for proc in processList:
-            proc.wait()
-        time.sleep(5)
-    currStep += 1
-    currentProc = 0
-    processList.clear()
+SCRIPT_DIR = Path(__file__).resolve().parent
+SIM_ROOT = SCRIPT_DIR.parent.parent
+PAPER_ROOT = SIM_ROOT / "paperExperiments"
+PLOTS_ROOT = SIM_ROOT / "plots"
+LOG_ROOT = SIM_ROOT / "logs" / "experiment1and2"
 
-    
-    if(currStep <= endStep and currStep >= startStep and "experiment2" in experiments): #STEP 2
-        print("\nAll experiments in Experiment 1 has been run!\n")
-        with open('experiment2runTimes.txt', 'w') as f2:
-            f2.write("--Experiment 2 Runtimes (s)--")
-            exp2RunNum = 1
-            for cc in congControlList:
-                fileName =  '../../paperExperiments/experiment2/experiment2_' + cc +'.ini'
-                iniFile = open(fileName, 'r').readlines()
-                print("----------experiment 2 " + cc + " simulations------------")
-                for line in iniFile:
-                    if line.find('[Config') != -1:
-                        configName = (line[8:])[:-2]
-                        progStart = time.time()
-                        processList.append(subprocess.Popen(
-                            build_simulation_command(cc, "experiment2_" + cc + ".ini", configName),
-                            cwd='../../paperExperiments/experiment2', **simulation_output_kwargs(cc)))
-                        currentProc = currentProc + 1
-                        print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
-                        if(currentProc == cores):
-                            procCompleteNum = 0
-                            for proc in processList:
-                                proc.wait()
-                                now = time.time()
-                                f2.write("Run "+ str(exp2RunNum) + ": " + str(now-progStart)) 
-                                procCompleteNum = procCompleteNum + 1
-                                print("\tRun #" + str(procCompleteNum) + " is complete!")
-                                exp2RunNum += 1
-                            currentProc = 0
-                            processList.clear()
-                            print(" ... Running next batch of simulations! ...\n")
-        
-        for proc in processList:
-            proc.wait()
-        time.sleep(5)
-    currStep += 1
-    
-        
-    if(currStep <= endStep and currStep >= startStep): #STEP 3
-        currentProc = 0
-        print("\nAll experiments in Experiment 1 + 2 has been run!\n")
-        folderLoc =  '../../paperExperiments/experiment1/results/'
-        print("------------ Generating CSV Files for experiment 1 ------------")
-        for file in os.listdir(folderLoc):
-            if(file.endswith(".vec")):
-                f = os.path.join(folderLoc, file)
-                processList.append(subprocess.Popen("opp_scavetool export -o "+ "results/"+ file[:-7] + ".csv -F CSV-R " + "results/" + file , shell=True, cwd='../../paperExperiments/experiment1/'))
-                currentProc = currentProc + 1
-                print("Generating CSV file for [" + file + "]... (Run #" + str(currentProc) + ")")
-                if(currentProc == cores):
-                     for proc in processList:
-                         proc.wait()
-                     currentProc = 0
-                     processList.clear()
-                     print("     ... Running next batch! ...\n")
-        
-        for proc in processList:
-            proc.wait()
-        processList.clear()
-        currentProc = 0
-        time.sleep(5)
-    currStep += 1
-    
-    
-    if(currStep <= endStep and currStep >= startStep): #STEP 4
-        folderLoc =  '../../paperExperiments/experiment2/results/'
-        print("------------ Generating CSV Files for experiment 2 ------------")
-        for file in os.listdir(folderLoc):
-            if(file.endswith(".vec")):
-                f = os.path.join(folderLoc, file)
-                processList.append(subprocess.Popen("opp_scavetool export -o "+ "results/"+ file[:-7] + ".csv -F CSV-R " + "results/" + file , shell=True, cwd='../../paperExperiments/experiment2/'))
-                currentProc = currentProc + 1
-                print("Generating CSV file for [" + file + "]... (Run #" + str(currentProc) + ")")
-                if(currentProc == cores):
-                     for proc in processList:
-                         proc.wait()
-                     currentProc = 0
-                     processList.clear()
-                     print("     ... Running next batch! ...\n")
-        
-        for proc in processList:
-            proc.wait()
-        time.sleep(5)
-        
-        processList.clear()
-        currentProc = 0   
-    currStep += 1
-    
-    print("CSVs created for experiments 1 and 2!\n")
-        
-    if(currStep <= endStep and currStep >= startStep): #STEP 5
-        currentProc = 0
-        print("Extracting CSV data!!\n")
-        print("------------ Extracting CSV Files for experiment 1 + 2 ------------")
-        processListStr = []
-        for exp in experiments:
-            if(exp == "experiment1"):
-                runNam = "Run"   
+
+@dataclass(frozen=True)
+class ConfigEntry:
+    experiment: str
+    protocol: str
+    ini_name: str
+    config_name: str
+    run: int
+
+
+def parse_args() -> argparse.Namespace:
+    default_cores = int(
+        os.environ.get(
+            "EXPERIMENT_CORES",
+            os.environ.get("ORBTCP_EXPERIMENT_CORES", str(os.cpu_count() or 1)),
+        )
+    )
+    parser = argparse.ArgumentParser(description="Run or plot orbtcpExperiments experiment 1 and 2.")
+    parser.add_argument("--cores", type=int, default=max(1, default_cores), help="Maximum parallel child processes.")
+    parser.add_argument("--retries", type=int, default=int(os.environ.get("EXPERIMENT_RETRIES", "3")))
+    parser.add_argument("--start-step", type=int, default=int(os.environ.get("START_STEP", "1")))
+    parser.add_argument("--end-step", type=int, default=int(os.environ.get("END_STEP", "10")))
+    parser.add_argument("--runs", type=int, default=int(os.environ.get("EXPERIMENT_RUNS", "50")))
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Skip simulations whose expected vector file already exists.",
+    )
+    return parser.parse_args()
+
+
+def step_enabled(curr_step: int, args: argparse.Namespace) -> bool:
+    return args.start_step <= curr_step <= args.end_step
+
+
+def run_checked(command: list[str], cwd: Path, description: str, timeout: int | None = None) -> None:
+    print(description)
+    result = subprocess.run(command, cwd=str(cwd), timeout=timeout)
+    if result.returncode != 0:
+        raise RuntimeError(f"{description} failed with exit code {result.returncode}")
+
+
+def collect_config_entries(experiment: str, protocols: list[str], run_list: list[int]) -> list[ConfigEntry]:
+    config_entries: list[ConfigEntry] = []
+    run_re = re.compile(r"Run(\d{1,5})\]")
+
+    for protocol in protocols:
+        ini_name = f"{experiment}_{protocol}.ini"
+        ini_path = PAPER_ROOT / experiment / ini_name
+        if not ini_path.exists():
+            raise FileNotFoundError(f"Missing ini file: {ini_path}")
+
+        for line in ini_path.read_text(encoding="utf-8").splitlines():
+            if not line.startswith("[Config "):
+                continue
+            match = run_re.search(line)
+            if not match:
+                continue
+            run = int(match.group(1))
+            if run not in run_list:
+                continue
+            config_name = line[len("[Config ") : -1]
+            config_entries.append(ConfigEntry(experiment, protocol, ini_name, config_name, run))
+
+    return config_entries
+
+
+def result_dir(entry: ConfigEntry) -> Path:
+    return PAPER_ROOT / entry.experiment / "results"
+
+
+def matching_vec_files(entry: ConfigEntry) -> list[Path]:
+    return sorted(result_dir(entry).glob(f"{entry.config_name}*.vec"))
+
+
+def expected_csv_path(entry: ConfigEntry) -> Path:
+    return result_dir(entry) / f"{entry.config_name}.csv"
+
+
+def clean_result_files(entry: ConfigEntry) -> None:
+    for suffix in ("-#0.vec", "-#0.vci", "-#0.sca", ".csv"):
+        (result_dir(entry) / f"{entry.config_name}{suffix}").unlink(missing_ok=True)
+
+
+def run_single_simulation(entry: ConfigEntry, attempt: int, resume: bool) -> tuple[ConfigEntry, bool, int, Path]:
+    result_dir(entry).mkdir(parents=True, exist_ok=True)
+    if resume and matching_vec_files(entry):
+        return entry, True, 0, Path()
+
+    clean_result_files(entry)
+    log_dir = LOG_ROOT / entry.experiment / entry.protocol / "simulations"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / f"{entry.config_name}.attempt{attempt}.log"
+    command = build_simulation_command(entry.protocol, entry.ini_name, entry.config_name)
+
+    started = time.time()
+    with log_path.open("w", encoding="utf-8") as log_file:
+        log_file.write("$ " + " ".join(command) + "\n\n")
+        log_file.flush()
+        result = subprocess.run(
+            command,
+            cwd=str(PAPER_ROOT / entry.experiment),
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+        )
+        log_file.write(f"\nExit code: {result.returncode}\n")
+        log_file.write(f"Elapsed seconds: {time.time() - started:.2f}\n")
+
+    ok = result.returncode == 0 and bool(matching_vec_files(entry))
+    return entry, ok, result.returncode, log_path
+
+
+def run_simulations(entries: list[ConfigEntry], args: argparse.Namespace) -> None:
+    pending = list(entries)
+    total_attempts = args.retries + 1
+
+    for attempt in range(1, total_attempts + 1):
+        if not pending:
+            return
+
+        print(
+            f"\nRunning {len(pending)} simulation config(s), attempt {attempt}/{total_attempts}, "
+            f"using {args.cores} core(s).\n"
+        )
+        failed: list[ConfigEntry] = []
+
+        with ThreadPoolExecutor(max_workers=args.cores) as executor:
+            futures = {
+                executor.submit(run_single_simulation, entry, attempt, args.resume and attempt == 1): entry
+                for entry in pending
+            }
+            for future in as_completed(futures):
+                entry, ok, return_code, log_path = future.result()
+                if ok:
+                    print(f"  complete: {entry.config_name}")
+                else:
+                    failed.append(entry)
+                    print(f"  failed/missing vec: {entry.config_name} (exit {return_code}, log: {log_path})")
+
+        pending = failed
+        if pending and attempt < total_attempts:
+            print(f"\nRetrying {len(pending)} missing/failed config(s).\n")
+
+    missing = "\n".join(f"  {entry.experiment}: {entry.config_name}" for entry in pending)
+    raise RuntimeError(f"Simulation outputs are still missing after retries:\n{missing}")
+
+
+def csv_name_for_vec(vec_file: Path) -> str:
+    name = vec_file.name
+    if name.endswith("-#0.vec"):
+        return name[:-7] + ".csv"
+    return vec_file.stem + ".csv"
+
+
+def export_single_csv(entry: ConfigEntry, attempt: int) -> tuple[ConfigEntry, bool, int, Path]:
+    vec_files = matching_vec_files(entry)
+    if not vec_files:
+        return entry, False, 127, Path()
+
+    vec_file = vec_files[0]
+    csv_name = csv_name_for_vec(vec_file)
+    csv_path = result_dir(entry) / csv_name
+    csv_path.unlink(missing_ok=True)
+
+    log_dir = LOG_ROOT / entry.experiment / entry.protocol / "scavetool"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / f"{entry.config_name}.attempt{attempt}.log"
+    command = [
+        "opp_scavetool",
+        "export",
+        "-o",
+        f"results/{csv_name}",
+        "-F",
+        "CSV-R",
+        f"results/{vec_file.name}",
+    ]
+
+    with log_path.open("w", encoding="utf-8") as log_file:
+        log_file.write("$ " + " ".join(command) + "\n\n")
+        log_file.flush()
+        result = subprocess.run(
+            command,
+            cwd=str(PAPER_ROOT / entry.experiment),
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+        )
+        log_file.write(f"\nExit code: {result.returncode}\n")
+
+    ok = result.returncode == 0 and csv_path.exists()
+    return entry, ok, result.returncode, log_path
+
+
+def export_csvs(entries: list[ConfigEntry], args: argparse.Namespace) -> None:
+    pending = list(entries)
+    total_attempts = args.retries + 1
+
+    for attempt in range(1, total_attempts + 1):
+        if not pending:
+            return
+
+        print(
+            f"\nExporting {len(pending)} vector file(s) to CSV, attempt {attempt}/{total_attempts}, "
+            f"using {args.cores} core(s).\n"
+        )
+        failed: list[ConfigEntry] = []
+
+        with ThreadPoolExecutor(max_workers=args.cores) as executor:
+            futures = {executor.submit(export_single_csv, entry, attempt): entry for entry in pending}
+            for future in as_completed(futures):
+                entry, ok, return_code, log_path = future.result()
+                if ok:
+                    print(f"  csv complete: {entry.config_name}")
+                else:
+                    failed.append(entry)
+                    print(f"  csv failed/missing: {entry.config_name} (exit {return_code}, log: {log_path})")
+
+        pending = failed
+
+    missing = "\n".join(f"  {entry.experiment}: {entry.config_name}" for entry in pending)
+    raise RuntimeError(f"CSV exports are still missing after retries:\n{missing}")
+
+
+def extracted_run_dir(entry: ConfigEntry) -> Path:
+    return PAPER_ROOT / entry.experiment / "csvs" / entry.protocol / f"run{entry.run}"
+
+
+def has_extracted_data(entry: ConfigEntry) -> bool:
+    run_dir = extracted_run_dir(entry)
+    return run_dir.is_dir() and any(run_dir.rglob("*.csv"))
+
+
+def extract_single_csv(entry: ConfigEntry, attempt: int) -> tuple[ConfigEntry, bool, int, Path]:
+    csv_path = expected_csv_path(entry)
+    if not csv_path.exists():
+        return entry, False, 127, Path()
+
+    shutil.rmtree(extracted_run_dir(entry), ignore_errors=True)
+
+    log_dir = LOG_ROOT / entry.experiment / entry.protocol / "extract"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / f"{entry.config_name}.attempt{attempt}.log"
+    command = [
+        sys.executable,
+        "extractSingleCsvFile.py",
+        str(csv_path),
+        entry.experiment,
+        entry.protocol,
+        str(entry.run),
+    ]
+
+    with log_path.open("w", encoding="utf-8") as log_file:
+        log_file.write("$ " + " ".join(command) + "\n\n")
+        log_file.flush()
+        result = subprocess.run(command, cwd=str(SCRIPT_DIR), stdout=log_file, stderr=subprocess.STDOUT)
+        log_file.write(f"\nExit code: {result.returncode}\n")
+
+    ok = result.returncode == 0 and has_extracted_data(entry)
+    return entry, ok, result.returncode, log_path
+
+
+def extract_csvs(entries: list[ConfigEntry], args: argparse.Namespace) -> None:
+    pending = list(entries)
+    total_attempts = args.retries + 1
+
+    for attempt in range(1, total_attempts + 1):
+        if not pending:
+            return
+
+        print(
+            f"\nExtracting {len(pending)} CSV result file(s), attempt {attempt}/{total_attempts}, "
+            f"using {args.cores} core(s).\n"
+        )
+        failed: list[ConfigEntry] = []
+
+        with ThreadPoolExecutor(max_workers=args.cores) as executor:
+            futures = {executor.submit(extract_single_csv, entry, attempt): entry for entry in pending}
+            for future in as_completed(futures):
+                entry, ok, return_code, log_path = future.result()
+                if ok:
+                    print(f"  extract complete: {entry.config_name}")
+                else:
+                    failed.append(entry)
+                    print(f"  extract failed/missing: {entry.config_name} (exit {return_code}, log: {log_path})")
+
+        pending = failed
+
+    missing = "\n".join(f"  {entry.experiment}: {entry.config_name}" for entry in pending)
+    raise RuntimeError(f"CSV extraction outputs are still missing after retries:\n{missing}")
+
+
+def plot_input_paths(entry: ConfigEntry) -> list[tuple[str, Path]]:
+    run_dir = extracted_run_dir(entry)
+    return [
+        ("plotGoodput.py", run_dir / "singledumbbell.server[0].app[0]" / "goodput.csv"),
+        ("plotThroughput.py", run_dir / "singledumbbell.server[0].tcp.conn" / "throughput.csv"),
+        ("plotCwnd.py", run_dir / "singledumbbell.client[0].tcp.conn" / "cwnd.csv"),
+        ("plotQueueLength.py", run_dir / "singledumbbell.router1.ppp[1].queue" / "queueLength.csv"),
+        ("plotRtt.py", run_dir / "singledumbbell.client[0].tcp.conn" / "rtt.csv"),
+        ("plotBytesInFlight.py", run_dir / "singledumbbell.client[0].tcp.conn" / "mbytesInFlight.csv"),
+    ]
+
+
+def plot_run_dir(entry: ConfigEntry) -> Path:
+    return PLOTS_ROOT / entry.experiment / entry.protocol / f"run{entry.run}"
+
+
+def prepare_plot_dirs(entries: list[ConfigEntry]) -> None:
+    for experiment in sorted({entry.experiment for entry in entries}):
+        shutil.rmtree(PLOTS_ROOT / experiment, ignore_errors=True)
+        (PLOTS_ROOT / experiment).mkdir(parents=True, exist_ok=True)
+
+    for entry in entries:
+        plot_run_dir(entry).mkdir(parents=True, exist_ok=True)
+
+
+def run_plot_task(script_name: str, csv_path: Path, cwd: Path) -> tuple[str, bool, int]:
+    rel_csv = os.path.relpath(csv_path, cwd)
+    result = subprocess.run([sys.executable, str(SCRIPT_DIR / script_name), rel_csv], cwd=str(cwd))
+    return f"{cwd.name}/{script_name}", result.returncode == 0, result.returncode
+
+
+def plot_individual_runs(entries: list[ConfigEntry], args: argparse.Namespace) -> None:
+    missing_inputs: list[Path] = []
+    tasks: list[tuple[str, Path, Path]] = []
+
+    for entry in entries:
+        cwd = plot_run_dir(entry)
+        for script_name, csv_path in plot_input_paths(entry):
+            if csv_path.exists():
+                tasks.append((script_name, csv_path, cwd))
             else:
-                runNam = "LossRun" 
-            for protocol in congControlList:
-                for run in runList:
-                    filePath = '../../paperExperiments/' + exp +'/results/'+ protocol.title() + "_" + runNam + str(run) + '.csv'
-                    if os.path.exists(filePath):
-                         processListStr.append("python3 extractSingleCsvFile.py " + filePath + " " + exp + " " + protocol + " " + str(run))
-        
-        currentProc = 0
-        while(len(processListStr) > 0):
-            process = processListStr.pop()
-            print(process + "\n")
-            processList.append(subprocess.Popen(process, shell=True))
-            currentProc += 1
-            if(currentProc >= cores):
-                for proc in processList:
-                    proc.wait(timeout=300)
-                currentProc = 0
-                print("Csv Extraction batch complete!\n")
-                print("Extracting next batch!\n")
-                processList.clear()
-        time.sleep(5)
-    currStep += 1
-    
-        
-    if(currStep <= endStep and currStep >= startStep): #STEP 6
-        print("Plotting goodput cumulative distribution!\n")
-        subprocess.Popen("mkdir experiment1and2Cumulative", shell=True, cwd='../../plots/').communicate(timeout=10)
-        time.sleep(3)
-        p = subprocess.Popen("python3 ../../pythonScripts/experiment1/plotGoodputCumulativeDistribution.py", shell=True, cwd='../../plots/experiment1and2Cumulative/')
-        p.wait(timeout=3600)
-        time.sleep(1)
-    currStep += 1
+                missing_inputs.append(csv_path)
 
-    if(currStep <= endStep and currStep >= startStep): #STEP 7
-        print("Plotting RTT cumulative distribution!\n")
-        subprocess.Popen("mkdir experiment1and2Cumulative", shell=True, cwd='../../plots/').communicate(timeout=10)
-        time.sleep(3)
-        p = subprocess.Popen("python3 ../../pythonScripts/experiment1/plotRttCumulativeDistribution.py", shell=True, cwd='../../plots/experiment1and2Cumulative/')
-        p.wait(timeout=3600)
-        time.sleep(1)
-    currStep += 1
+    if missing_inputs:
+        sample = "\n".join(f"  {path}" for path in missing_inputs[:40])
+        extra = "" if len(missing_inputs) <= 40 else f"\n  ... and {len(missing_inputs) - 40} more"
+        raise RuntimeError(f"Cannot plot because expected extracted CSV inputs are missing:\n{sample}{extra}")
 
-    if(currStep <= endStep and currStep >= startStep): #STEP 8
-        print("Plotting Retransmissions distribution!\n")
-        subprocess.Popen("mkdir experiment1and2Cumulative", shell=True, cwd='../../plots/').communicate(timeout=10)
-        time.sleep(3)
-        p = subprocess.Popen("python3 ../../pythonScripts/experiment1/plotRetransmissionsCumulativeDistribution.py", shell=True, cwd='../../plots/experiment1and2Cumulative/')
-        p.wait(timeout=3600)
-        time.sleep(1)
-    currStep += 1
-    
-        
-    if(currStep <= endStep and currStep >= startStep): #STEP 9
-        subprocess.Popen("mkdir ../../plots/experiment1", shell=True).communicate(timeout=10)
-        subprocess.Popen("mkdir ../../plots/experiment2", shell=True).communicate(timeout=10)
-        for exp in experiments:
-            subprocess.Popen("rm -r " + exp + "../", shell=True, cwd='../../plots/experiment1').communicate(timeout=10)
-            subprocess.Popen("rm -r " + exp + "../", shell=True, cwd='../../plots/experiment2').communicate(timeout=10)
-            print("\n-----Making plot diretories for " + exp + "-----\n")
-            subprocess.Popen("mkdir " + exp, shell=True, cwd='../../plots/').communicate(timeout=10)
-            for cc in congControlList:
-                print("\n-----Making plot directories for " + cc + "-----\n")
-                subprocess.Popen("mkdir " + cc, shell=True, cwd='../../plots/' + exp + '/').communicate(timeout=10)
-                for run in runList:
-                    subprocess.Popen("mkdir run" + str(run), shell=True, cwd='../../plots/' + exp + '/' + cc + '/' ).communicate(timeout=10)
-        time.sleep(5)
-    currStep += 1
-    
-    
-    if(currStep <= endStep and currStep >= startStep): #STEP 9
-        print("\nPlotting!")
-        processListStr = []
-        processListMerge = []
-        for exp in experiments:
-            for protocol in congControlList:
-                for run in runList:
-                    #print("\nCurrently on Run#" + str(run) + " \n")
-        
-                    runTitle = "run"
-                       
-                    goodputFilePath = '../../paperExperiments/' + exp + '/csvs/'+ protocol + '/' + runTitle + str(run) + '/singledumbbell.server[0].app[0]/goodput.csv'
-                    throughputFilePath = '../../paperExperiments/' + exp + '/csvs/'+ protocol + '/' + runTitle + str(run) + '/singledumbbell.server[0].tcp.conn/throughput.csv'
-                    cwndFilePath = '../../paperExperiments/' + exp + '/csvs/'+ protocol + '/' + runTitle + str(run) + '/singledumbbell.client[0].tcp.conn/cwnd.csv'
-                    queueLengthFilePath = '../../paperExperiments/' + exp + '/csvs/'+ protocol + '/' + runTitle + str(run) + '/singledumbbell.router1.ppp[1].queue/queueLength.csv'
-                    rttFilePath = '../../paperExperiments/' + exp + '/csvs/'+ protocol + '/' + runTitle + str(run) + '/singledumbbell.client[0].tcp.conn/rtt.csv'
-                    inflightFilePath = '../../paperExperiments/' + exp + '/csvs/'+ protocol + '/' + runTitle + str(run) + '/singledumbbell.client[0].tcp.conn/mbytesInFlight.csv'
-                    if os.path.exists(cwndFilePath) or os.path.exists(goodputFilePath) or os.path.exists(throughputFilePath) or os.path.exists(queueLengthFilePath):
-                        #subprocess.Popen("mkdir goodput", shell=True, cwd='plots/'+ exp + '/' + protocol +'/run' + str(run) + '/', stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT).communicate(timeout=10)
-                        #subprocess.Popen("mkdir throughput", shell=True, cwd='plots/'+ exp + '/' + protocol +'/run' + str(run) + '/', stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT).communicate(timeout=10) 
-                        #subprocess.Popen("mkdir cwnd", shell=True, cwd='plots/'+ exp + '/' + protocol +'/run' + str(run) + '/', stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT).communicate(timeout=10) 
-                        #subprocess.Popen("mkdir queueLength", shell=True, cwd='plots/'+ exp + '/' + protocol +'/run' + str(run) + '/', stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT).communicate(timeout=10) 
-                        #subprocess.Popen("mkdir rtt", shell=True, cwd='plots/'+ exp + '/' + protocol +'/run' + str(run) + '/', stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT).communicate(timeout=10) 
-                        processListStr.append(("python3 ../../../../pythonScripts/experiment1/plotGoodput.py " + "../../" + goodputFilePath, '../../plots/' + exp + '/' + protocol + '/run' + str(run)))
-                        processListStr.append(("python3 ../../../../pythonScripts/experiment1/plotThroughput.py " + "../../" + throughputFilePath, '../../plots/' + exp + '/' + protocol + '/run' + str(run)))
-                        processListStr.append(("python3 ../../../../pythonScripts/experiment1/plotCwnd.py " + "../../" + cwndFilePath, '../../plots/' + exp + '/' + protocol + '/run' + str(run)))
-                        processListStr.append(("python3 ../../../../pythonScripts/experiment1/plotQueueLength.py " + "../../" + queueLengthFilePath, '../../plots/' + exp + '/' + protocol + '/run' + str(run)))
-                        processListStr.append(("python3 ../../../../pythonScripts/experiment1/plotRtt.py " + "../../" + rttFilePath, '../../plots/' + exp + '/' + protocol + '/run' + str(run)))
-                        processListStr.append(("python3 ../../../../pythonScripts/experiment1/plotBytesInFlight.py " + "../../" + inflightFilePath, '../../plots/' + exp + '/' + protocol + '/run' + str(run)))
-                        processListMerge.append(("python3 ../../../../pythonScripts/experiment1/mergePdfs.py" , '../../plots/' + exp + '/' + protocol + '/run' + str(run)))
-                    else:
-                        print("CSV Entries do not exist! \n")
-        print("Plotting current batch!\n")
-        while(len(processListStr) > 0):
-            processTup = processListStr.pop()
-            print(processTup[0] + "\n")
-            processList.append(subprocess.Popen(processTup[0], shell=True, cwd=processTup[1]))
-            currentProc += 1
-            if(currentProc >= cores):
-                for proc in processList:
-                    proc.wait(timeout=300)
-                currentProc = 0
-                print("Plot batch complete!\n")
-                print("Plotting next batch!\n")
-                processList.clear()
-                
-        print("Plotting merging batch!\n")
-        while(len(processListMerge) > 0):
-            processTup = processListMerge.pop()
-            print(processTup[0] + "\n")
-            processList.append(subprocess.Popen(processTup[0], shell=True, cwd=processTup[1]))
-            currentProc += 1
-            if(currentProc >= cores):
-                for proc in processList:
-                    proc.wait(timeout=300)
-                currentProc = 0
-                print("Merge batch complete!\n")
-                print("Merging next batch!\n")
-                processList.clear()
-    currStep += 1
+    print(f"\nPlotting {len(tasks)} per-run figure(s) using {args.cores} core(s).\n")
+    failures: list[str] = []
+    with ThreadPoolExecutor(max_workers=args.cores) as executor:
+        futures = {executor.submit(run_plot_task, *task): task for task in tasks}
+        for future in as_completed(futures):
+            name, ok, return_code = future.result()
+            if ok:
+                print(f"  plot complete: {name}")
+            else:
+                failures.append(f"{name} (exit {return_code})")
+
+    if failures:
+        raise RuntimeError("Plotting failed:\n" + "\n".join(f"  {failure}" for failure in failures))
+
+    print("\nMerging per-run PDFs.\n")
+    merge_failures: list[str] = []
+    with ThreadPoolExecutor(max_workers=args.cores) as executor:
+        futures = {}
+        for entry in entries:
+            cwd = plot_run_dir(entry)
+            futures[executor.submit(subprocess.run, [sys.executable, str(SCRIPT_DIR / "mergePdfs.py")], cwd=str(cwd))] = cwd
+        for future in as_completed(futures):
+            cwd = futures[future]
+            result = future.result()
+            if result.returncode != 0:
+                merge_failures.append(f"{cwd} (exit {result.returncode})")
+
+    if merge_failures:
+        raise RuntimeError("PDF merging failed:\n" + "\n".join(f"  {failure}" for failure in merge_failures))
+
+
+def plot_cumulative(script_name: str) -> None:
+    cumulative_dir = PLOTS_ROOT / "experiment1and2Cumulative"
+    cumulative_dir.mkdir(parents=True, exist_ok=True)
+    run_checked(
+        [sys.executable, str(SCRIPT_DIR / script_name)],
+        cwd=cumulative_dir,
+        description=f"Running {script_name}",
+        timeout=3600,
+    )
+
+
+def generate_inputs() -> None:
+    run_checked([sys.executable, "generateExperiment1Scenarios.py"], SCRIPT_DIR, "Generating experiment 1 scenarios")
+    run_checked([sys.executable, "generateExperiment1IniFile.py"], SCRIPT_DIR, "Generating experiment 1 ini files")
+    run_checked(
+        [sys.executable, "../experiment2/generateExperiment2Scenarios.py"],
+        SCRIPT_DIR,
+        "Generating experiment 2 scenarios",
+    )
+    run_checked(
+        [sys.executable, "../experiment2/generateExperiment2IniFile.py"],
+        SCRIPT_DIR,
+        "Generating experiment 2 ini files",
+    )
+
+
+def clean_previous_csvs(protocols: list[str], experiments: list[str]) -> None:
+    for experiment in experiments:
+        (PAPER_ROOT / experiment / "results").mkdir(parents=True, exist_ok=True)
+        for protocol in protocols:
+            shutil.rmtree(PAPER_ROOT / experiment / "csvs" / protocol, ignore_errors=True)
+
+
+def write_runtime_header(experiment: str) -> None:
+    (SCRIPT_DIR / f"{experiment}runTimes.txt").write_text(
+        f"--{experiment.title()} Runtimes (s)--\n",
+        encoding="utf-8",
+    )
+
+
+def main() -> int:
+    args = parse_args()
+    os.chdir(SCRIPT_DIR)
+
+    experiments = ["experiment1", "experiment2"]
+    protocols = with_raynet_protocols([])
+    run_list = list(range(1, args.runs + 1))
+    print(f"Protocols: {protocols}")
+    print(f"Runs: 1-{args.runs}")
+    print(f"Cores: {args.cores}")
+    print(f"Retries: {args.retries}")
+
+    curr_step = 1
+    entries: list[ConfigEntry] = []
+
+    if step_enabled(curr_step, args):
+        generate_inputs()
+        clean_previous_csvs(protocols, experiments)
+        for experiment in experiments:
+            write_runtime_header(experiment)
+        entries = collect_config_entries("experiment1", protocols, run_list)
+        run_simulations(entries, args)
+    curr_step += 1
+
+    if step_enabled(curr_step, args):
+        if not entries:
+            entries = collect_config_entries("experiment2", protocols, run_list)
+        else:
+            entries = collect_config_entries("experiment2", protocols, run_list)
+        run_simulations(entries, args)
+    curr_step += 1
+
+    all_entries = collect_config_entries("experiment1", protocols, run_list) + collect_config_entries(
+        "experiment2", protocols, run_list
+    )
+
+    if step_enabled(curr_step, args):
+        export_csvs(collect_config_entries("experiment1", protocols, run_list), args)
+    curr_step += 1
+
+    if step_enabled(curr_step, args):
+        export_csvs(collect_config_entries("experiment2", protocols, run_list), args)
+    curr_step += 1
+
+    if step_enabled(curr_step, args):
+        extract_csvs(all_entries, args)
+    curr_step += 1
+
+    if step_enabled(curr_step, args):
+        plot_cumulative("plotGoodputCumulativeDistribution.py")
+    curr_step += 1
+
+    if step_enabled(curr_step, args):
+        plot_cumulative("plotRttCumulativeDistribution.py")
+    curr_step += 1
+
+    if step_enabled(curr_step, args):
+        plot_cumulative("plotRetransmissionsCumulativeDistribution.py")
+    curr_step += 1
+
+    if step_enabled(curr_step, args):
+        prepare_plot_dirs(all_entries)
+    curr_step += 1
+
+    if step_enabled(curr_step, args):
+        plot_individual_runs(all_entries, args)
+
+    print("\nExperiment 1 and 2 pipeline completed with all expected outputs present.\n")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except Exception as exc:
+        print(f"\nERROR: {exc}\n", file=sys.stderr)
+        raise SystemExit(1)

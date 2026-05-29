@@ -16,6 +16,65 @@ from PyPDF2 import PdfMerger
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from raynetExperimentSupport import build_simulation_command, simulation_output_kwargs, with_raynet_protocols
 
+def collect_config_entries(paperExperimentDir, congControlList, runList):
+    configEntries = []
+
+    for cc in congControlList:
+        fileName = paperExperimentDir / ("experiment8_" + cc + ".ini")
+        iniFile = open(fileName, 'r').readlines()
+        for line in iniFile:
+            if line.find('[Config') != -1:
+                match = re.search(r'Run(\d{1,5})\]', line)
+                if match and int(match.group(1)) in runList:
+                    configName = (line[8:])[:-2]
+                    configEntries.append((cc, configName))
+
+    return configEntries
+
+def has_expected_vec_file(resultsDir, configName):
+    expectedFiles = list(resultsDir.glob(configName + "*.vec"))
+    return len(expectedFiles) > 0
+
+def run_config_batch(configEntries, cores, paperExperimentDir):
+    currentProc = 0
+    processList = []
+    failedConfigs = []
+
+    for cc, configName in configEntries:
+        resultsDir = paperExperimentDir / "results"
+        for staleFile in resultsDir.glob(configName + "*"):
+            staleFile.unlink(missing_ok=True)
+
+        processList.append((subprocess.Popen(
+            build_simulation_command(cc, "experiment8_" + cc + ".ini", configName, include_leo=True),
+            cwd=str(paperExperimentDir), **simulation_output_kwargs(cc)), (cc, configName)))
+
+        currentProc = currentProc + 1
+        print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
+        if(currentProc == cores):
+            procCompleteNum = 0
+            for proc, entry in processList:
+                if proc.wait() != 0:
+                    failedConfigs.append(entry)
+                procCompleteNum = procCompleteNum + 1
+                print("\tRun #" + str(procCompleteNum) + " is complete!")
+            currentProc = 0
+            processList.clear()
+            print(" ... Running next batch of simulations! ...\n")
+
+    for proc, entry in processList:
+        if proc.wait() != 0:
+            failedConfigs.append(entry)
+
+    return failedConfigs
+
+def configs_needing_retry(configEntries, failedConfigs, resultsDir):
+    missingConfigs = [entry for entry in configEntries if not has_expected_vec_file(resultsDir, entry[1])]
+    for entry in failedConfigs:
+        if entry not in missingConfigs:
+            missingConfigs.append(entry)
+    return missingConfigs
+
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
         protocol_path = os.path.join(root_folder, protocol)
@@ -64,7 +123,7 @@ if __name__ == "__main__":
     startStep = 1
     endStep = 8
     currStep = 1
-    cores = 20
+    cores = int(os.environ.get("EXPERIMENT_CORES", "20"))
     currentProc = 0
     processList = []
     congControlList = with_raynet_protocols(["orbtcp", "cubic", "bbr", "bbr3", "satcp", "leocc"])
@@ -72,6 +131,8 @@ if __name__ == "__main__":
     buffersizes = ["mediumbuffer"]#["mediumbuffer", "smallbuffer", "largebuffer"]
     runs = 5
     runList = list(range(1,runs+1))
+    scriptDir = Path(__file__).resolve().parent
+    paperExperimentDir = (scriptDir / "../../paperExperiments/experiment8").resolve()
 
     city_pairs = [
         ("San Diego", "Seattle", ["isl", "bentpipe"]),
@@ -83,43 +144,30 @@ if __name__ == "__main__":
     
     if(currStep <= endStep and currStep >= startStep): #STEP 1
         subprocess.Popen("python3 generateExperiment8IniFile.py", shell=True).communicate(timeout=30)
+        resultsDir = paperExperimentDir / "results"
+        os.makedirs(resultsDir, exist_ok=True)
     
         subprocess.Popen("rm experiment8runTimes.txt", shell=True).communicate(timeout=30)
-        
-        exp1RunNum = 1
-        for cc in congControlList:
-            fileName =  '../../paperExperiments/experiment8/experiment8_' + cc + '.ini'
-            iniFile = open(fileName, 'r').readlines()
-            print("----------experiment 8 " + cc + " simulations------------")
-            for line in iniFile:
-                if line.find('[Config') != -1:
-                    match = re.search(r'Run(\d{1,5})\]', line)
-                    if match and int(match.group(1)) in runList:
-                        configName = (line[8:])[:-2]
-                        print(configName)
-                        progStart = time.time()
-                        processList.append(subprocess.Popen(
-                            build_simulation_command(cc, "experiment8_" + cc + ".ini", configName, include_leo=True),
-                            cwd='../../paperExperiments/experiment8', **simulation_output_kwargs(cc)))
-                        
-                        currentProc = currentProc + 1
-                        print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
-                        if(currentProc == cores):
-                            procCompleteNum = 0
-                            for proc in processList:
-                                proc.wait()
-                                now = time.time()
-                                procCompleteNum = procCompleteNum + 1
-                                print("\tRun #" + str(procCompleteNum) + " is complete!")
-                                exp1RunNum += 1
-                            currentProc = 0
-                            processList.clear()
-                            print(" ... Running next batch of simulations! ...\n")
-                    else:
-                        continue
-    
-        for proc in processList:
-            proc.wait()
+
+        configEntries = collect_config_entries(paperExperimentDir, congControlList, runList)
+        failedConfigs = run_config_batch(configEntries, cores, paperExperimentDir)
+
+        maxRetryRounds = 3
+        retryRound = 1
+        missingConfigs = configs_needing_retry(configEntries, failedConfigs, resultsDir)
+
+        while(len(missingConfigs) > 0 and retryRound <= maxRetryRounds):
+            print("\nMissing vec files for " + str(len(missingConfigs)) + " configs after batch run. Retrying missing configs (attempt " + str(retryRound) + "/" + str(maxRetryRounds) + ")...\n")
+            for _, configName in missingConfigs:
+                print("Missing vec for [" + configName + "]")
+
+            failedConfigs = run_config_batch(missingConfigs, cores, paperExperimentDir)
+            missingConfigs = configs_needing_retry(configEntries, failedConfigs, resultsDir)
+            retryRound += 1
+
+        if(len(missingConfigs) > 0):
+            missingText = "\n".join("  " + configName for _, configName in missingConfigs)
+            raise RuntimeError("The following experiment 8 configs are still missing vec files after retries:\n" + missingText)
     
     currStep += 1
     currentProc = 0
@@ -205,7 +253,7 @@ if __name__ == "__main__":
         filePath2 = '../../paperExperiments/experiment8/results/pingBentPipe.csv'
         if os.path.exists(filePath2):
             print("Extracting CSV file for " + experiment + " Ping" )
-            processListStr.append("python3 extractSingleCsvFilePing.py " + filePath + " " + experiment + " " + "bentpipe" + " ")
+            processListStr.append("python3 extractSingleCsvFilePing.py " + filePath2 + " " + experiment + " " + "bentpipe" + " ")
 
         time.sleep(10)
         currentProc = 0

@@ -38,26 +38,42 @@ def has_expected_vec_file(resultsDir, configName):
 def run_config_batch(configEntries, cores, paperExperimentDir):
     currentProc = 0
     processList = []
+    failedConfigs = []
 
     for cc, configName in configEntries:
-        processList.append(subprocess.Popen(
+        resultsDir = paperExperimentDir / "results"
+        for staleFile in resultsDir.glob(configName + "*"):
+            staleFile.unlink(missing_ok=True)
+
+        processList.append((subprocess.Popen(
             build_simulation_command(cc, "experiment9_" + cc + ".ini", configName, include_leo=True),
-            cwd=str(paperExperimentDir), **simulation_output_kwargs(cc)))
+            cwd=str(paperExperimentDir), **simulation_output_kwargs(cc)), (cc, configName)))
 
         currentProc = currentProc + 1
         print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
         if(currentProc == cores):
             procCompleteNum = 0
-            for proc in processList:
-                proc.wait()
+            for proc, entry in processList:
+                if proc.wait() != 0:
+                    failedConfigs.append(entry)
                 procCompleteNum = procCompleteNum + 1
                 print("\tRun #" + str(procCompleteNum) + " is complete!")
             currentProc = 0
             processList.clear()
             print(" ... Running next batch of simulations! ...\n")
 
-    for proc in processList:
-        proc.wait()
+    for proc, entry in processList:
+        if proc.wait() != 0:
+            failedConfigs.append(entry)
+
+    return failedConfigs
+
+def configs_needing_retry(configEntries, failedConfigs, resultsDir):
+    missingConfigs = [entry for entry in configEntries if not has_expected_vec_file(resultsDir, entry[1])]
+    for entry in failedConfigs:
+        if entry not in missingConfigs:
+            missingConfigs.append(entry)
+    return missingConfigs
 
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
@@ -107,7 +123,7 @@ if __name__ == "__main__":
     startStep = 1
     endStep = 6
     currStep = 1
-    cores = 1
+    cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
     currentProc = 0
     processList = []
     congControlList = with_raynet_protocols(["orbtcp", "cubic", "bbr", "bbr3", "satcp", "leocc"])
@@ -133,26 +149,24 @@ if __name__ == "__main__":
         os.makedirs(resultsDir, exist_ok=True)
 
         configEntries = collect_config_entries(paperExperimentDir, congControlList, runList)
-        run_config_batch(configEntries, cores, paperExperimentDir)
+        failedConfigs = run_config_batch(configEntries, cores, paperExperimentDir)
 
         maxRetryRounds = 3
         retryRound = 1
-        missingConfigs = [entry for entry in configEntries if not has_expected_vec_file(resultsDir, entry[1])]
+        missingConfigs = configs_needing_retry(configEntries, failedConfigs, resultsDir)
 
         while(len(missingConfigs) > 0 and retryRound <= maxRetryRounds):
             print("\nMissing vec files for " + str(len(missingConfigs)) + " configs after batch run. Retrying missing configs (attempt " + str(retryRound) + "/" + str(maxRetryRounds) + ")...\n")
             for _, configName in missingConfigs:
                 print("Missing vec for [" + configName + "]")
 
-            run_config_batch(missingConfigs, cores, paperExperimentDir)
-            missingConfigs = [entry for entry in configEntries if not has_expected_vec_file(resultsDir, entry[1])]
+            failedConfigs = run_config_batch(missingConfigs, cores, paperExperimentDir)
+            missingConfigs = configs_needing_retry(configEntries, failedConfigs, resultsDir)
             retryRound += 1
 
         if(len(missingConfigs) > 0):
-            print("\nWARNING: The following configs are still missing vec files after retries:\n")
-            for _, configName in missingConfigs:
-                print("  " + configName)
-            print("")
+            missingText = "\n".join("  " + configName for _, configName in missingConfigs)
+            raise RuntimeError("The following experiment 9 configs are still missing vec files after retries:\n" + missingText)
     
     currStep += 1
     currentProc = 0

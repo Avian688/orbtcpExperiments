@@ -63,11 +63,9 @@ if __name__ == "__main__":
                 modName = re.sub(r'(conn)-\d+', r'\1', modName)
 
                 finallist = pd.DataFrame({'time': time, str(vec): val})
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs", shell=True).communicate(timeout=40) 
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol, shell=True).communicate(timeout=40) 
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/run'+ str(run), shell=True).communicate(timeout=40) 
-                subprocess.Popen("mkdir ../../paperExperiments/" + exp + "/csvs/" + protocol + '/run'+ str(run) + "/" + str(modName), shell=True).communicate(timeout=40)
-                finallist.to_csv('../../paperExperiments/'+ exp +'/csvs/' + protocol + '/run'+ str(run) + '/' + str(modName) + '/' + vec + '.csv', index=False)
+                out_dir = Path('../../paperExperiments') / exp / 'csvs' / protocol / ('run' + str(run)) / str(modName)
+                out_dir.mkdir(parents=True, exist_ok=True)
+                finallist.to_csv(out_dir / (vec + '.csv'), index=False)
     termTime.sleep(1)          
 
     

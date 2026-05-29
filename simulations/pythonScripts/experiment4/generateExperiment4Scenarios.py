@@ -2,7 +2,8 @@
 
 # Generates a path change scenario XML file given sender->receiver base propagation delays (ms)
 # generatePathChangeScenario delayNum1 delayNum2... delayNumX
-# This will generate X flows for the use in the scenario manager which will change path at 10s
+# This will generate X flows for use in the scenario manager and add periodic
+# hard reconfigurations on the bottleneck link.
 # 
 
 import sys
@@ -34,6 +35,11 @@ def int_to_word(num):
 if __name__ == "__main__":
     numOfClients = 2
     simSeed = 1
+    handoverEvery = 15
+    minHandoverMs = 45
+    maxHandoverMs = 120
+    bottleneckDelayMs = 0.5
+    bottleneckDataRate = "100Mbps"
     #queueSizes = [0.2,1,4] #OF AVERAGE BDP AFFECTS INI FILE
     constantClientRtt = 20
     clientsRtts = [20,40,60,80,100,120,140,160,180,200] #OF AVERAGE BDP
@@ -60,5 +66,41 @@ if __name__ == "__main__":
                 f.write('\n')
           
             f.write('\n    </at>')
+
+            # Hard reconfiguration on the bottleneck every 15s. The ini files
+            # run each RTT case for RTT*2000 seconds, i.e. 2*RTT_ms seconds.
+            simLength = int(clientRtt) * 2
+            bottleneckIf = numOfClients
+            t = handoverEvery
+            while t <= simLength:
+                handoverMs = random.randint(minHandoverMs, maxHandoverMs)
+                reconnectT = t + (handoverMs / 1000.0)
+
+                f.write('\n    <at t="' + str(t) + '">')
+                f.write('\n        <disconnect src-module="router1" src-gate="pppg$o[' + str(bottleneckIf) + ']"/>')
+                f.write('\n        <disconnect src-module="router2" src-gate="pppg$o[' + str(bottleneckIf) + ']"/>')
+                f.write('\n        <crash module="router1.ppp[' + str(bottleneckIf) + ']"/>')
+                f.write('\n        <crash module="router2.ppp[' + str(bottleneckIf) + ']"/>')
+                f.write('\n    </at>')
+
+                f.write('\n    <at t="' + str(reconnectT) + '">')
+                f.write('\n        <connect src-module="router1" src-gate="pppg$o[' + str(bottleneckIf) + ']"')
+                f.write('\n                 dest-module="router2" dest-gate="pppg$i[' + str(bottleneckIf) + ']"')
+                f.write('\n                 channel-type="ned.DatarateChannel">')
+                f.write('\n                 <param name="datarate" value="' + str(bottleneckDataRate) + '" />')
+                f.write('\n                 <param name="delay" value="' + str(bottleneckDelayMs) + 'ms" />')
+                f.write('\n        </connect>')
+                f.write('\n        <connect src-module="router2" src-gate="pppg$o[' + str(bottleneckIf) + ']"')
+                f.write('\n                 dest-module="router1" dest-gate="pppg$i[' + str(bottleneckIf) + ']"')
+                f.write('\n                 channel-type="ned.DatarateChannel">')
+                f.write('\n                 <param name="datarate" value="' + str(bottleneckDataRate) + '" />')
+                f.write('\n                 <param name="delay" value="' + str(bottleneckDelayMs) + 'ms" />')
+                f.write('\n        </connect>')
+                f.write('\n        <start module="router1.ppp[' + str(bottleneckIf) + ']"/>')
+                f.write('\n        <start module="router2.ppp[' + str(bottleneckIf) + ']"/>')
+                f.write('\n        <update module="configurator" />')
+                f.write('\n    </at>')
+
+                t += handoverEvery
             
             f.write('\n</scenario>')

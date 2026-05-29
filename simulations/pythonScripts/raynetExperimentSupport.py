@@ -106,6 +106,13 @@ RAYNET_NED_PATHS = (
     _raynet_simulation_path("simlibs", "Astrea", "src"),
 )
 
+RAYNET_IDE_LIBS = (
+    _raynet_simulation_path("simlibs", "RLComponents", "src", "RLComponents"),
+    _raynet_simulation_path("simlibs", "Orca", "src", "Orca"),
+    _raynet_simulation_path("simlibs", "CleanSlate", "src", "CleanSlate"),
+    _raynet_simulation_path("simlibs", "Astrea", "src", "Astrea"),
+)
+
 BASE_LIBS = (
     "../../../src/orbtcpExperiments",
     "../../../../bbr/src/bbr",
@@ -157,6 +164,10 @@ def common_ned_path(include_leo: bool = False) -> str:
         paths.extend(LEO_NED_PATHS)
     paths.extend(str(path) for path in RAYNET_NED_PATHS)
     return "ned-path = " + ":".join(paths)
+
+
+def common_load_libs() -> str:
+    return "load-libs = " + " ".join(RAYNET_IDE_LIBS)
 
 
 def build_opp_run_command(config_name: str, ini_file: str, include_leo: bool = False):
@@ -211,6 +222,14 @@ def _ensure_ned_path(text: str, include_leo: bool) -> str:
     if "ned-path" in general_text:
         return text
     return text.replace("[General]\n", "[General]\n" + common_ned_path(include_leo) + "\n", 1)
+
+
+def _ensure_load_libs(text: str) -> str:
+    first_config = text.find("\n[Config ")
+    general_text = text if first_config == -1 else text[:first_config]
+    if "load-libs" in general_text:
+        return text
+    return text.replace("[General]\n", "[General]\n" + common_load_libs() + "\n", 1)
 
 
 def _raynet_parameter_lines(protocol: str):
@@ -275,6 +294,7 @@ def clone_raynet_ini_variants(base_ini_path, source_protocol: str = "bbr", inclu
         text = text.replace('**.tcp.tcpAlgorithmClass = "BbrFlavour"', f'**.tcp.tcpAlgorithmClass = "{alg_class}"')
         text = text.replace(source_display, display)
         text = _ensure_ned_path(text, include_leo)
+        text = _ensure_load_libs(text)
         text = _insert_raynet_parameters(text, protocol)
         target_ini.write_text(text, encoding="utf-8")
         print(f"Generated RayNet ini file {target_ini}")
