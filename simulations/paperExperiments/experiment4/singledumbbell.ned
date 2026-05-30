@@ -2,11 +2,11 @@ package orbtcpexperiments.simulations.paperExperiments.experiment4;
 @namespace(inet);
 
 import inet.node.inet.StandardHost;
-import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
 import inet.node.inet.Router;
 import ned.DatarateChannel;
 import ned.IBidirectionalChannel;
 import inet.common.scenario.ScenarioManager;
+import tcppaced.networklayer.configurator.ipv4.AutoNetworkConfigurator;
 import RLComponents.Broker;
 
 network singledumbbell
@@ -30,7 +30,7 @@ network singledumbbell
         client[numberOfFlows]: StandardHost {
             @display("p=68,71,m,n,numberOfFlows,150");
         }
-        configurator: Ipv4NetworkConfigurator {
+        configurator: AutoNetworkConfigurator {
             @display("p=450,350");
         }
         server[numberOfFlows]: StandardHost {

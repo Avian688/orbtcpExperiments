@@ -2,11 +2,11 @@ package orbtcpexperiments.simulations.paperExperiments.experiment6;
 @namespace(inet);
 
 import inet.node.inet.StandardHost;
-import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
 import inet.node.inet.Router;
 import ned.DatarateChannel;
 import ned.IBidirectionalChannel;
 import inet.common.scenario.ScenarioManager;
+import tcppaced.networklayer.configurator.ipv4.AutoNetworkConfigurator;
 import RLComponents.Broker;
 
 network parkinglot
@@ -48,7 +48,7 @@ network parkinglot
         scenarioManager: ScenarioManager {
             @display("p=100,300;is=s");
         }
-        configurator: Ipv4NetworkConfigurator {
+        configurator: AutoNetworkConfigurator {
             @display("p=450,350");
         }
         broker: Broker;

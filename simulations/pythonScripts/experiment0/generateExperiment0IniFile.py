@@ -121,7 +121,7 @@ def main() -> None:
         w()
         block(
             [
-                "network = singledumbbell",
+                "network = orbtcpexperiments.simulations.paperExperiments.experiment0.singledumbbell",
                 f"sim-time-limit = {SIM_TIME_LIMIT_S}s",
                 "record-eventlog=false",
                 "cmdenv-express-mode = true",

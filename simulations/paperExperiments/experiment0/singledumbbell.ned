@@ -3,9 +3,9 @@ package orbtcpexperiments.simulations.paperExperiments.experiment0;
 
 import inet.node.inet.StandardHost;
 import inet.node.inet.Router;
+import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
 import ned.DatarateChannel;
 import inet.common.scenario.ScenarioManager;
-import tcppaced.networklayer.configurator.ipv4.AutoNetworkConfigurator;
 
 network singledumbbell
 {
@@ -30,7 +30,7 @@ network singledumbbell
         client[numberOfFlows]: StandardHost {
             @display("p=68,71,m,n,numberOfFlows,150");
         }
-        configurator: AutoNetworkConfigurator {
+        configurator: Ipv4NetworkConfigurator {
             @display("p=450,350");
         }
         server[numberOfFlows]: StandardHost {
