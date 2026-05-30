@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from __future__ import annotations
+
 import os
 import subprocess
 import sys
@@ -26,11 +28,25 @@ EXPERIMENT0_NED_PATHS = (
     "../../../../tcpGoodputApplications/src",
 )
 EXPERIMENT0_LIBS = (
-    "../../../src/orbtcpExperiments",
-    "../../../../bbr/src/bbr",
     "../../../../inet4.5/src/INET",
     "../../../../tcpPaced/src/tcpPaced",
     "../../../../tcpGoodputApplications/src/tcpGoodputApplications",
+    "../../../../bbr/src/bbr",
+    "../../../src/orbtcpExperiments",
+)
+LIBRARY_REBUILD_ORDER = (
+    "inet4.5",
+    "tcpPaced",
+    "tcpGoodputApplications",
+    "bbr",
+    "orbtcpExperiments",
+)
+LIBRARY_DEPENDENCIES = (
+    ("tcpPaced", "INET"),
+    ("tcpGoodputApplications", "INET"),
+    ("bbr", "INET"),
+    ("bbr", "tcpPaced"),
+    ("orbtcpExperiments", "INET"),
 )
 VARIANTS = [
     ("no_updated_sack_no_pacing_no_rack", "Bbr3_NoUpdatedSackNoPacingNoRack"),
@@ -41,6 +57,63 @@ VARIANTS = [
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 EXPERIMENT_DIR = (SCRIPT_DIR / "../../paperExperiments" / EXPERIMENT).resolve()
+
+
+def library_base_name(lib_path: str) -> str:
+    return Path(lib_path).name
+
+
+def resolve_library_file(lib_path: str) -> Path | None:
+    path = (EXPERIMENT_DIR / lib_path).resolve()
+    parent = path.parent
+    name = path.name
+    candidates = [
+        parent / f"lib{name}.so",
+        parent / f"lib{name}_dbg.so",
+        parent / f"lib{name}.dylib",
+        parent / f"lib{name}_dbg.dylib",
+    ]
+    existing = [candidate for candidate in candidates if candidate.is_file()]
+    return max(existing, key=lambda candidate: candidate.stat().st_mtime) if existing else None
+
+
+def check_library_freshness() -> None:
+    if os.environ.get("EXPERIMENT0_SKIP_BUILD_CHECK", "").lower() in {"1", "true", "yes", "on"}:
+        return
+
+    libraries = {
+        library_base_name(lib_path): resolve_library_file(lib_path)
+        for lib_path in EXPERIMENT0_LIBS
+    }
+    missing = [name for name, path in libraries.items() if path is None]
+    if missing:
+        print("WARNING: Could not find built shared libraries for: " + ", ".join(missing))
+        return
+
+    stale = []
+    for dependent, dependency in LIBRARY_DEPENDENCIES:
+        dependent_path = libraries.get(dependent)
+        dependency_path = libraries.get(dependency)
+        if dependent_path is None or dependency_path is None:
+            continue
+        if dependent_path.stat().st_mtime + 1 < dependency_path.stat().st_mtime:
+            stale.append((dependent, dependent_path, dependency, dependency_path))
+
+    if not stale:
+        return
+
+    print("Experiment 0 shared-library freshness check failed.")
+    print("This commonly causes Linux-only vtable/typeinfo segfaults when a dependent project was not rebuilt.")
+    for dependent, dependent_path, dependency, dependency_path in stale:
+        print(
+            f"  {dependent_path} is older than {dependency_path} "
+            f"({dependent} depends on {dependency})"
+        )
+    print("Rebuild in this order from the samples folder:")
+    for project in LIBRARY_REBUILD_ORDER:
+        print(f"  (cd {project} && make)")
+    print("If you intentionally want to bypass this check, set EXPERIMENT0_SKIP_BUILD_CHECK=1.")
+    raise RuntimeError("stale experiment 0 shared libraries")
 
 
 def run_checked(command, cwd: Path) -> None:
@@ -117,6 +190,7 @@ def expected_vec_files() -> list[Path]:
 
 
 def run_simulations(cores: int) -> None:
+    check_library_freshness()
     (EXPERIMENT_DIR / "results").mkdir(parents=True, exist_ok=True)
     batched(simulation_commands(), EXPERIMENT_DIR, cores)
     missing = [path for path in expected_vec_files() if not path.is_file()]
