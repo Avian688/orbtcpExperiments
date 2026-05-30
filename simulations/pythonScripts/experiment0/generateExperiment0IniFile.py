@@ -3,11 +3,7 @@
 import json
 import math
 import random
-import sys
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import common_load_libs, common_ned_path
 
 
 BASE_BW_MBPS = 100
@@ -15,6 +11,22 @@ BASE_RTT_S = 0.05
 MSS_BYTES = 1448
 RUNS = 5
 SIM_TIME_LIMIT_S = 120
+EXPERIMENT0_NED_PATHS = (
+    "../..",
+    "../../../src",
+    "../../../../bbr/simulations",
+    "../../../../bbr/src",
+    "../../../../inet4.5/examples",
+    "../../../../inet4.5/showcases",
+    "../../../../inet4.5/src",
+    "../../../../inet4.5/tests/validation",
+    "../../../../inet4.5/tests/networks",
+    "../../../../inet4.5/tutorials",
+    "../../../../tcpPaced/src",
+    "../../../../tcpPaced/simulations",
+    "../../../../tcpGoodputApplications/simulations",
+    "../../../../tcpGoodputApplications/src",
+)
 
 VARIANTS = [
     {
@@ -71,6 +83,10 @@ def load_start_times() -> dict[str, float]:
     return {f"run{run}": round(rng.uniform(0.0, 0.1), 6) for run in range(1, RUNS + 1)}
 
 
+def experiment0_ned_path() -> str:
+    return "ned-path = " + ":".join(EXPERIMENT0_NED_PATHS)
+
+
 def main() -> None:
     out_dir = Path("../../paperExperiments/experiment0")
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -101,8 +117,7 @@ def main() -> None:
                 w(line)
 
         w("[General]")
-        w(common_ned_path())
-        w(common_load_libs())
+        w(experiment0_ned_path())
         w()
         block(
             [

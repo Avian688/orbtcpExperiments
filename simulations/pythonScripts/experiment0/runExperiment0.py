@@ -5,14 +5,33 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import build_simulation_command
-
 
 EXPERIMENT = "experiment0"
-PROTOCOL = "bbr3"
 INI_FILE = "experiment0_bbr3.ini"
 RUNS = 5
+EXPERIMENT0_NED_PATHS = (
+    "../..",
+    "../../../src",
+    "../../../../bbr/simulations",
+    "../../../../bbr/src",
+    "../../../../inet4.5/examples",
+    "../../../../inet4.5/showcases",
+    "../../../../inet4.5/src",
+    "../../../../inet4.5/tests/validation",
+    "../../../../inet4.5/tests/networks",
+    "../../../../inet4.5/tutorials",
+    "../../../../tcpPaced/src",
+    "../../../../tcpPaced/simulations",
+    "../../../../tcpGoodputApplications/simulations",
+    "../../../../tcpGoodputApplications/src",
+)
+EXPERIMENT0_LIBS = (
+    "../../../src/orbtcpExperiments",
+    "../../../../bbr/src/bbr",
+    "../../../../inet4.5/src/INET",
+    "../../../../tcpPaced/src/tcpPaced",
+    "../../../../tcpGoodputApplications/src/tcpGoodputApplications",
+)
 VARIANTS = [
     ("no_updated_sack_no_pacing_no_rack", "Bbr3_NoUpdatedSackNoPacingNoRack"),
     ("updated_sack_no_pacing_no_rack", "Bbr3_UpdatedSackNoPacingNoRack"),
@@ -59,13 +78,33 @@ def generate_inputs() -> None:
     run_checked([sys.executable, "generateExperiment0IniFile.py"], SCRIPT_DIR)
 
 
+def build_experiment0_command(config_name: str) -> list[str]:
+    command = [
+        "opp_run",
+        "-r",
+        "0",
+        "-m",
+        "-u",
+        "Cmdenv",
+        "-c",
+        config_name,
+        "-n",
+        ":".join(EXPERIMENT0_NED_PATHS),
+        "--image-path=../../../../inet4.5/images",
+    ]
+    for lib in EXPERIMENT0_LIBS:
+        command.extend(["-l", lib])
+    command.append(INI_FILE)
+    return command
+
+
 def simulation_commands() -> list[tuple[str, list[str]]]:
     commands = []
     for variant_key, config_prefix in VARIANTS:
         for run in range(1, RUNS + 1):
             config_name = f"{config_prefix}_Run{run}"
             label = f"{variant_key} run{run}"
-            commands.append((label, build_simulation_command(PROTOCOL, INI_FILE, config_name)))
+            commands.append((label, build_experiment0_command(config_name)))
     return commands
 
 
@@ -87,7 +126,7 @@ def run_simulations(cores: int) -> None:
         for path in missing:
             stem = path.name.removesuffix("-#0.vec")
             print(f"  {path.name}")
-            retry.append((stem, build_simulation_command(PROTOCOL, INI_FILE, stem)))
+            retry.append((stem, build_experiment0_command(stem)))
         batched(retry, EXPERIMENT_DIR, cores)
 
 
