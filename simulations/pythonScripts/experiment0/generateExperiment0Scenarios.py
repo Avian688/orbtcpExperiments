@@ -69,12 +69,6 @@ def main() -> None:
 
             w("<scenario>")
 
-            w('    <at t="0">')
-            write_delay_updates(w, BASE_RTT_MS)
-            write_bottleneck_bw(w, BASE_BW_MBPS)
-            write_bottleneck_loss(w, 0)
-            w("    </at>")
-
             w('    <at t="15">')
             write_bottleneck_bw(w, BASE_BW_MBPS * 2)
             w("    </at>")
