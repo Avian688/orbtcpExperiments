@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+
+from pathlib import Path
+import sys
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import export_plot_dataframe
+
+
+MSS_BYTES = 1448
+RUNS = 5
+EVENTS = [
+    (15, "BW x2"),
+    (30, "BW /2"),
+    (35, "RTT x2"),
+    (60, "RTT /2"),
+    (75, "1% loss"),
+    (90, "loss off"),
+]
+VARIANTS = [
+    ("no_updated_sack_no_pacing_no_rack", "No updated SACK, no pacing, no RACK"),
+    ("updated_sack_no_pacing_no_rack", "Updated SACK, no pacing, no RACK"),
+    ("updated_sack_pacing_no_rack", "Updated SACK, pacing, no RACK"),
+    ("all_enabled", "Updated SACK, pacing, RACK"),
+]
+
+
+def cwnd_file_for(run: int, variant: str) -> Path:
+    return (
+        Path("../../paperExperiments/experiment0/csvs")
+        / variant
+        / f"run{run}"
+        / "singledumbbell.client[0].tcp.conn"
+        / "cwnd.csv"
+    )
+
+
+def add_event_lines(ax, show_labels: bool) -> None:
+    for event_time, label in EVENTS:
+        ax.axvline(event_time, color="0.65", linewidth=0.8, linestyle="--")
+        if show_labels:
+            ymax = ax.get_ylim()[1]
+            ax.text(event_time, ymax, label, rotation=90, va="top", ha="right", fontsize=8, color="0.3")
+
+
+def plot_run(run: int) -> bool:
+    fig, axes = plt.subplots(len(VARIANTS), 1, figsize=(12, 10), sharex=True)
+    fig.suptitle(f"Experiment 0 BBRv3 CWND comparison, run {run}", fontsize=14)
+    any_plotted = False
+    plotted_dataframes = []
+
+    for index, (variant, title) in enumerate(VARIANTS):
+        ax = axes[index]
+        csv_path = cwnd_file_for(run, variant)
+        ax.set_title(title, fontsize=10)
+        ax.grid(True, linewidth=0.4, alpha=0.65)
+        ax.set_ylabel("CWND (MSS)")
+
+        if csv_path.is_file():
+            data = pd.read_csv(csv_path)
+            cwnd_mss = data["cwnd"] / MSS_BYTES
+            ax.plot(data["time"], cwnd_mss, drawstyle="steps-post", linewidth=1.1)
+            plotted_dataframes.append(pd.DataFrame({
+                "run": run,
+                "variant": variant,
+                "variant_label": title,
+                "time_s": data["time"],
+                "cwnd_bytes": data["cwnd"],
+                "cwnd_mss": cwnd_mss,
+            }))
+            any_plotted = True
+        else:
+            ax.text(0.5, 0.5, f"Missing {csv_path}", transform=ax.transAxes, ha="center", va="center")
+
+        add_event_lines(ax, show_labels=index == 0)
+
+    axes[-1].set_xlabel("Time (s)")
+    fig.tight_layout(rect=[0, 0, 1, 0.97])
+
+    out_dir = Path("../../plots/experiment0") / f"run{run}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_dir / "cwnd_comparison.pdf", bbox_inches="tight")
+    plt.close(fig)
+
+    if plotted_dataframes:
+        export_plot_dataframe(
+            "cwnd_comparison.csv",
+            pd.concat(plotted_dataframes, ignore_index=True),
+            base_dir=out_dir / "plot_data",
+            metadata={
+                "experiment": "experiment0",
+                "plot": "cwnd_comparison",
+                "run": run,
+                "description": "Complete plotted CWND time series for the four BBRv3 feature variants.",
+            },
+        )
+    return any_plotted
+
+
+def main() -> int:
+    plotted = False
+    for run in range(1, RUNS + 1):
+        plotted = plot_run(run) or plotted
+    if not plotted:
+        print("No CWND CSVs found yet. Run simulations/export/extraction first.")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

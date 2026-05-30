@@ -7,6 +7,7 @@ from matplotlib.colors import LinearSegmentedColormap, Normalize
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import export_heatmap
 from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
 
 # ─── Matplotlib Styling ───────────────────────────────────────────────────────
@@ -107,6 +108,17 @@ for p, label in zip(pairs, row_labels):
         mu, sigma = compute_mean_std_normalised(p, proto)
         df_mean.at[label, proto] = mu
         df_std.at[label, proto]   = sigma
+
+export_heatmap(
+    "heatmap_normalized_delay_pairs_exp10_points.csv",
+    df_mean,
+    df_std,
+    metadata={
+        "experiment": "experiment10",
+        "plot": "heatmap_normalized_delay_pairs_exp10",
+        "description": "Final heatmap cell values for normalized delay mean and across-run standard deviation.",
+    },
+)
 
 # ─── Heatmap Plotting ─────────────────────────────────────────────────────────
 cmap = LinearSegmentedColormap.from_list('g_y_r', ['green', 'yellow', 'red'], N=256)

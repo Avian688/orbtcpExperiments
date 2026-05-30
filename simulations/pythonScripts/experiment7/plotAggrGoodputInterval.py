@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import export_plot_dataframe
 from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS, PROTOCOL_MARKERS
 
 # existing style & constants
@@ -109,6 +110,19 @@ for qmult in QMULTS:
         ]
     )
     summary = summary.set_index('interrupt_ms')
+    export_plot_dataframe(
+        f"Avg_goodput_{qmult}_points.csv",
+        summary.reset_index().rename(columns={
+            "interrupt_ms": "x_disruption_duration_ms",
+            "mean_goodput": "y_average_goodput_mbps",
+            "std_goodput": "yerr_average_goodput_std_mbps",
+        }),
+        metadata={
+            "experiment": "experiment7",
+            "plot": f"Avg_goodput_{qmult}",
+            "description": "Final error-bar points plotted for average goodput versus disruption duration.",
+        },
+    )
 
     # now plot
     fig, ax = plt.subplots(figsize=(4.5, 1.2))

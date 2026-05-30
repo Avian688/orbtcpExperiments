@@ -1,0 +1,38 @@
+{
+  "runs": 5,
+  "base_bw_mbps": 100,
+  "base_rtt_ms": 50,
+  "sim_time_limit_s": 120,
+  "events": [
+    {
+      "time_s": 15,
+      "action": "double bandwidth",
+      "bw_mbps": 200
+    },
+    {
+      "time_s": 30,
+      "action": "halve bandwidth",
+      "bw_mbps": 100
+    },
+    {
+      "time_s": 35,
+      "action": "double RTT",
+      "rtt_ms": 100
+    },
+    {
+      "time_s": 60,
+      "action": "halve RTT",
+      "rtt_ms": 50
+    },
+    {
+      "time_s": 75,
+      "action": "add bottleneck packet loss",
+      "per": 0.01
+    },
+    {
+      "time_s": 90,
+      "action": "remove bottleneck packet loss",
+      "per": 0
+    }
+  ]
+}

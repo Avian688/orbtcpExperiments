@@ -7,6 +7,7 @@ from matplotlib.colors import LinearSegmentedColormap, Normalize
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import export_heatmap, export_plot_dataframe
 from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
 
 # ─── Matplotlib Styling ───────────────────────────────────────────────────────
@@ -72,6 +73,17 @@ for p in pairs2:
         df_mean.at[p, q] = mu
         df_std.at[p, q]  = sigma
 
+export_heatmap(
+    "heatmap_goodput_fairness_exp10_points.csv",
+    df_mean.rename(index=pair_labels),
+    df_std.rename(index=pair_labels),
+    metadata={
+        "experiment": "experiment10",
+        "plot": "heatmap_goodput_fairness_exp10",
+        "description": "Final heatmap cell values for competing-pair goodput fairness ratio and across-run standard deviation.",
+    },
+)
+
 # ─── Heatmap Plotting ─────────────────────────────────────────────────────────
 fig, ax = plt.subplots(figsize=(10, 7))
 im = ax.imshow(df_mean.values, origin='upper', aspect='auto',
@@ -117,12 +129,28 @@ for p in pairs2:
 
 # Prepare average goodputs rows (in Mbps)
 gp_rows = []
+gp_export_rows = []
 for p in pairs2:
     row = []
     for q in protocols:
         val = avg_goodput(q, p) / 1e6
         row.append(f"{val:.2f}")
+        gp_export_rows.append({
+            "pair": pair_labels[p],
+            "protocol": q,
+            "average_goodput_mbps": val,
+        })
     gp_rows.append(row)
+
+export_plot_dataframe(
+    "fairness_table_pairs1_2_average_goodput.csv",
+    pd.DataFrame(gp_export_rows),
+    metadata={
+        "experiment": "experiment10",
+        "plot": "fairness_table_pairs1_2",
+        "description": "Average-goodput table values emitted by the experiment10 aggregate table script.",
+    },
+)
 
 # Build LaTeX lines, using pair_labels for the leftmost column
 ncols     = len(protocols)

@@ -7,6 +7,7 @@ from matplotlib import font_manager
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import export_heatmap
 from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
 
 plt.rcParams['font.family'] = 'serif'
@@ -86,6 +87,18 @@ for m in QMULTS:
             dfs.at[label, proto] = sigma
     df_mean[m] = dfm
     df_std[m]  = dfs
+
+    export_heatmap(
+        f"heatmap_leo_goodput_q{m}_points.csv",
+        dfm,
+        dfs,
+        metadata={
+            "experiment": "experiment8",
+            "plot": "heatmap_leo",
+            "qmult": m,
+            "description": "Final heatmap cell values for mean goodput and across-run standard deviation.",
+        },
+    )
 
 # Create a continuous “red → yellow → green” colormap, fixed to [0, 100]
 cmap = LinearSegmentedColormap.from_list("r_y_g", ["red", "yellow", "green"], N=256)

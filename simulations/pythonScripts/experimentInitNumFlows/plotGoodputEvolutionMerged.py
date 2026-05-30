@@ -1,10 +1,15 @@
 import os
+import sys
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import scienceplots
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.lines import Line2D
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import export_plot_dataframe
 
 # Use science-style plots
 plt.style.use("science")
@@ -39,6 +44,7 @@ display_names = {
 }
 
 plt.figure(figsize=(4.5, 1.2))
+plot_exports = []
 
 for protocol in protocols:
     # 1) Collect per-flow times → list of Mbps values over runs
@@ -75,6 +81,15 @@ for protocol in protocols:
 
     t_m = [0] + times
     m_m = [0] + mean_vals
+    plot_exports.append(pd.DataFrame({
+        "protocol": protocol,
+        "series": "initial_50_flows_mean",
+        "flow_index": "0-49",
+        "x_time_s": t_m,
+        "y_goodput_mbps": m_m,
+        "y_min_goodput_mbps": np.nan,
+        "y_max_goodput_mbps": np.nan,
+    }))
 
     plt.plot(t_m, m_m,
              linewidth=AGG_WIDTH,
@@ -97,6 +112,15 @@ for protocol in protocols:
         means = [0.0] + mean_i
         mins  = [0.0] + min_i
         maxs  = [0.0] + max_i
+        plot_exports.append(pd.DataFrame({
+            "protocol": protocol,
+            "series": "late_flow",
+            "flow_index": i,
+            "x_time_s": times,
+            "y_goodput_mbps": means,
+            "y_min_goodput_mbps": mins,
+            "y_max_goodput_mbps": maxs,
+        }))
 
         plt.plot(times, means,
                  linewidth=LINEWIDTH,
@@ -147,4 +171,14 @@ plt.legend(handles=proxy_lines,
            fontsize='small')
 
 # Save only; no tight_layout or show
+if plot_exports:
+    export_plot_dataframe(
+        "all_protocols_grouped_perflow_toplegend_scalar_points.csv",
+        pd.concat(plot_exports, ignore_index=True),
+        metadata={
+            "experiment": "experimentInitNumFlows",
+            "plot": "all_protocols_grouped_perflow_toplegend_scalar",
+            "description": "Final time-series points plotted for the aggregate first-50-flow curve and late-joining per-flow curves.",
+        },
+    )
 plt.savefig("all_protocols_grouped_perflow_toplegend_scalar.pdf", dpi=1080)

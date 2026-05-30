@@ -3,13 +3,13 @@
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-default_experiments=(1 3 4 5 6 7 8 9 10 11)
+default_experiments=(0 1 3 4 5 6 7 8 9 10 11)
 
 usage() {
   cat <<'EOF'
 Usage:
   ./runAllExperiment.sh all
-  ./runAllExperiment.sh 1 3 5 9
+  ./runAllExperiment.sh 0 1 3 5 9
   EXPERIMENT_CORES=30 ./runAllExperiment.sh all
 
 Notes:
@@ -19,7 +19,7 @@ EOF
 }
 
 valid_experiment() {
-  [[ "$1" =~ ^(1|2|3|4|5|6|7|8|9|10|11)$ ]]
+  [[ "$1" =~ ^(0|1|2|3|4|5|6|7|8|9|10|11)$ ]]
 }
 
 dedupe_experiments() {
@@ -91,14 +91,14 @@ collect_interactive_selection() {
   local choice
   echo "Choose an option:" >&2
   echo "1) Run all experiments (experiment2 is included via experiment1)" >&2
-  echo "2) Run specific experiments (e.g. 1 3 5)" >&2
+  echo "2) Run specific experiments (e.g. 0 1 3 5)" >&2
   read -rp "Enter 1 or 2: " choice
 
   if [[ "$choice" == "1" ]]; then
     printf '%s\n' "${default_experiments[@]}"
   elif [[ "$choice" == "2" ]]; then
     local selected=()
-    read -rp "Enter experiment numbers separated by space (e.g. 1 3 5): " -a selected
+    read -rp "Enter experiment numbers separated by space (e.g. 0 1 3 5): " -a selected
     dedupe_experiments "${selected[@]}"
   else
     echo "Invalid choice." >&2

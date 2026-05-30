@@ -6,6 +6,7 @@ import os, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import export_plot_dataframe
 from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS, PROTOCOL_MARKERS
 
 # Optional style imports
@@ -179,6 +180,44 @@ if __name__ == "__main__":
                 'fairness_cross_mean', 'fairness_cross_std',
                 'fairness_return_mean','fairness_return_std'
             ])
+            export_plot_dataframe(
+                f"jains_cross_qmult_{mult}_{rttval}rtts_points.csv",
+                summary_data.rename(columns={
+                    "delay": "x_rtt_ms",
+                    "fairness_cross_mean": "y_jains_index",
+                    "fairness_cross_std": "yerr_jains_index_std",
+                })[
+                    [
+                        "protocol", "bandwidth", "x_rtt_ms", "qmult",
+                        "y_jains_index", "yerr_jains_index_std",
+                        "fairness_return_mean", "fairness_return_std",
+                    ]
+                ],
+                metadata={
+                    "experiment": "experiment3",
+                    "plot": f"jains_cross_qmult_{mult}_{rttval}rtts",
+                    "description": "Final error-bar points plotted for the cross-path Jain's fairness index.",
+                },
+            )
+            export_plot_dataframe(
+                f"jains_return_qmult_{mult}_{rttval}rtts_points.csv",
+                summary_data.rename(columns={
+                    "delay": "x_rtt_ms",
+                    "fairness_return_mean": "y_jains_index",
+                    "fairness_return_std": "yerr_jains_index_std",
+                })[
+                    [
+                        "protocol", "bandwidth", "x_rtt_ms", "qmult",
+                        "fairness_cross_mean", "fairness_cross_std",
+                        "y_jains_index", "yerr_jains_index_std",
+                    ]
+                ],
+                metadata={
+                    "experiment": "experiment3",
+                    "plot": f"jains_return_qmult_{mult}_{rttval}rtts",
+                    "description": "Final error-bar points plotted for the return Jain's fairness index.",
+                },
+            )
 
             # (Optional) Save or plot for this qmult
 

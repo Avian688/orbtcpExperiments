@@ -10,6 +10,7 @@ from pathlib import Path
 from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import build_cdf_points, export_plot_dataframe
 from plotProtocolSupport import EXPERIMENT_1_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS
 
 def make_cdf_axes(xlabel, show_ylabel=True):
@@ -116,6 +117,7 @@ if __name__ == "__main__":
     colours = PROTOCOL_COLORS
 
     fig, ax = make_cdf_axes("Average Retr. Rate (Mbps)", show_ylabel=False)
+    cdf_exports = []
 
     # Plot CDFs (experiment 1 only)
     for protocol in protocols:
@@ -125,9 +127,9 @@ if __name__ == "__main__":
             print(f"[WARN] No retransmission data found for {protocol}")
             continue
 
-        values, base = np.histogram(avg_retrans, bins=BINS)
-        cumulative = np.cumsum(values)
-        ax.plot(base[:-1], cumulative / len(avg_retrans) * 100, c=colours[protocol])
+        cdf = build_cdf_points(avg_retrans, BINS)
+        ax.plot(cdf["x"], cdf["y_percent_trials"], c=colours[protocol])
+        cdf_exports.append(cdf.assign(series=PROTOCOL_LABELS[protocol], protocol=protocol, scenario="bw-rtt"))
 
     #ax.set_xlabel("Average Retr. Rate (Mbps)")
     #ax.set_ylabel("\% of Trials")
@@ -148,6 +150,26 @@ if __name__ == "__main__":
     # )
     
     plt.subplots_adjust(top=1)
+
+    if cdf_exports:
+        export_plot_dataframe(
+            "joined_retransmissions_cdf_points.csv",
+            pd.concat(cdf_exports, ignore_index=True).rename(columns={"x": "average_retransmission_rate_mbps"}),
+            metadata={
+                "experiment": "experiment1",
+                "plot": "joined_retransmissions_cdf",
+                "description": "Final CDF points plotted for average retransmission rate.",
+            },
+        )
+    export_plot_dataframe(
+        "joined_retransmissions_cdf_run_summary.csv",
+        retrans_df.assign(scenario="bw-rtt"),
+        metadata={
+            "experiment": "experiment1",
+            "plot": "joined_retransmissions_cdf",
+            "description": "Per-run retransmission-rate values used to build the plotted CDF points.",
+        },
+    )
 
     for format in ["pdf"]:
         fig.savefig(f"joined_retransmissions_cdf.{format}", dpi=1080, bbox_inches="tight", pad_inches=0.02)#, bbox_inches="tight")

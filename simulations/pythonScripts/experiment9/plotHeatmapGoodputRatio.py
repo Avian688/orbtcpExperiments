@@ -7,6 +7,7 @@ from matplotlib.colors import LinearSegmentedColormap, Normalize
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import export_heatmap
 from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
 
 # Set up LaTeX fonts and style
@@ -77,6 +78,17 @@ for m in QMULTS:
             mdf.at[label, proto] = mu
             sdf.at[label, proto] = sigma
     df_mean[m], df_std[m] = mdf, sdf
+    export_heatmap(
+        f"heatmap_goodput_fairness_q{m}_points.csv",
+        mdf,
+        sdf,
+        metadata={
+            "experiment": "experiment9",
+            "plot": "heatmap_goodput_fairness",
+            "qmult": m,
+            "description": "Final heatmap cell values for goodput fairness ratio and across-run standard deviation.",
+        },
+    )
 
 # Define colormap: red → yellow → green
 cmap = LinearSegmentedColormap.from_list("r_y_g", ["red", "yellow", "green"], N=256)

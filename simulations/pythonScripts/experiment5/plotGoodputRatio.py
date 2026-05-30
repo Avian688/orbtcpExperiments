@@ -9,6 +9,7 @@ import numpy as np
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import export_plot_dataframe
 from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_LABELS, PROTOCOL_MARKERS
 
 plt.rcParams['text.usetex'] = True
@@ -121,6 +122,19 @@ for mult in QMULTS:
             'qmult', 'goodput_ratio_20_mean', 'goodput_ratio_20_std',
             'goodput_ratio_total_mean', 'goodput_ratio_total_std'
         ]
+    )
+    export_plot_dataframe(
+        f"goodput_ratio_inter_rtt_{mult}_points.csv",
+        summary_data.rename(columns={
+            "delay": "x_rtt_ms",
+            "goodput_ratio_total_mean": "y_goodput_ratio",
+            "goodput_ratio_total_std": "yerr_goodput_ratio_std",
+        }),
+        metadata={
+            "experiment": "experiment5",
+            "plot": f"goodput_ratio_inter_rtt_{mult}",
+            "description": "Final error-bar points plotted for goodput ratio versus RTT.",
+        },
     )
 
     fig, ax = plt.subplots(figsize=(4.5,1.2))

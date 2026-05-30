@@ -1,10 +1,15 @@
 import os
+import sys
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import scienceplots
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.lines import Line2D
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import export_plot_dataframe
 
 # Use science‐style plots
 plt.style.use("science")
@@ -114,6 +119,19 @@ summary = pd.DataFrame(
         'protocol', 'goodput', 'delay', 'delay_ratio',
         'goodput_ratio_mean', 'goodput_ratio_std'
     ]
+)
+export_plot_dataframe(
+    "avgrtt_goodput_ratio_combined_points.csv",
+    summary.rename(columns={
+        "delay": "x_rtt_ms",
+        "goodput_ratio_mean": "y_goodput_ratio",
+        "goodput_ratio_std": "yerr_goodput_ratio_std",
+    }),
+    metadata={
+        "experiment": "experimentAvgRTT",
+        "plot": "avgrtt_goodput_ratio_combined",
+        "description": "Final error-bar points plotted for the AvgRTT ablation goodput-ratio comparison.",
+    },
 )
 
 # Plot each protocol's curve

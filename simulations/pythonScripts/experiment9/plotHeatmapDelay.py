@@ -7,6 +7,7 @@ from matplotlib.colors import LinearSegmentedColormap, Normalize
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import export_heatmap
 from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
 
 # Plot styling (same as previous script)
@@ -114,6 +115,17 @@ for m in QMULTS:
             std_df.at[label, proto]   = sigma
     df_mean[m] = mean_df
     df_std[m]  = std_df
+    export_heatmap(
+        f"heatmap_no_legend_q{m}_points.csv",
+        mean_df,
+        std_df,
+        metadata={
+            "experiment": "experiment9",
+            "plot": "heatmap_no_legend",
+            "qmult": m,
+            "description": "Final heatmap cell values for normalized delay mean and across-run standard deviation.",
+        },
+    )
 
 # ========== Heatmap (no left legend) ==========
 cmap = LinearSegmentedColormap.from_list('g_y_r', ['green', 'yellow', 'red'], N=256)

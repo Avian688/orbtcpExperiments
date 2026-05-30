@@ -18,6 +18,7 @@ from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import export_plot_dataframe
 from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS
 
 ROOT_PATH = "../../.."
@@ -207,6 +208,23 @@ def data_to_exp11_df(root_path, experiment, protocols, flow_batches, runs):
 
 
 def plot_exp11_scatter_norm_util_vs_norm_delay(df):
+    export_plot_dataframe(
+        "norm_util_vs_norm_delay_experiment11_points.csv",
+        df.rename(columns={
+            "norm_delay_mean": "x_normalised_delay",
+            "norm_util_mean": "y_normalised_goodput",
+            "norm_delay_std": "xerr_normalised_delay_std",
+            "norm_util_std": "yerr_normalised_goodput_std",
+            "norm_delay_list": "x_runs_normalised_delay",
+            "norm_util_list": "y_runs_normalised_goodput",
+        }),
+        metadata={
+            "experiment": "experiment11",
+            "plot": "norm_util_vs_norm_delay_experiment11",
+            "description": "Final scatter means plus per-run values used to draw confidence ellipses.",
+        },
+    )
+
     # Taller figure + explicit top margin for protocol legend
     fig, ax = plt.subplots(figsize=(5.5, 2))
     ax.grid(True, which="major", alpha=0.2, linewidth=0.6)

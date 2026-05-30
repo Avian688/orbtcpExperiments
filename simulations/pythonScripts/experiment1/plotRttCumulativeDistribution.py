@@ -11,6 +11,7 @@ from pathlib import Path
 from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import build_cdf_points, export_plot_dataframe
 from plotProtocolSupport import EXPERIMENT_1_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS
 
 def make_cdf_axes(xlabel, show_ylabel=True):
@@ -73,17 +74,18 @@ if __name__ == "__main__":
     colours = PROTOCOL_COLORS
 
     fig, ax = make_cdf_axes("Average RTT (ms)", show_ylabel=False)
+    cdf_exports = []
 
     optimals = bw_rtt_data[bw_rtt_data["protocol"] == "bbr"]["optimal_rtt"]
-    values, base = np.histogram(optimals, bins=BINS)
-    cumulative = np.cumsum(values)
-    ax.plot(base[:-1], cumulative / 50 * 100, c="black")
+    optimal_cdf = build_cdf_points(optimals, BINS, denominator=50)
+    ax.plot(optimal_cdf["x"], optimal_cdf["y_percent_trials"], c="black")
+    cdf_exports.append(optimal_cdf.assign(series="Optimal", protocol="optimal", scenario="bw-rtt"))
 
     for protocol in protocols:
         avg_rtts = bw_rtt_data[bw_rtt_data["protocol"] == protocol]["average_rtt"]
-        values, base = np.histogram(avg_rtts, bins=BINS)
-        cumulative = np.cumsum(values)
-        ax.plot(base[:-1], cumulative / 50 * 100, c=colours[protocol])
+        cdf = build_cdf_points(avg_rtts, BINS, denominator=50)
+        ax.plot(cdf["x"], cdf["y_percent_trials"], c=colours[protocol])
+        cdf_exports.append(cdf.assign(series=PROTOCOL_LABELS[protocol], protocol=protocol, scenario="bw-rtt"))
 
     #ax.set_xlabel("Average RTT (ms)")
 
@@ -102,6 +104,26 @@ if __name__ == "__main__":
     # )
 
     plt.subplots_adjust(top=1)
+
+    if cdf_exports:
+        export_plot_dataframe(
+            "joined_rtt_cdf_points.csv",
+            pd.concat(cdf_exports, ignore_index=True).rename(columns={"x": "average_rtt_ms"}),
+            metadata={
+                "experiment": "experiment1",
+                "plot": "joined_rtt_cdf",
+                "description": "Final CDF points plotted for average RTT.",
+            },
+        )
+    export_plot_dataframe(
+        "joined_rtt_cdf_run_summary.csv",
+        bw_rtt_data.assign(scenario="bw-rtt"),
+        metadata={
+            "experiment": "experiment1",
+            "plot": "joined_rtt_cdf",
+            "description": "Per-run average RTT values used to build the plotted CDF points.",
+        },
+    )
 
     for format in ["pdf"]:
         fig.savefig(f"joined_rtt_cdf.{format}", dpi=1080, bbox_inches="tight", pad_inches=0.02)#, bbox_inches="tight")

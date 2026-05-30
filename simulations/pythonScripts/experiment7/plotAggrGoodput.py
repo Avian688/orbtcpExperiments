@@ -10,6 +10,7 @@ from matplotlib.lines import Line2D
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import export_plot_dataframe
 from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS, PROTOCOL_MARKERS
 
 plt.rcParams['text.usetex'] = False
@@ -84,6 +85,19 @@ for mult in QMULTS:
         data,
         columns=['protocol','goodput','delay','qmult','interrupt',
                  'goodput_total_mean','goodput_total_std']
+    )
+    export_plot_dataframe(
+        f"Avg_goodput_{mult}_points.csv",
+        summary.rename(columns={
+            "interrupt": "x_disruption_duration_ms",
+            "goodput_total_mean": "y_average_goodput_mbps",
+            "goodput_total_std": "yerr_average_goodput_std_mbps",
+        }),
+        metadata={
+            "experiment": "experiment7",
+            "plot": f"Avg_goodput_{mult}",
+            "description": "Final error-bar points plotted for average goodput versus disruption duration.",
+        },
     )
 
     fig, ax = plt.subplots(figsize=(4.5,1.2))

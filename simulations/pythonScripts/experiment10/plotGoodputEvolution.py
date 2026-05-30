@@ -7,6 +7,7 @@ from matplotlib.colors import LinearSegmentedColormap, Normalize
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import export_plot_dataframe
 from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
 
 # ─── Matplotlib Styling ───────────────────────────────────────────────────────
@@ -87,6 +88,21 @@ for proto in protocols:
 
         # convert from bps to Mbps
         df_ts[['mean0','std0','mean1','std1']] /= 1e6
+        export_plot_dataframe(
+            f"goodput_ts_{proto}_{pair}_points.csv",
+            df_ts.rename(columns={
+                "time": "x_time_s",
+                "mean0": "flow0_goodput_mbps",
+                "std0": "flow0_goodput_std_mbps",
+                "mean1": "flow1_goodput_mbps",
+                "std1": "flow1_goodput_std_mbps",
+            }),
+            metadata={
+                "experiment": "experiment10",
+                "plot": f"goodput_ts_{proto}_{pair}",
+                "description": "Final time-series means and standard deviations plotted for the two competing flows.",
+            },
+        )
 
         plt.figure(figsize=(12, 6))
         plt.plot(df_ts['time'], df_ts['mean0'],

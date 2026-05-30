@@ -18,6 +18,7 @@ from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotDataExport import export_plot_dataframe
 from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS
 
 ROOT_PATH = "../../.."
@@ -222,6 +223,33 @@ def plot_dd_scatter_jains_vs_util(df, delays=[10,20], qmults=[0.2,1,4]):
     for q in qmults:
         fig, ax = plt.subplots(figsize=(4.5,1.2))
         ax.grid(True, which="major", alpha=0.2, linewidth=0.6)
+        q_df = df[df['qmult'] == q].copy()
+        if not q_df.empty:
+            export_df = q_df.assign(
+                x_cross_jains=q_df['fairness_cross_mean'],
+                y_cross_norm_goodput=q_df['goodput_aggregated_cross_mean'] / 100,
+                x_rejoin_jains=q_df['fairness_rejoin_mean'],
+                y_rejoin_norm_goodput=q_df['goodput_aggregated_rejoin_mean'] / 100,
+                x_cross_runs_jains=q_df['fairness_cross_list'],
+                y_cross_runs_norm_goodput=q_df['aggregated_cross_list'].apply(lambda values: np.asarray(values) / 100),
+                x_rejoin_runs_jains=q_df['fairness_rejoin_list'],
+                y_rejoin_runs_norm_goodput=q_df['aggregated_rejoin_list'].apply(lambda values: np.asarray(values) / 100),
+            )
+            export_plot_dataframe(
+                f"jains_vs_goodput_qmult_{q}_points.csv",
+                export_df[[
+                    'protocol', 'bandwidth', 'min_delay', 'qmult',
+                    'x_cross_jains', 'y_cross_norm_goodput',
+                    'x_rejoin_jains', 'y_rejoin_norm_goodput',
+                    'x_cross_runs_jains', 'y_cross_runs_norm_goodput',
+                    'x_rejoin_runs_jains', 'y_rejoin_runs_norm_goodput',
+                ]],
+                metadata={
+                    "experiment": "experiment3",
+                    "plot": f"jains_vs_goodput_qmult_{q}",
+                    "description": "Final scatter means plus per-run values used to draw confidence ellipses.",
+                },
+            )
         for prot in df['protocol'].unique():
             sub_df = df[(df['qmult']==q) & (df['protocol']==prot)]
             if sub_df.empty:
