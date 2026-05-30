@@ -38,6 +38,16 @@ def cwnd_file_for(run: int, variant: str) -> Path:
     )
 
 
+def goodput_file_for(run: int, variant: str) -> Path:
+    return (
+        Path("../../paperExperiments/experiment0/csvs")
+        / variant
+        / f"run{run}"
+        / "singledumbbell.server[0].app[0]"
+        / "goodput.csv"
+    )
+
+
 def add_event_lines(ax, show_labels: bool) -> None:
     for event_time, label in EVENTS:
         ax.axvline(event_time, color="0.65", linewidth=0.8, linestyle="--")
@@ -46,10 +56,9 @@ def add_event_lines(ax, show_labels: bool) -> None:
             ax.text(event_time, ymax, label, rotation=90, va="top", ha="right", fontsize=8, color="0.3")
 
 
-def plot_run(run: int) -> bool:
+def plot_cwnd_run(run: int, out_dir: Path) -> list[pd.DataFrame]:
     fig, axes = plt.subplots(len(VARIANTS), 1, figsize=(12, 10), sharex=True)
     fig.suptitle(f"Experiment 0 BBRv3 CWND comparison, run {run}", fontsize=14)
-    any_plotted = False
     plotted_dataframes = []
 
     for index, (variant, title) in enumerate(VARIANTS):
@@ -71,7 +80,6 @@ def plot_run(run: int) -> bool:
                 "cwnd_bytes": data["cwnd"],
                 "cwnd_mss": cwnd_mss,
             }))
-            any_plotted = True
         else:
             ax.text(0.5, 0.5, f"Missing {csv_path}", transform=ax.transAxes, ha="center", va="center")
 
@@ -79,16 +87,58 @@ def plot_run(run: int) -> bool:
 
     axes[-1].set_xlabel("Time (s)")
     fig.tight_layout(rect=[0, 0, 1, 0.97])
-
-    out_dir = Path("../../plots/experiment0") / f"run{run}"
-    out_dir.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_dir / "cwnd_comparison.pdf", bbox_inches="tight")
     plt.close(fig)
+    return plotted_dataframes
 
-    if plotted_dataframes:
+
+def plot_goodput_run(run: int, out_dir: Path) -> list[pd.DataFrame]:
+    fig, axes = plt.subplots(len(VARIANTS), 1, figsize=(12, 10), sharex=True)
+    fig.suptitle(f"Experiment 0 BBRv3 goodput comparison, run {run}", fontsize=14)
+    plotted_dataframes = []
+
+    for index, (variant, title) in enumerate(VARIANTS):
+        ax = axes[index]
+        csv_path = goodput_file_for(run, variant)
+        ax.set_title(title, fontsize=10)
+        ax.grid(True, linewidth=0.4, alpha=0.65)
+        ax.set_ylabel("Goodput (Mbps)")
+
+        if csv_path.is_file():
+            data = pd.read_csv(csv_path)
+            goodput_mbps = data["goodput"] / 1_000_000.0
+            ax.plot(data["time"], goodput_mbps, linewidth=1.1)
+            plotted_dataframes.append(pd.DataFrame({
+                "run": run,
+                "variant": variant,
+                "variant_label": title,
+                "time_s": data["time"],
+                "goodput_bps": data["goodput"],
+                "goodput_mbps": goodput_mbps,
+            }))
+        else:
+            ax.text(0.5, 0.5, f"Missing {csv_path}", transform=ax.transAxes, ha="center", va="center")
+
+        add_event_lines(ax, show_labels=index == 0)
+
+    axes[-1].set_xlabel("Time (s)")
+    fig.tight_layout(rect=[0, 0, 1, 0.97])
+    fig.savefig(out_dir / "goodput_comparison.pdf", bbox_inches="tight")
+    plt.close(fig)
+    return plotted_dataframes
+
+
+def plot_run(run: int) -> bool:
+    out_dir = Path("../../plots/experiment0") / f"run{run}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    cwnd_dataframes = plot_cwnd_run(run, out_dir)
+    goodput_dataframes = plot_goodput_run(run, out_dir)
+
+    if cwnd_dataframes:
         export_plot_dataframe(
             "cwnd_comparison.csv",
-            pd.concat(plotted_dataframes, ignore_index=True),
+            pd.concat(cwnd_dataframes, ignore_index=True),
             base_dir=out_dir / "plot_data",
             metadata={
                 "experiment": "experiment0",
@@ -97,7 +147,19 @@ def plot_run(run: int) -> bool:
                 "description": "Complete plotted CWND time series for the four BBRv3 feature variants.",
             },
         )
-    return any_plotted
+    if goodput_dataframes:
+        export_plot_dataframe(
+            "goodput_comparison.csv",
+            pd.concat(goodput_dataframes, ignore_index=True),
+            base_dir=out_dir / "plot_data",
+            metadata={
+                "experiment": "experiment0",
+                "plot": "goodput_comparison",
+                "run": run,
+                "description": "Complete plotted goodput time series for the four BBRv3 feature variants.",
+            },
+        )
+    return bool(cwnd_dataframes or goodput_dataframes)
 
 
 def main() -> int:
@@ -105,7 +167,7 @@ def main() -> int:
     for run in range(1, RUNS + 1):
         plotted = plot_run(run) or plotted
     if not plotted:
-        print("No CWND CSVs found yet. Run simulations/export/extraction first.")
+        print("No CWND or goodput CSVs found yet. Run simulations/export/extraction first.")
         return 1
     return 0
 

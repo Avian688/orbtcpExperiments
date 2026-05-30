@@ -142,8 +142,8 @@ def main() -> int:
         ("generate ini/scenarios", generate_inputs),
         ("run simulations", lambda: run_simulations(cores)),
         ("export scavetool CSVs", lambda: export_csvs(cores)),
-        ("extract CWND CSVs", lambda: extract_csvs(cores)),
-        ("plot CWND comparisons", plot),
+        ("extract CWND/goodput CSVs", lambda: extract_csvs(cores)),
+        ("plot CWND/goodput comparisons", plot),
     ]
 
     for index, (name, fn) in enumerate(steps, start=1):

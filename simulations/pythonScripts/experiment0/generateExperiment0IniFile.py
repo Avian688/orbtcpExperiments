@@ -118,6 +118,8 @@ def main() -> None:
                 "",
                 "**.**.tcp.conn-*.cwnd:vector(removeRepeats).vector-recording = true",
                 "**.**.tcp.conn-*.cwnd.result-recording-modes = vector(removeRepeats)",
+                "**.**.goodput:vector(removeRepeats).vector-recording = true",
+                "**.**.goodput.result-recording-modes = vector(removeRepeats)",
                 "",
                 "**.scalar-recording=false",
                 "**.vector-recording=false",

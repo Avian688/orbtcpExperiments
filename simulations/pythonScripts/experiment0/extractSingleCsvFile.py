@@ -43,6 +43,29 @@ def normalized_module_name(module_name: str) -> str:
     return re.sub(r"(conn)-\d+", r"\1", module_name)
 
 
+def metric_results(raw_results: pd.DataFrame, metric_name: str) -> pd.DataFrame:
+    possible_names = {
+        f"{metric_name}:vector",
+        f"{metric_name}:vector(removeRepeats)",
+    }
+    return raw_results.loc[raw_results["name"].isin(possible_names)]
+
+
+def extract_metric(results: pd.DataFrame, out_root: Path, metric_name: str) -> int:
+    extracted = 0
+    for _, row in results.iterrows():
+        values = row["vecvalue"]
+        times = row["vectime"]
+        if values is None or times is None:
+            continue
+
+        module_path = out_root / normalized_module_name(str(row["module"]))
+        module_path.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame({"time": times, metric_name: values}).to_csv(module_path / f"{metric_name}.csv", index=False)
+        extracted += 1
+    return extracted
+
+
 def main() -> int:
     if len(sys.argv) != 4:
         print("Usage: extractSingleCsvFile.py <scavetool_csv> <variant_key> <run>")
@@ -53,24 +76,18 @@ def main() -> int:
     run = int(sys.argv[3])
 
     raw_results = get_results(file_path)
-    cwnd_results = raw_results.loc[raw_results["name"] == "cwnd:vector(removeRepeats)"]
     out_root = Path("../../paperExperiments/experiment0/csvs") / variant_key / f"run{run}"
-    extracted = False
 
-    for _, row in cwnd_results.iterrows():
-        values = row["vecvalue"]
-        times = row["vectime"]
-        if values is None or times is None:
-            continue
+    extracted_cwnd = extract_metric(metric_results(raw_results, "cwnd"), out_root, "cwnd")
+    extracted_goodput = extract_metric(metric_results(raw_results, "goodput"), out_root, "goodput")
 
-        module_path = out_root / normalized_module_name(str(row["module"]))
-        module_path.mkdir(parents=True, exist_ok=True)
-        pd.DataFrame({"time": times, "cwnd": values}).to_csv(module_path / "cwnd.csv", index=False)
-        extracted = True
-
-    if not extracted:
-        print(f"No cwnd vectors found in {file_path}")
+    if extracted_cwnd == 0 and extracted_goodput == 0:
+        print(f"No cwnd or goodput vectors found in {file_path}")
         return 1
+    if extracted_cwnd == 0:
+        print(f"No cwnd vectors found in {file_path}")
+    if extracted_goodput == 0:
+        print(f"No goodput vectors found in {file_path}")
     return 0
 
 
