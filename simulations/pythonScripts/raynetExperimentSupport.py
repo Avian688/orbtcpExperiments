@@ -237,6 +237,10 @@ class _RunningSimulation:
     log_path: Path
 
 
+_ACTIVE_SIMULATION_PROCESSES: dict[int, subprocess.Popen] = {}
+_PROCESS_GROUP_TERMINATION_GRACE_SECONDS = 2
+
+
 def collect_simulation_configs(
     protocol: str,
     ini_file: str,
@@ -276,28 +280,78 @@ def _clean_result_files(config: SimulationConfig, cwd: Path) -> None:
             stale_file.unlink(missing_ok=True)
 
 
-def _terminate_process_group(process: subprocess.Popen) -> None:
-    if process.poll() is not None:
-        return
+def _register_process(process: subprocess.Popen) -> None:
+    _ACTIVE_SIMULATION_PROCESSES[process.pid] = process
 
+
+def _unregister_process(process: subprocess.Popen) -> None:
+    _ACTIVE_SIMULATION_PROCESSES.pop(process.pid, None)
+
+
+def _process_group_exists(pid: int) -> bool:
+    try:
+        os.killpg(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return False
+
+
+def _terminate_process_group(process: subprocess.Popen) -> None:
     try:
         os.killpg(process.pid, signal.SIGTERM)
     except ProcessLookupError:
-        process.wait()
-        return
+        pass
+    except PermissionError:
+        if process.poll() is None:
+            process.terminate()
+    else:
+        deadline = time.monotonic() + _PROCESS_GROUP_TERMINATION_GRACE_SECONDS
+        while _process_group_exists(process.pid) and time.monotonic() < deadline:
+            process.poll()
+            time.sleep(0.1)
+        if _process_group_exists(process.pid):
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            except PermissionError:
+                if process.poll() is None:
+                    process.kill()
 
     try:
         process.wait(timeout=10)
-        return
     except subprocess.TimeoutExpired:
-        pass
-
-    try:
-        os.killpg(process.pid, signal.SIGKILL)
-    except ProcessLookupError:
+        process.kill()
         process.wait()
-        return
-    process.wait()
+    finally:
+        _unregister_process(process)
+
+
+def _terminate_active_process_groups() -> None:
+    for process in list(_ACTIVE_SIMULATION_PROCESSES.values()):
+        _terminate_process_group(process)
+
+
+def _handle_shutdown_signal(signum, _frame) -> None:
+    raise SystemExit(128 + signum)
+
+
+def _install_shutdown_signal_handlers():
+    previous_handlers = {}
+    for signal_name in ("SIGTERM", "SIGHUP"):
+        shutdown_signal = getattr(signal, signal_name, None)
+        if shutdown_signal is None:
+            continue
+        previous_handlers[shutdown_signal] = signal.getsignal(shutdown_signal)
+        signal.signal(shutdown_signal, _handle_shutdown_signal)
+    return previous_handlers
+
+
+def _restore_signal_handlers(previous_handlers) -> None:
+    for shutdown_signal, previous_handler in previous_handlers.items():
+        signal.signal(shutdown_signal, previous_handler)
 
 
 def _env_int(name: str, default: int) -> int:
@@ -347,6 +401,7 @@ def _start_simulation(config: SimulationConfig, cwd: Path, attempt: int) -> _Run
     except BaseException:
         log_file.close()
         raise
+    _register_process(process)
     return _RunningSimulation(config, process, time.monotonic(), log_file, log_path)
 
 
@@ -364,6 +419,8 @@ def _finish_simulation(
         timed_out = True
         _terminate_process_group(running.process)
         return_code = running.process.returncode
+    else:
+        _unregister_process(running.process)
 
     elapsed = time.monotonic() - running.started
     complete = not timed_out and return_code == 0 and _has_complete_results(running.config, cwd)
@@ -388,6 +445,15 @@ def _finish_simulation(
 
 
 def run_simulation_configs(configs, cwd, cores: int, runtime_file=None) -> None:
+    previous_handlers = _install_shutdown_signal_handlers()
+    try:
+        _run_simulation_configs(configs, cwd, cores, runtime_file)
+    finally:
+        _terminate_active_process_groups()
+        _restore_signal_handlers(previous_handlers)
+
+
+def _run_simulation_configs(configs, cwd, cores: int, runtime_file=None) -> None:
     cwd = Path(cwd).resolve()
     timeout_seconds = _env_float("EXPERIMENT_SIM_TIMEOUT_SECONDS", 2.5 * 60 * 60)
     retries = _env_int("EXPERIMENT_RETRIES", 3)
