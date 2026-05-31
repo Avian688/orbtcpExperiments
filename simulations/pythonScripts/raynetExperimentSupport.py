@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import os
+import re
+import signal
 import subprocess
 import sys
+import time
+from dataclasses import dataclass
 from pathlib import Path
 
 RAYNET_PROTOCOLS = ["orca"]#, "cleanslate", "astrea")
@@ -214,6 +218,226 @@ def build_simulation_command(protocol: str, ini_file: str, config_name: str, inc
             config_name,
         ]
     return build_opp_run_command(config_name, ini_file, include_leo=include_leo)
+
+
+@dataclass(frozen=True)
+class SimulationConfig:
+    protocol: str
+    ini_file: str
+    config_name: str
+    include_leo: bool = False
+
+
+@dataclass
+class _RunningSimulation:
+    config: SimulationConfig
+    process: subprocess.Popen
+    started: float
+    log_file: object
+    log_path: Path
+
+
+def collect_simulation_configs(
+    protocol: str,
+    ini_file: str,
+    run_list,
+    cwd,
+    include_leo: bool = False,
+) -> list[SimulationConfig]:
+    ini_path = Path(cwd) / ini_file
+    run_numbers = set(run_list)
+    run_re = re.compile(r"Run(\d{1,5})\]")
+    configs = []
+
+    for line in ini_path.read_text(encoding="utf-8").splitlines():
+        if not line.startswith("[Config "):
+            continue
+        match = run_re.search(line)
+        if match and int(match.group(1)) in run_numbers:
+            configs.append(SimulationConfig(protocol, ini_file, line[8:-1], include_leo))
+
+    return configs
+
+
+def _result_paths(config: SimulationConfig, cwd: Path) -> tuple[Path, Path]:
+    prefix = cwd / "results" / config.config_name
+    return prefix.with_name(prefix.name + "-#0.vec"), prefix.with_name(prefix.name + "-#0.sca")
+
+
+def _has_complete_results(config: SimulationConfig, cwd: Path) -> bool:
+    return all(path.is_file() and path.stat().st_size > 0 for path in _result_paths(config, cwd))
+
+
+def _clean_result_files(config: SimulationConfig, cwd: Path) -> None:
+    results_dir = cwd / "results"
+    results_dir.mkdir(parents=True, exist_ok=True)
+    for stale_file in results_dir.glob(config.config_name + "*"):
+        if stale_file.is_file():
+            stale_file.unlink(missing_ok=True)
+
+
+def _terminate_process_group(process: subprocess.Popen) -> None:
+    if process.poll() is not None:
+        return
+
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        process.wait()
+        return
+
+    try:
+        process.wait(timeout=10)
+        return
+    except subprocess.TimeoutExpired:
+        pass
+
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        process.wait()
+        return
+    process.wait()
+
+
+def _env_int(name: str, default: int) -> int:
+    value = int(os.environ.get(name, str(default)))
+    if value < 0:
+        raise ValueError(f"{name} must not be negative")
+    return value
+
+
+def _env_float(name: str, default: float) -> float:
+    value = float(os.environ.get(name, str(default)))
+    if value <= 0:
+        raise ValueError(f"{name} must be greater than zero")
+    return value
+
+
+def _logs_dir(cwd: Path) -> Path:
+    logs_dir = cwd.parents[1] / "logs" / cwd.name / "simulations"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    return logs_dir
+
+
+def _start_simulation(config: SimulationConfig, cwd: Path, attempt: int) -> _RunningSimulation:
+    _clean_result_files(config, cwd)
+    command = build_simulation_command(
+        config.protocol,
+        config.ini_file,
+        config.config_name,
+        include_leo=config.include_leo,
+    )
+    log_path = _logs_dir(cwd) / f"{config.config_name}.attempt{attempt}.log"
+    log_file = log_path.open("w", encoding="utf-8")
+    log_file.write("$ " + " ".join(command) + "\n\n")
+    log_file.flush()
+
+    output_kwargs = {}
+    if simulation_output_kwargs(config.protocol):
+        output_kwargs = {"stdout": log_file, "stderr": subprocess.STDOUT}
+
+    try:
+        process = subprocess.Popen(
+            command,
+            cwd=str(cwd),
+            start_new_session=True,
+            **output_kwargs,
+        )
+    except BaseException:
+        log_file.close()
+        raise
+    return _RunningSimulation(config, process, time.monotonic(), log_file, log_path)
+
+
+def _finish_simulation(
+    running: _RunningSimulation,
+    cwd: Path,
+    timeout_seconds: float,
+    runtime_file,
+) -> bool:
+    elapsed = time.monotonic() - running.started
+    timed_out = False
+    try:
+        return_code = running.process.wait(timeout=max(0, timeout_seconds - elapsed))
+    except subprocess.TimeoutExpired:
+        timed_out = True
+        _terminate_process_group(running.process)
+        return_code = running.process.returncode
+
+    elapsed = time.monotonic() - running.started
+    complete = not timed_out and return_code == 0 and _has_complete_results(running.config, cwd)
+    if timed_out:
+        status = f"timed out after {elapsed:.1f}s"
+    elif return_code != 0:
+        status = f"failed with exit code {return_code}"
+    elif not complete:
+        status = "finished without complete vec/sca output"
+    else:
+        status = f"complete in {elapsed:.1f}s"
+
+    running.log_file.write(f"\n{status}\n")
+    running.log_file.close()
+    if runtime_file is not None:
+        runtime_file.write(f"\n{running.config.config_name}: {status}")
+        runtime_file.flush()
+    print(f"  {running.config.config_name}: {status}")
+    if not complete:
+        print(f"    log: {running.log_path}")
+    return complete
+
+
+def run_simulation_configs(configs, cwd, cores: int, runtime_file=None) -> None:
+    cwd = Path(cwd).resolve()
+    timeout_seconds = _env_float("EXPERIMENT_SIM_TIMEOUT_SECONDS", 2.5 * 60 * 60)
+    retries = _env_int("EXPERIMENT_RETRIES", 3)
+    retry_delay_seconds = _env_float("EXPERIMENT_RETRY_DELAY_SECONDS", 1)
+    resume = os.environ.get("EXPERIMENT_RESUME", "").lower() in {"1", "true", "yes", "on"}
+    cores = max(1, int(cores))
+    pending = [config for config in configs if not (resume and _has_complete_results(config, cwd))]
+    skipped = len(configs) - len(pending)
+
+    if skipped:
+        print(f"Skipping {skipped} config(s) with complete vec/sca outputs because EXPERIMENT_RESUME is enabled.")
+
+    attempts = retries + 1
+    for attempt in range(1, attempts + 1):
+        if not pending:
+            return
+
+        print(
+            f"\nRunning {len(pending)} simulation config(s), attempt {attempt}/{attempts}, "
+            f"up to {cores} at a time with a {timeout_seconds:g}s timeout.\n"
+        )
+        failed = []
+        for offset in range(0, len(pending), cores):
+            batch = pending[offset : offset + cores]
+            running_batch = []
+            try:
+                for config in batch:
+                    running_batch.append(_start_simulation(config, cwd, attempt))
+                    print(f"  started: {config.config_name}")
+                for running in running_batch:
+                    if not _finish_simulation(running, cwd, timeout_seconds, runtime_file):
+                        failed.append(running.config)
+            except BaseException:
+                for running in running_batch:
+                    _terminate_process_group(running.process)
+                    if not running.log_file.closed:
+                        running.log_file.write("\nterminated because the batch was interrupted\n")
+                        running.log_file.close()
+                raise
+
+        pending = failed
+        if pending and attempt < attempts:
+            print(f"\nRetrying {len(pending)} failed or incomplete simulation config(s).\n")
+            time.sleep(retry_delay_seconds)
+
+    if not pending:
+        return
+
+    missing = "\n".join(f"  {config.config_name}" for config in pending)
+    raise RuntimeError(f"Simulation outputs are still incomplete after {attempts} attempt(s):\n{missing}")
 
 
 def _ensure_ned_path(text: str, include_leo: bool) -> str:

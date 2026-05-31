@@ -14,7 +14,7 @@ import re
 from PyPDF2 import PdfMerger
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import build_simulation_command, simulation_output_kwargs, with_raynet_protocols
+from raynetExperimentSupport import collect_simulation_configs, run_simulation_configs, with_raynet_protocols
 
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
@@ -61,8 +61,8 @@ def merge_pdfs_in_folders(root_folder):
 
 if __name__ == "__main__":
     
-    startStep = 5
-    endStep = 5
+    startStep = int(os.environ.get("START_STEP", "1"))
+    endStep = int(os.environ.get("END_STEP", "8"))
     currStep = 1
     cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
     currentProc = 0
@@ -78,48 +78,23 @@ if __name__ == "__main__":
         subprocess.Popen("python3 generateExperiment11Scenarios.py", shell=True).communicate(timeout=60)
         subprocess.Popen("python3 generateExperiment11IniFile.py", shell=True).communicate(timeout=60)
 
-        subprocess.Popen("rm experiment11runTimes.txt", shell=True).communicate(timeout=30)
+        Path("experiment11runTimes.txt").unlink(missing_ok=True)
         for c in congControlList:
             subprocess.Popen("rm -r ../../paperExperiments/experiment11/csvs/" + c, shell=True).communicate(timeout=30)
             
         with open('experiment11runTimes.txt', 'w') as f1:
-            expRunNum = 1
             f1.write("--Experiment 11 Runtimes (s)--")
             for cc in congControlList:
-                fileName =  '../../paperExperiments/experiment11/experiment11_' + cc + '.ini'
+                fileName = '../../paperExperiments/experiment11/experiment11_' + cc + '.ini'
                 if not os.path.exists(fileName):
                     print("Missing ini file " + fileName + ", skipping...")
                     continue
-                iniFile = open(fileName, 'r').readlines()
                 print("----------experiment 11 " + cc + " simulations------------")
-                for line in iniFile:
-                    if line.find('[Config') != -1:
-                        match = re.search(r'Run(\d{1,5})\]', line)
-                        if match and int(match.group(1)) in runList:
-                            configName = (line[8:])[:-2]
-                            progStart = time.time()
-                            processList.append(subprocess.Popen(
-                                build_simulation_command(cc, "experiment11_" + cc + ".ini", configName),
-                                cwd='../../paperExperiments/experiment11', **simulation_output_kwargs(cc)))
-                            currentProc = currentProc + 1
-                            print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
-                            if(currentProc == cores):
-                                procCompleteNum = 0
-                                for proc in processList:
-                                    proc.wait()
-                                    now = time.time()
-                                    f1.write("Run "+ str(expRunNum) + ": " + str(now-progStart))
-                                    procCompleteNum = procCompleteNum + 1
-                                    print("\tRun #" + str(procCompleteNum) + " is complete!")
-                                    expRunNum += 1
-                                currentProc = 0
-                                processList.clear()
-                                print(" ... Running next batch of simulations! ...\n")
-                        else:
-                            continue
-        
-        for proc in processList:
-            proc.wait()
+                iniName = "experiment11_" + cc + ".ini"
+                configs = collect_simulation_configs(
+                    cc, iniName, runList, "../../paperExperiments/experiment11"
+                )
+                run_simulation_configs(configs, "../../paperExperiments/experiment11", cores, f1)
         time.sleep(5)
     currStep += 1
     currentProc = 0
@@ -187,6 +162,7 @@ if __name__ == "__main__":
         for proc in processList:
             proc.wait(timeout=1800)
         processList.clear()
+        currentProc = 0
     currStep += 1
     
     if(currStep <= endStep and currStep >= startStep): #STEP 4
@@ -293,6 +269,7 @@ if __name__ == "__main__":
                             processListStr.append(("python3 ../../../../../../../pythonScripts/experiment11/plotGoodput.py " + aggreGpPlotFile[0], dirPath + aggreGpPlotFile[1]))
 
         print("Plotting current batch!\n")
+        currentProc = 0
         while(len(processListStr) > 0):
             processTup = processListStr.pop()
             print(processTup[0] + "\n")

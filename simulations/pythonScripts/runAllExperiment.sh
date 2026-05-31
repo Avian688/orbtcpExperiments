@@ -14,6 +14,8 @@ Usage:
 
 Notes:
   experiment2 is covered by experiment1/runExperiment1and2.py.
+  Experiment 3+ simulation attempts time out after 9000 seconds and retry three times by default.
+  Override with EXPERIMENT_SIM_TIMEOUT_SECONDS, EXPERIMENT_RETRIES, or EXPERIMENT_RESUME=1.
   If no arguments are supplied, the script falls back to the interactive menu.
 EOF
 }

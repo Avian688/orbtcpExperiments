@@ -14,7 +14,7 @@ import re
 from PyPDF2 import PdfMerger
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import build_simulation_command, simulation_output_kwargs, with_raynet_protocols
+from raynetExperimentSupport import collect_simulation_configs, run_simulation_configs, with_raynet_protocols
 
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
@@ -61,8 +61,8 @@ def merge_pdfs_in_folders(root_folder):
 
 if __name__ == "__main__":
     
-    startStep = 5
-    endStep = 5
+    startStep = int(os.environ.get("START_STEP", "1"))
+    endStep = int(os.environ.get("END_STEP", "7"))
     currStep = 1
     cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
     numOfRibFlows = 3
@@ -79,44 +79,18 @@ if __name__ == "__main__":
     subprocess.Popen("python3 generateExperiment6IniFile.py", shell=True).communicate(timeout=30)
 
     if(currStep <= endStep and currStep >= startStep): #STEP 1
-        subprocess.Popen("rm experiment6runTimes.txt", shell=True).communicate(timeout=30)
+        Path("experiment6runTimes.txt").unlink(missing_ok=True)
         
         with open('experiment6runTimes.txt', 'w') as f1:
-            exp1RunNum = 1
             f1.write("--Experiment 6 Runtimes (s)--")
             for cc in congControlList:
                 for bs in buffersizes:
-                    fileName =  '../../paperExperiments/experiment6/experiment6_' + cc + '_' + bs + '.ini'
-                    iniFile = open(fileName, 'r').readlines()
                     print("----------experiment 6 " + cc + " " + bs + " simulations------------")
-                    for line in iniFile:
-                        if line.find('[Config') != -1:
-                            match = re.search(r'Run(\d{1,5})\]', line)
-                            if match and int(match.group(1)) in runList:
-                                configName = (line[8:])[:-2]
-                                progStart = time.time()
-                                processList.append(subprocess.Popen(
-                                    build_simulation_command(cc, "experiment6_" + cc + "_" + bs + ".ini", configName),
-                                    cwd='../../paperExperiments/experiment6', **simulation_output_kwargs(cc)))
-                                currentProc = currentProc + 1
-                                print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
-                                if(currentProc == cores):
-                                    procCompleteNum = 0
-                                    for proc in processList:
-                                        proc.wait()
-                                        now = time.time()
-                                        f1.write("Run "+ str(exp1RunNum) + ": " + str(now-progStart))
-                                        procCompleteNum = procCompleteNum + 1
-                                        print("\tRun #" + str(procCompleteNum) + " is complete!")
-                                        exp1RunNum += 1
-                                    currentProc = 0
-                                    processList.clear()
-                                    print(" ... Running next batch of simulations! ...\n")
-                            else:
-                                continue
-        
-        for proc in processList:
-            proc.wait()
+                    iniName = "experiment6_" + cc + "_" + bs + ".ini"
+                    configs = collect_simulation_configs(
+                        cc, iniName, runList, "../../paperExperiments/experiment6"
+                    )
+                    run_simulation_configs(configs, "../../paperExperiments/experiment6", cores, f1)
     
     currStep += 1
     currentProc = 0
@@ -183,6 +157,10 @@ if __name__ == "__main__":
                 print("Csv Extraction batch complete!\n")
                 print("Extracting next batch!\n")
                 processList.clear()          
+        for proc in processList:
+            proc.wait(timeout=2000)
+        processList.clear()
+        currentProc = 0
 
         #subprocess.Popen("rm " + filePath, shell=True).communicate(timeout=60)
         #subprocess.Popen("rm  ../../paperExperiments/experiment6/results/*.vec", shell=True).communicate(timeout=60)
@@ -331,6 +309,7 @@ if __name__ == "__main__":
                         # else:
                         #     prnt("CSV Entries do not exist! \n")
         print("Plotting current batch!\n")
+        currentProc = 0
         time.sleep(10)
         while(len(processListStr) > 0):
             processTup = processListStr.pop()
@@ -361,6 +340,9 @@ if __name__ == "__main__":
                 print("Plot batch complete!\n")
                 print("Plotting next batch!\n")
                 processList.clear()
+        for proc in processList:
+            proc.wait(timeout=500)
+        processList.clear()
     currStep += 1
     
 

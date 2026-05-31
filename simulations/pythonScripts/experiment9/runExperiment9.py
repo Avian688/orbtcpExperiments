@@ -14,7 +14,7 @@ import re
 from PyPDF2 import PdfMerger
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import build_simulation_command, simulation_output_kwargs, with_raynet_protocols
+from raynetExperimentSupport import SimulationConfig, run_simulation_configs, with_raynet_protocols
 
 def collect_config_entries(paperExperimentDir, congControlList, runList):
     configEntries = []
@@ -31,49 +31,12 @@ def collect_config_entries(paperExperimentDir, congControlList, runList):
 
     return configEntries
 
-def has_expected_vec_file(resultsDir, configName):
-    expectedFiles = list(resultsDir.glob(configName + "*.vec"))
-    return len(expectedFiles) > 0
-
 def run_config_batch(configEntries, cores, paperExperimentDir):
-    currentProc = 0
-    processList = []
-    failedConfigs = []
-
-    for cc, configName in configEntries:
-        resultsDir = paperExperimentDir / "results"
-        for staleFile in resultsDir.glob(configName + "*"):
-            staleFile.unlink(missing_ok=True)
-
-        processList.append((subprocess.Popen(
-            build_simulation_command(cc, "experiment9_" + cc + ".ini", configName, include_leo=True),
-            cwd=str(paperExperimentDir), **simulation_output_kwargs(cc)), (cc, configName)))
-
-        currentProc = currentProc + 1
-        print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
-        if(currentProc == cores):
-            procCompleteNum = 0
-            for proc, entry in processList:
-                if proc.wait() != 0:
-                    failedConfigs.append(entry)
-                procCompleteNum = procCompleteNum + 1
-                print("\tRun #" + str(procCompleteNum) + " is complete!")
-            currentProc = 0
-            processList.clear()
-            print(" ... Running next batch of simulations! ...\n")
-
-    for proc, entry in processList:
-        if proc.wait() != 0:
-            failedConfigs.append(entry)
-
-    return failedConfigs
-
-def configs_needing_retry(configEntries, failedConfigs, resultsDir):
-    missingConfigs = [entry for entry in configEntries if not has_expected_vec_file(resultsDir, entry[1])]
-    for entry in failedConfigs:
-        if entry not in missingConfigs:
-            missingConfigs.append(entry)
-    return missingConfigs
+    configs = [
+        SimulationConfig(cc, "experiment9_" + cc + ".ini", configName, include_leo=True)
+        for cc, configName in configEntries
+    ]
+    run_simulation_configs(configs, paperExperimentDir, cores)
 
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
@@ -120,8 +83,8 @@ def merge_pdfs_in_folders(root_folder):
 
 if __name__ == "__main__":
     
-    startStep = 1
-    endStep = 6
+    startStep = int(os.environ.get("START_STEP", "1"))
+    endStep = int(os.environ.get("END_STEP", "6"))
     currStep = 1
     cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
     currentProc = 0
@@ -149,24 +112,7 @@ if __name__ == "__main__":
         os.makedirs(resultsDir, exist_ok=True)
 
         configEntries = collect_config_entries(paperExperimentDir, congControlList, runList)
-        failedConfigs = run_config_batch(configEntries, cores, paperExperimentDir)
-
-        maxRetryRounds = 3
-        retryRound = 1
-        missingConfigs = configs_needing_retry(configEntries, failedConfigs, resultsDir)
-
-        while(len(missingConfigs) > 0 and retryRound <= maxRetryRounds):
-            print("\nMissing vec files for " + str(len(missingConfigs)) + " configs after batch run. Retrying missing configs (attempt " + str(retryRound) + "/" + str(maxRetryRounds) + ")...\n")
-            for _, configName in missingConfigs:
-                print("Missing vec for [" + configName + "]")
-
-            failedConfigs = run_config_batch(missingConfigs, cores, paperExperimentDir)
-            missingConfigs = configs_needing_retry(configEntries, failedConfigs, resultsDir)
-            retryRound += 1
-
-        if(len(missingConfigs) > 0):
-            missingText = "\n".join("  " + configName for _, configName in missingConfigs)
-            raise RuntimeError("The following experiment 9 configs are still missing vec files after retries:\n" + missingText)
+        run_config_batch(configEntries, cores, paperExperimentDir)
     
     currStep += 1
     currentProc = 0
@@ -238,6 +184,10 @@ if __name__ == "__main__":
                 print("Csv Extraction batch complete!\n")
                 print("Extracting next batch!\n")
                 processList.clear()               
+        for proc in processList:
+            proc.wait(timeout=4000)
+        processList.clear()
+        currentProc = 0
     currStep += 1
     
     if(currStep <= endStep and currStep >= startStep): #STEP 4
