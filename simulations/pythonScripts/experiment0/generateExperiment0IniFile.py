@@ -28,50 +28,14 @@ EXPERIMENT0_NED_PATHS = (
     "../../../../tcpGoodputApplications/src",
 )
 
-VARIANTS = [
+PROTOCOLS = [
     {
-        "key": "no_updated_sack_no_pacing_no_rack",
-        "config": "Bbr3_NoUpdatedSackNoPacingNoRack",
-        "label": "No updated SACK, no pacing, no RACK",
+        "key": "bbr3",
+        "config": "Bbr3",
+        "label": "BBRv3",
         "tcp_type": "Bbr",
         "algorithm_class": "Bbr3Flavour",
         "initial_ssthresh": 4000 * MSS_BYTES,
-        "updated_sack": False,
-        "pacing": False,
-        "rack": False,
-    },
-    {
-        "key": "updated_sack_no_pacing_no_rack",
-        "config": "Bbr3_UpdatedSackNoPacingNoRack",
-        "label": "Updated SACK, no pacing, no RACK",
-        "tcp_type": "Bbr",
-        "algorithm_class": "Bbr3Flavour",
-        "initial_ssthresh": 4000 * MSS_BYTES,
-        "updated_sack": True,
-        "pacing": False,
-        "rack": False,
-    },
-    {
-        "key": "updated_sack_pacing_no_rack",
-        "config": "Bbr3_UpdatedSackPacingNoRack",
-        "label": "Updated SACK, pacing, no RACK",
-        "tcp_type": "Bbr",
-        "algorithm_class": "Bbr3Flavour",
-        "initial_ssthresh": 4000 * MSS_BYTES,
-        "updated_sack": True,
-        "pacing": True,
-        "rack": False,
-    },
-    {
-        "key": "all_enabled",
-        "config": "Bbr3_AllEnabled",
-        "label": "Updated SACK, pacing, RACK",
-        "tcp_type": "Bbr",
-        "algorithm_class": "Bbr3Flavour",
-        "initial_ssthresh": 4000 * MSS_BYTES,
-        "updated_sack": True,
-        "pacing": True,
-        "rack": True,
     },
     {
         "key": "cubic",
@@ -88,6 +52,41 @@ VARIANTS = [
         "tcp_type": "Bbr",
         "algorithm_class": "BbrFlavour",
         "initial_ssthresh": 4000 * MSS_BYTES,
+    },
+]
+
+VARIANTS = [
+    {
+        "key": "no_updated_sack_no_pacing_no_rack",
+        "config": "NoUpdatedSackNoPacingNoRack",
+        "label": "No updated SACK, no pacing, no RACK",
+        "updated_sack": False,
+        "pacing": False,
+        "rack": False,
+    },
+    {
+        "key": "updated_sack_no_pacing_no_rack",
+        "config": "UpdatedSackNoPacingNoRack",
+        "label": "Updated SACK, no pacing, no RACK",
+        "updated_sack": True,
+        "pacing": False,
+        "rack": False,
+    },
+    {
+        "key": "updated_sack_pacing_no_rack",
+        "config": "UpdatedSackPacingNoRack",
+        "label": "Updated SACK, pacing, no RACK",
+        "updated_sack": True,
+        "pacing": True,
+        "rack": False,
+    },
+    {
+        "key": "all_enabled",
+        "config": "AllEnabled",
+        "label": "Updated SACK, pacing, RACK",
+        "updated_sack": True,
+        "pacing": True,
+        "rack": True,
     },
 ]
 
@@ -197,31 +196,31 @@ def main() -> None:
         )
         w()
 
-        for variant in VARIANTS:
-            for run in range(1, RUNS + 1):
-                config_name = f"{variant['config']}_Run{run}"
-                start_time = start_times[f"run{run}"]
-                w(f"[Config {config_name}]")
-                w("extends = General")
-                w()
-                w(f"# {variant['label']}")
-                w(f'**.tcp.typename = "{variant["tcp_type"]}"')
-                w(f'**.tcp.tcpAlgorithmClass = "{variant["algorithm_class"]}"')
-                w(f'**.tcp.initialSsthresh = {variant["initial_ssthresh"]}')
-                if "updated_sack" in variant:
+        for protocol in PROTOCOLS:
+            for variant in VARIANTS:
+                for run in range(1, RUNS + 1):
+                    config_name = f"{protocol['config']}_{variant['config']}_Run{run}"
+                    start_time = start_times[f"run{run}"]
+                    w(f"[Config {config_name}]")
+                    w("extends = General")
+                    w()
+                    w(f"# {protocol['label']}: {variant['label']}")
+                    w(f'**.tcp.typename = "{protocol["tcp_type"]}"')
+                    w(f'**.tcp.tcpAlgorithmClass = "{protocol["algorithm_class"]}"')
+                    w(f'**.tcp.initialSsthresh = {protocol["initial_ssthresh"]}')
                     w(f"**.updatedSackEnabled = {bool_text(variant['updated_sack'])}")
                     w(f"**.pacingEnabled = {bool_text(variant['pacing'])}")
                     w(f"**.rackEnabled = {bool_text(variant['rack'])}")
-                w()
-                w("**.numberOfFlows = 1")
-                w('*.client[0].app[0].connectAddress = "server[0]"')
-                w(f"*.client[0].app[0].tOpen = {start_time}s")
-                w(f"*.client[0].app[0].tSend = {start_time}s")
-                w()
-                w(f'output-vector-file = "results/{config_name}-#0.vec"')
-                w(f'output-scalar-file = "results/{config_name}-#0.sca"')
-                w(f'*.scenarioManager.script = xmldoc("../scenarios/experiment0/run{run}.xml")')
-                w()
+                    w()
+                    w("**.numberOfFlows = 1")
+                    w('*.client[0].app[0].connectAddress = "server[0]"')
+                    w(f"*.client[0].app[0].tOpen = {start_time}s")
+                    w(f"*.client[0].app[0].tSend = {start_time}s")
+                    w()
+                    w(f'output-vector-file = "results/{config_name}-#0.vec"')
+                    w(f'output-scalar-file = "results/{config_name}-#0.sca"')
+                    w(f'*.scenarioManager.script = xmldoc("../scenarios/experiment0/run{run}.xml")')
+                    w()
 
     print(f"Generated {out_file} with {queue_packets} packets for 1 BDP.")
 

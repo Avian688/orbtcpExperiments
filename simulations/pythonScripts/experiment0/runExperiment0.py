@@ -48,13 +48,16 @@ LIBRARY_DEPENDENCIES = (
     ("bbr", "tcpPaced"),
     ("orbtcpExperiments", "INET"),
 )
-VARIANTS = [
-    ("no_updated_sack_no_pacing_no_rack", "Bbr3_NoUpdatedSackNoPacingNoRack"),
-    ("updated_sack_no_pacing_no_rack", "Bbr3_UpdatedSackNoPacingNoRack"),
-    ("updated_sack_pacing_no_rack", "Bbr3_UpdatedSackPacingNoRack"),
-    ("all_enabled", "Bbr3_AllEnabled"),
+PROTOCOLS = [
+    ("bbr3", "Bbr3"),
     ("cubic", "Cubic"),
     ("bbr", "Bbr"),
+]
+VARIANTS = [
+    ("no_updated_sack_no_pacing_no_rack", "NoUpdatedSackNoPacingNoRack"),
+    ("updated_sack_no_pacing_no_rack", "UpdatedSackNoPacingNoRack"),
+    ("updated_sack_pacing_no_rack", "UpdatedSackPacingNoRack"),
+    ("all_enabled", "AllEnabled"),
 ]
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -127,7 +130,17 @@ def batched(commands, cwd: Path, cores: int) -> None:
     active: list[tuple[str, subprocess.Popen]] = []
     for label, command in commands:
         print(f"Starting {label}")
-        active.append((label, subprocess.Popen(command, cwd=cwd)))
+        active.append(
+            (
+                label,
+                subprocess.Popen(
+                    command,
+                    cwd=cwd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                ),
+            )
+        )
         if len(active) >= cores:
             wait_for_batch(active)
             active.clear()
@@ -173,12 +186,18 @@ def build_experiment0_command(config_name: str) -> list[str]:
     return command
 
 
+def experiment_cases():
+    for protocol_key, protocol_config in PROTOCOLS:
+        for variant_key, variant_config in VARIANTS:
+            yield f"{protocol_key}/{variant_key}", f"{protocol_config}_{variant_config}"
+
+
 def simulation_commands() -> list[tuple[str, list[str]]]:
     commands = []
-    for variant_key, config_prefix in VARIANTS:
+    for case_key, config_prefix in experiment_cases():
         for run in range(1, RUNS + 1):
             config_name = f"{config_prefix}_Run{run}"
-            label = f"{variant_key} run{run}"
+            label = f"{case_key} run{run}"
             commands.append((label, build_experiment0_command(config_name)))
     return commands
 
@@ -186,7 +205,7 @@ def simulation_commands() -> list[tuple[str, list[str]]]:
 def expected_vec_files() -> list[Path]:
     return [
         EXPERIMENT_DIR / "results" / f"{config_prefix}_Run{run}-#0.vec"
-        for _, config_prefix in VARIANTS
+        for _, config_prefix in experiment_cases()
         for run in range(1, RUNS + 1)
     ]
 
@@ -229,7 +248,7 @@ def export_csvs(cores: int) -> None:
 
 def extract_csvs(cores: int) -> None:
     commands = []
-    for variant_key, config_prefix in VARIANTS:
+    for case_key, config_prefix in experiment_cases():
         for run in range(1, RUNS + 1):
             csv_file = EXPERIMENT_DIR / "results" / f"{config_prefix}_Run{run}-#0.csv"
             if not csv_file.is_file():
@@ -237,8 +256,8 @@ def extract_csvs(cores: int) -> None:
                 continue
             commands.append(
                 (
-                    f"extract {variant_key} run{run}",
-                    [sys.executable, "extractSingleCsvFile.py", str(csv_file), variant_key, str(run)],
+                    f"extract {case_key} run{run}",
+                    [sys.executable, "extractSingleCsvFile.py", str(csv_file), case_key, str(run)],
                 )
             )
     batched(commands, SCRIPT_DIR, cores)

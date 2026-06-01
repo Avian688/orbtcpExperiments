@@ -20,19 +20,23 @@ EVENTS = [
     (75, "1% loss"),
     (90, "loss off"),
 ]
+PROTOCOLS = [
+    ("bbr3", "BBRv3"),
+    ("cubic", "Cubic"),
+    ("bbr", "BBRv1"),
+]
 VARIANTS = [
     ("no_updated_sack_no_pacing_no_rack", "No updated SACK, no pacing, no RACK"),
     ("updated_sack_no_pacing_no_rack", "Updated SACK, no pacing, no RACK"),
     ("updated_sack_pacing_no_rack", "Updated SACK, pacing, no RACK"),
     ("all_enabled", "Updated SACK, pacing, RACK"),
-    ("cubic", "Cubic"),
-    ("bbr", "BBRv1"),
 ]
 
 
-def cwnd_file_for(run: int, variant: str) -> Path:
+def cwnd_file_for(run: int, protocol: str, variant: str) -> Path:
     return (
         Path("../../paperExperiments/experiment0/csvs")
+        / protocol
         / variant
         / f"run{run}"
         / "singledumbbell.client[0].tcp.conn"
@@ -40,9 +44,10 @@ def cwnd_file_for(run: int, variant: str) -> Path:
     )
 
 
-def goodput_file_for(run: int, variant: str) -> Path:
+def goodput_file_for(run: int, protocol: str, variant: str) -> Path:
     return (
         Path("../../paperExperiments/experiment0/csvs")
+        / protocol
         / variant
         / f"run{run}"
         / "singledumbbell.server[0].app[0]"
@@ -58,14 +63,14 @@ def add_event_lines(ax, show_labels: bool) -> None:
             ax.text(event_time, ymax, label, rotation=90, va="top", ha="right", fontsize=8, color="0.3")
 
 
-def plot_cwnd_run(run: int, out_dir: Path) -> list[pd.DataFrame]:
+def plot_cwnd_run(run: int, protocol: str, protocol_label: str, out_dir: Path) -> list[pd.DataFrame]:
     fig, axes = plt.subplots(len(VARIANTS), 1, figsize=(12, 2.35 * len(VARIANTS)), sharex=True)
-    fig.suptitle(f"Experiment 0 CWND comparison, run {run}", fontsize=14)
+    fig.suptitle(f"Experiment 0 {protocol_label} CWND comparison, run {run}", fontsize=14)
     plotted_dataframes = []
 
     for index, (variant, title) in enumerate(VARIANTS):
         ax = axes[index]
-        csv_path = cwnd_file_for(run, variant)
+        csv_path = cwnd_file_for(run, protocol, variant)
         ax.set_title(title, fontsize=10)
         ax.grid(True, linewidth=0.4, alpha=0.65)
         ax.set_ylabel("CWND (MSS)")
@@ -76,6 +81,8 @@ def plot_cwnd_run(run: int, out_dir: Path) -> list[pd.DataFrame]:
             ax.plot(data["time"], cwnd_mss, drawstyle="steps-post", linewidth=1.1)
             plotted_dataframes.append(pd.DataFrame({
                 "run": run,
+                "protocol": protocol,
+                "protocol_label": protocol_label,
                 "variant": variant,
                 "variant_label": title,
                 "time_s": data["time"],
@@ -94,14 +101,14 @@ def plot_cwnd_run(run: int, out_dir: Path) -> list[pd.DataFrame]:
     return plotted_dataframes
 
 
-def plot_goodput_run(run: int, out_dir: Path) -> list[pd.DataFrame]:
+def plot_goodput_run(run: int, protocol: str, protocol_label: str, out_dir: Path) -> list[pd.DataFrame]:
     fig, axes = plt.subplots(len(VARIANTS), 1, figsize=(12, 2.35 * len(VARIANTS)), sharex=True)
-    fig.suptitle(f"Experiment 0 goodput comparison, run {run}", fontsize=14)
+    fig.suptitle(f"Experiment 0 {protocol_label} goodput comparison, run {run}", fontsize=14)
     plotted_dataframes = []
 
     for index, (variant, title) in enumerate(VARIANTS):
         ax = axes[index]
-        csv_path = goodput_file_for(run, variant)
+        csv_path = goodput_file_for(run, protocol, variant)
         ax.set_title(title, fontsize=10)
         ax.grid(True, linewidth=0.4, alpha=0.65)
         ax.set_ylabel("Goodput (Mbps)")
@@ -112,6 +119,8 @@ def plot_goodput_run(run: int, out_dir: Path) -> list[pd.DataFrame]:
             ax.plot(data["time"], goodput_mbps, linewidth=1.1)
             plotted_dataframes.append(pd.DataFrame({
                 "run": run,
+                "protocol": protocol,
+                "protocol_label": protocol_label,
                 "variant": variant,
                 "variant_label": title,
                 "time_s": data["time"],
@@ -130,12 +139,12 @@ def plot_goodput_run(run: int, out_dir: Path) -> list[pd.DataFrame]:
     return plotted_dataframes
 
 
-def plot_run(run: int) -> bool:
-    out_dir = Path("../../plots/experiment0") / f"run{run}"
+def plot_run(run: int, protocol: str, protocol_label: str) -> bool:
+    out_dir = Path("../../plots/experiment0") / protocol / f"run{run}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    cwnd_dataframes = plot_cwnd_run(run, out_dir)
-    goodput_dataframes = plot_goodput_run(run, out_dir)
+    cwnd_dataframes = plot_cwnd_run(run, protocol, protocol_label, out_dir)
+    goodput_dataframes = plot_goodput_run(run, protocol, protocol_label, out_dir)
 
     if cwnd_dataframes:
         export_plot_dataframe(
@@ -146,7 +155,8 @@ def plot_run(run: int) -> bool:
                 "experiment": "experiment0",
                 "plot": "cwnd_comparison",
                 "run": run,
-                "description": "Complete plotted CWND time series for the four BBRv3 feature variants and the Cubic and BBRv1 baselines.",
+                "protocol": protocol,
+                "description": f"Complete plotted CWND time series for the four {protocol_label} feature configurations.",
             },
         )
     if goodput_dataframes:
@@ -158,7 +168,8 @@ def plot_run(run: int) -> bool:
                 "experiment": "experiment0",
                 "plot": "goodput_comparison",
                 "run": run,
-                "description": "Complete plotted goodput time series for the four BBRv3 feature variants and the Cubic and BBRv1 baselines.",
+                "protocol": protocol,
+                "description": f"Complete plotted goodput time series for the four {protocol_label} feature configurations.",
             },
         )
     return bool(cwnd_dataframes or goodput_dataframes)
@@ -166,8 +177,9 @@ def plot_run(run: int) -> bool:
 
 def main() -> int:
     plotted = False
-    for run in range(1, RUNS + 1):
-        plotted = plot_run(run) or plotted
+    for protocol, protocol_label in PROTOCOLS:
+        for run in range(1, RUNS + 1):
+            plotted = plot_run(run, protocol, protocol_label) or plotted
     if not plotted:
         print("No CWND or goodput CSVs found yet. Run simulations/export/extraction first.")
         return 1
