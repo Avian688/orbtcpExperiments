@@ -53,6 +53,8 @@ VARIANTS = [
     ("updated_sack_no_pacing_no_rack", "Bbr3_UpdatedSackNoPacingNoRack"),
     ("updated_sack_pacing_no_rack", "Bbr3_UpdatedSackPacingNoRack"),
     ("all_enabled", "Bbr3_AllEnabled"),
+    ("cubic", "Cubic"),
+    ("bbr", "Bbr"),
 ]
 
 SCRIPT_DIR = Path(__file__).resolve().parent

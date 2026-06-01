@@ -563,6 +563,22 @@ def _insert_raynet_parameters(text: str, protocol: str) -> str:
     return text + "\n" + insertion
 
 
+def _ensure_orca_receiver_tcp(text: str) -> str:
+    receiver_lines = (
+        '**.server[*].tcp.typename = "TcpPaced"',
+        '**.server[*].tcp.tcpAlgorithmClass = "TcpCubic"',
+    )
+    if all(line in text for line in receiver_lines):
+        return text
+
+    marker = '\n**.tcp.typename = "'
+    if marker not in text:
+        raise ValueError("Cannot insert RayNet receiver TCP settings: missing TCP typename assignment")
+
+    insertion = "\n".join(receiver_lines) + "\n"
+    return text.replace(marker, "\n" + insertion + marker.lstrip("\n"), 1)
+
+
 def clone_raynet_ini_variants(base_ini_path, source_protocol: str = "bbr", include_leo: bool = False):
     base_ini = Path(base_ini_path)
     if not base_ini.exists():
@@ -583,6 +599,8 @@ def clone_raynet_ini_variants(base_ini_path, source_protocol: str = "bbr", inclu
         text = text.replace('**.tcp.typename = "Bbr"', f'**.tcp.typename = "{tcp_type}"')
         text = text.replace('**.tcp.tcpAlgorithmClass = "BbrFlavour"', f'**.tcp.tcpAlgorithmClass = "{alg_class}"')
         text = text.replace(source_display, display)
+        if protocol == "orca":
+            text = _ensure_orca_receiver_tcp(text)
         text = _ensure_ned_path(text, include_leo)
         text = _ensure_load_libs(text)
         text = _insert_raynet_parameters(text, protocol)

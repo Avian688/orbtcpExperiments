@@ -25,6 +25,8 @@ VARIANTS = [
     ("updated_sack_no_pacing_no_rack", "Updated SACK, no pacing, no RACK"),
     ("updated_sack_pacing_no_rack", "Updated SACK, pacing, no RACK"),
     ("all_enabled", "Updated SACK, pacing, RACK"),
+    ("cubic", "Cubic"),
+    ("bbr", "BBRv1"),
 ]
 
 
@@ -57,8 +59,8 @@ def add_event_lines(ax, show_labels: bool) -> None:
 
 
 def plot_cwnd_run(run: int, out_dir: Path) -> list[pd.DataFrame]:
-    fig, axes = plt.subplots(len(VARIANTS), 1, figsize=(12, 10), sharex=True)
-    fig.suptitle(f"Experiment 0 BBRv3 CWND comparison, run {run}", fontsize=14)
+    fig, axes = plt.subplots(len(VARIANTS), 1, figsize=(12, 2.35 * len(VARIANTS)), sharex=True)
+    fig.suptitle(f"Experiment 0 CWND comparison, run {run}", fontsize=14)
     plotted_dataframes = []
 
     for index, (variant, title) in enumerate(VARIANTS):
@@ -93,8 +95,8 @@ def plot_cwnd_run(run: int, out_dir: Path) -> list[pd.DataFrame]:
 
 
 def plot_goodput_run(run: int, out_dir: Path) -> list[pd.DataFrame]:
-    fig, axes = plt.subplots(len(VARIANTS), 1, figsize=(12, 10), sharex=True)
-    fig.suptitle(f"Experiment 0 BBRv3 goodput comparison, run {run}", fontsize=14)
+    fig, axes = plt.subplots(len(VARIANTS), 1, figsize=(12, 2.35 * len(VARIANTS)), sharex=True)
+    fig.suptitle(f"Experiment 0 goodput comparison, run {run}", fontsize=14)
     plotted_dataframes = []
 
     for index, (variant, title) in enumerate(VARIANTS):
@@ -144,7 +146,7 @@ def plot_run(run: int) -> bool:
                 "experiment": "experiment0",
                 "plot": "cwnd_comparison",
                 "run": run,
-                "description": "Complete plotted CWND time series for the four BBRv3 feature variants.",
+                "description": "Complete plotted CWND time series for the four BBRv3 feature variants and the Cubic and BBRv1 baselines.",
             },
         )
     if goodput_dataframes:
@@ -156,7 +158,7 @@ def plot_run(run: int) -> bool:
                 "experiment": "experiment0",
                 "plot": "goodput_comparison",
                 "run": run,
-                "description": "Complete plotted goodput time series for the four BBRv3 feature variants.",
+                "description": "Complete plotted goodput time series for the four BBRv3 feature variants and the Cubic and BBRv1 baselines.",
             },
         )
     return bool(cwnd_dataframes or goodput_dataframes)

@@ -33,6 +33,9 @@ VARIANTS = [
         "key": "no_updated_sack_no_pacing_no_rack",
         "config": "Bbr3_NoUpdatedSackNoPacingNoRack",
         "label": "No updated SACK, no pacing, no RACK",
+        "tcp_type": "Bbr",
+        "algorithm_class": "Bbr3Flavour",
+        "initial_ssthresh": 4000 * MSS_BYTES,
         "updated_sack": False,
         "pacing": False,
         "rack": False,
@@ -41,6 +44,9 @@ VARIANTS = [
         "key": "updated_sack_no_pacing_no_rack",
         "config": "Bbr3_UpdatedSackNoPacingNoRack",
         "label": "Updated SACK, no pacing, no RACK",
+        "tcp_type": "Bbr",
+        "algorithm_class": "Bbr3Flavour",
+        "initial_ssthresh": 4000 * MSS_BYTES,
         "updated_sack": True,
         "pacing": False,
         "rack": False,
@@ -49,6 +55,9 @@ VARIANTS = [
         "key": "updated_sack_pacing_no_rack",
         "config": "Bbr3_UpdatedSackPacingNoRack",
         "label": "Updated SACK, pacing, no RACK",
+        "tcp_type": "Bbr",
+        "algorithm_class": "Bbr3Flavour",
+        "initial_ssthresh": 4000 * MSS_BYTES,
         "updated_sack": True,
         "pacing": True,
         "rack": False,
@@ -57,9 +66,28 @@ VARIANTS = [
         "key": "all_enabled",
         "config": "Bbr3_AllEnabled",
         "label": "Updated SACK, pacing, RACK",
+        "tcp_type": "Bbr",
+        "algorithm_class": "Bbr3Flavour",
+        "initial_ssthresh": 4000 * MSS_BYTES,
         "updated_sack": True,
         "pacing": True,
         "rack": True,
+    },
+    {
+        "key": "cubic",
+        "config": "Cubic",
+        "label": "Cubic",
+        "tcp_type": "TcpPaced",
+        "algorithm_class": "TcpCubic",
+        "initial_ssthresh": 400 * MSS_BYTES,
+    },
+    {
+        "key": "bbr",
+        "config": "Bbr",
+        "label": "BBRv1",
+        "tcp_type": "Bbr",
+        "algorithm_class": "BbrFlavour",
+        "initial_ssthresh": 4000 * MSS_BYTES,
     },
 ]
 
@@ -142,9 +170,6 @@ def main() -> None:
                 "",
                 "**.goodputInterval = 1s",
                 "**.throughputInterval = 1s",
-                "",
-                '**.tcp.typename = "Bbr"',
-                '**.tcp.tcpAlgorithmClass = "Bbr3Flavour"',
             ]
         )
         block(common_tcp)
@@ -163,10 +188,11 @@ def main() -> None:
                 '**.server[*].app[0].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"',
                 "",
                 '**.ppp[*].queue.typename = "BandwidthRecorderDropTailQueue"',
-                "**.ppp[*].queue.packetCapacity = 100000",
+                # OMNeT++ uses the first matching ini assignment, so keep the
+                # bottleneck capacities before the large access-link fallback.
                 f"**.router1.ppp[1].queue.packetCapacity = {queue_packets}",
                 f"**.router2.ppp[1].queue.packetCapacity = {queue_packets}",
-                f"**.tcp.initialSsthresh = {4000 * MSS_BYTES}",
+                "**.ppp[*].queue.packetCapacity = 100000",
             ]
         )
         w()
@@ -179,9 +205,13 @@ def main() -> None:
                 w("extends = General")
                 w()
                 w(f"# {variant['label']}")
-                w(f"**.updatedSackEnabled = {bool_text(variant['updated_sack'])}")
-                w(f"**.pacingEnabled = {bool_text(variant['pacing'])}")
-                w(f"**.rackEnabled = {bool_text(variant['rack'])}")
+                w(f'**.tcp.typename = "{variant["tcp_type"]}"')
+                w(f'**.tcp.tcpAlgorithmClass = "{variant["algorithm_class"]}"')
+                w(f'**.tcp.initialSsthresh = {variant["initial_ssthresh"]}')
+                if "updated_sack" in variant:
+                    w(f"**.updatedSackEnabled = {bool_text(variant['updated_sack'])}")
+                    w(f"**.pacingEnabled = {bool_text(variant['pacing'])}")
+                    w(f"**.rackEnabled = {bool_text(variant['rack'])}")
                 w()
                 w("**.numberOfFlows = 1")
                 w('*.client[0].app[0].connectAddress = "server[0]"')
