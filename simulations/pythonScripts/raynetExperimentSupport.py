@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-RAYNET_PROTOCOLS = ["orca"]#, "cleanslate", "astrea")
+RAYNET_PROTOCOLS = []
 
 RAYNET_ALG_FLAVOUR = {
     "orca": ("OrcaTcp", "Orca"),
@@ -188,6 +188,10 @@ def common_load_libs() -> str:
     return "load-libs = " + " ".join(RAYNET_IDE_LIBS)
 
 
+def ide_load_libs_enabled() -> bool:
+    return os.environ.get("RAYNET_ENABLE_IDE_LOAD_LIBS", "").lower() in {"1", "true", "yes", "on"}
+
+
 def ensure_local_ini_preamble(text: str, include_leo: bool = False) -> str:
     first_config = text.find("\n[Config ")
     general_text = text if first_config == -1 else text[:first_config]
@@ -202,7 +206,10 @@ def ensure_local_ini_preamble(text: str, include_leo: bool = False) -> str:
     if marker not in general_text:
         raise ValueError("Cannot add local INI paths: missing [General] section")
 
-    preamble = common_ned_path(include_leo) + "\n" + common_load_libs() + "\n"
+    preamble_lines = [common_ned_path(include_leo)]
+    if ide_load_libs_enabled():
+        preamble_lines.append(common_load_libs())
+    preamble = "\n".join(preamble_lines) + "\n"
     general_text = general_text.replace(marker, marker + preamble, 1)
     return general_text + config_text
 
@@ -548,6 +555,8 @@ def _ensure_ned_path(text: str, include_leo: bool) -> str:
 
 
 def _ensure_load_libs(text: str) -> str:
+    if not ide_load_libs_enabled():
+        return text
     first_config = text.find("\n[Config ")
     general_text = text if first_config == -1 else text[:first_config]
     if "load-libs" in general_text:
