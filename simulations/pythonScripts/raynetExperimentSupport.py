@@ -24,6 +24,10 @@ _RAYNET_CONFIG_ALIAS = {
     "astrea": "Astrea",
 }
 
+_PROTOCOL_CONFIG_PREFIX = {
+    "orbtcp_pint": "OrbtcpPint",
+}
+
 
 def _looks_like_raynet_home(path: Path) -> bool:
     return (
@@ -158,8 +162,18 @@ def with_raynet_protocols(protocols):
     return result
 
 
+def with_experiment_protocols(protocols):
+    result = []
+    for protocol in protocols:
+        if protocol not in result:
+            result.append(protocol)
+        if protocol.lower() == "orbtcp" and "orbtcp_pint" not in result:
+            result.append("orbtcp_pint")
+    return with_raynet_protocols(result)
+
+
 def protocol_config_prefix(protocol: str) -> str:
-    return protocol.title()
+    return _PROTOCOL_CONFIG_PREFIX.get(protocol.lower(), protocol.title())
 
 
 def common_ned_path(include_leo: bool = False) -> str:
@@ -172,6 +186,25 @@ def common_ned_path(include_leo: bool = False) -> str:
 
 def common_load_libs() -> str:
     return "load-libs = " + " ".join(RAYNET_IDE_LIBS)
+
+
+def ensure_local_ini_preamble(text: str, include_leo: bool = False) -> str:
+    first_config = text.find("\n[Config ")
+    general_text = text if first_config == -1 else text[:first_config]
+    config_text = "" if first_config == -1 else text[first_config:]
+
+    general_text = re.sub(
+        r"(?m)^(?:ned-path|load-libs)\s*=.*(?:\n|$)",
+        "",
+        general_text,
+    )
+    marker = "[General]\n"
+    if marker not in general_text:
+        raise ValueError("Cannot add local INI paths: missing [General] section")
+
+    preamble = common_ned_path(include_leo) + "\n" + common_load_libs() + "\n"
+    general_text = general_text.replace(marker, marker + preamble, 1)
+    return general_text + config_text
 
 
 def build_opp_run_command(config_name: str, ini_file: str, include_leo: bool = False):

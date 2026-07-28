@@ -12,7 +12,7 @@ network singledumbbell
 {
     parameters:
         @display("bgb=512,395");
-        int numberOfFlows = default(1);
+        int numberOfFlows = default(5);
     types:
         channel standardLine extends DatarateChannel
         {

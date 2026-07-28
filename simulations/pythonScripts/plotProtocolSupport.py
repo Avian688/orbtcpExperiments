@@ -2,9 +2,9 @@
 
 RAYNET_PROTOCOLS = ["orca", "cleanslate", "astrea"]
 
-CORE_PROTOCOLS = ["cubic", "bbr", "bbr3", "orbtcp", *RAYNET_PROTOCOLS]
-LEO_PROTOCOLS = ["cubic", "bbr", "bbr3", "satcp", "orbtcp", "leocc", *RAYNET_PROTOCOLS]
-EXPERIMENT_1_PROTOCOLS = ["orbtcp", "bbr", "cubic", "bbr3", "satcp", "leocc", *RAYNET_PROTOCOLS]
+CORE_PROTOCOLS = ["cubic", "bbr", "bbr3", "orbtcp", "orbtcp_pint", *RAYNET_PROTOCOLS]
+LEO_PROTOCOLS = ["cubic", "bbr", "bbr3", "satcp", "orbtcp", "orbtcp_pint", "leocc", *RAYNET_PROTOCOLS]
+EXPERIMENT_1_PROTOCOLS = ["orbtcp", "orbtcp_pint", "bbr", "cubic", "bbr3", "satcp", "leocc", *RAYNET_PROTOCOLS]
 
 PROTOCOL_LABELS = {
     "cubic": "Cubic",
@@ -12,6 +12,7 @@ PROTOCOL_LABELS = {
     "bbr3": "BBRv3",
     "satcp": "SaTCP",
     "orbtcp": "OrbCC",
+    "orbtcp_pint": "OrbCC-PINT",
     "leocc": "LeoCC",
     "orca": "Orca",
     "cleanslate": "CleanSlate",
@@ -24,6 +25,7 @@ PROTOCOL_COLORS = {
     "bbr3": "#EB0909",
     "satcp": "#7E2F8E",
     "orbtcp": "#FF9500",
+    "orbtcp_pint": "#C44E00",
     "leocc": "#17BECF",
     "orca": "#8C564B",
     "cleanslate": "#E377C2",
@@ -36,6 +38,7 @@ PROTOCOL_REJOIN_COLORS = {
     "bbr3": "#F27A7A",
     "satcp": "#B77CC4",
     "orbtcp": "#FFC46B",
+    "orbtcp_pint": "#E89A67",
     "leocc": "#77DCE6",
     "orca": "#C49A8F",
     "cleanslate": "#F0A8D7",
@@ -48,6 +51,7 @@ PROTOCOL_MARKERS = {
     "bbr3": "_",
     "satcp": "s",
     "orbtcp": "^",
+    "orbtcp_pint": "h",
     "leocc": "D",
     "orca": "o",
     "cleanslate": "v",
@@ -60,4 +64,6 @@ def labels_for(protocols):
 
 
 def title_case_folder(protocol):
+    if protocol.lower() == "orbtcp_pint":
+        return "OrbtcpPint"
     return protocol.title()

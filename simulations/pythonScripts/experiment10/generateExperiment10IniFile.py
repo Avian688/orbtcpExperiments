@@ -11,6 +11,7 @@ import math
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from orbtcpPintExperimentSupport import clone_orbtcp_pint_ini_variants
 from raynetExperimentSupport import clone_raynet_ini_variants
 
 PACKET_SIZE_BYTES = 1448
@@ -365,4 +366,6 @@ if __name__ == "__main__":
 
         print(f"INI file written to {fileName}")
 
-    clone_raynet_ini_variants(Path('../../paperExperiments/experiment10/experiment10_bbr.ini'), include_leo=True)
+    out_dir = Path('../../paperExperiments/experiment10')
+    clone_raynet_ini_variants(out_dir / 'experiment10_bbr.ini', include_leo=True)
+    clone_orbtcp_pint_ini_variants(out_dir)

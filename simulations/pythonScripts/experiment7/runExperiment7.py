@@ -14,7 +14,7 @@ import re
 from PyPDF2 import PdfMerger
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import collect_simulation_configs, run_simulation_configs, with_raynet_protocols
+from raynetExperimentSupport import collect_simulation_configs, protocol_config_prefix, run_simulation_configs, with_experiment_protocols
 
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     cores = int(os.environ.get("EXPERIMENT_CORES", "30"))
     currentProc = 0
     processList = []
-    congControlList = with_raynet_protocols(["bbr3", "bbr", "orbtcp", "cubic"])
+    congControlList = with_experiment_protocols(["bbr3", "bbr", "orbtcp", "cubic"])
     experiment = "experiment7"
     buffersizes = ["mediumbuffer"]
     disruptionIntervals = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP
@@ -140,7 +140,7 @@ if __name__ == "__main__":
                 for rtt in rtts:
                     for di in disruptionIntervals:
                         for run in runList:
-                            filePath = '../../paperExperiments/experiment7/results/'+ protocol.title() + "_" + buf + "_RTT" + str(rtt) + 'ms_Disruption' + str(di) + 'ms_Run' + str(run) + '.csv'
+                            filePath = '../../paperExperiments/experiment7/results/'+ protocol_config_prefix(protocol) + "_" + buf + "_RTT" + str(rtt) + 'ms_Disruption' + str(di) + 'ms_Run' + str(run) + '.csv'
                             print(filePath)
                             if os.path.exists(filePath):
                                 print("Extracting CSV file for " + experiment + " " + protocol + " " + buf + " " + str(rtt) + " " + str(di) + " " + str(run))

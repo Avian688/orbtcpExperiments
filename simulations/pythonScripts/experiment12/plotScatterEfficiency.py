@@ -20,6 +20,7 @@ from plotProtocolSupport import PROTOCOL_COLORS, PROTOCOL_LABELS
 
 PROTOCOLS = ("cubic", "orca")
 RUNS = range(1, 6)
+FLOW_COUNT = 5
 BANDWIDTH_MBPS = 100
 BASE_RTT_MS = 20
 EVALUATION_START_S = 50
@@ -72,23 +73,49 @@ def collect_points() -> pd.DataFrame:
     for protocol in PROTOCOLS:
         delay_runs = []
         goodput_runs = []
+        aggregate_goodput_runs_mbps = []
+        mean_delay_runs_ms = []
+        per_run_flow_goodput_mbps = []
+        per_run_flow_rtt_ms = []
         for run in RUNS:
             run_dir = CSV_ROOT / protocol / f"run{run}"
-            goodput = load_window_mean(run_dir / "singledumbbell.server[0].app[0]" / "goodput.csv", "goodput")
-            rtt = load_window_mean(run_dir / "singledumbbell.client[0].tcp.conn" / "rtt.csv", "rtt")
-            rtt_ms = rtt * 1000 if rtt < 5 else rtt
-            goodput_runs.append(goodput / 1_000_000 / BANDWIDTH_MBPS)
-            delay_runs.append(rtt_ms / BASE_RTT_MS)
+            flow_goodput_mbps = []
+            flow_rtt_ms = []
+            for flow in range(FLOW_COUNT):
+                goodput = load_window_mean(
+                    run_dir / f"singledumbbell.server[{flow}].app[0]" / "goodput.csv",
+                    "goodput",
+                )
+                rtt = load_window_mean(
+                    run_dir / f"singledumbbell.client[{flow}].tcp.conn" / "rtt.csv",
+                    "rtt",
+                )
+                flow_goodput_mbps.append(goodput / 1_000_000)
+                flow_rtt_ms.append(rtt * 1000 if rtt < 5 else rtt)
+
+            aggregate_goodput_mbps = float(np.sum(flow_goodput_mbps))
+            mean_rtt_ms = float(np.mean(flow_rtt_ms))
+            aggregate_goodput_runs_mbps.append(aggregate_goodput_mbps)
+            mean_delay_runs_ms.append(mean_rtt_ms)
+            per_run_flow_goodput_mbps.append(flow_goodput_mbps)
+            per_run_flow_rtt_ms.append(flow_rtt_ms)
+            goodput_runs.append(aggregate_goodput_mbps / BANDWIDTH_MBPS)
+            delay_runs.append(mean_rtt_ms / BASE_RTT_MS)
 
         rows.append(
             {
                 "protocol": protocol,
+                "flow_count": FLOW_COUNT,
                 "x_normalised_delay": float(np.mean(delay_runs)),
                 "y_normalised_goodput": float(np.mean(goodput_runs)),
                 "xerr_normalised_delay_std": float(np.std(delay_runs)),
                 "yerr_normalised_goodput_std": float(np.std(goodput_runs)),
                 "x_runs_normalised_delay": np.asarray(delay_runs),
                 "y_runs_normalised_goodput": np.asarray(goodput_runs),
+                "aggregate_goodput_runs_mbps": np.asarray(aggregate_goodput_runs_mbps),
+                "mean_delay_runs_ms": np.asarray(mean_delay_runs_ms),
+                "per_run_flow_goodput_mbps": np.asarray(per_run_flow_goodput_mbps),
+                "per_run_flow_rtt_ms": np.asarray(per_run_flow_rtt_ms),
             }
         )
     return pd.DataFrame(rows)
@@ -103,7 +130,10 @@ def plot(points: pd.DataFrame) -> None:
         metadata={
             "experiment": "experiment12",
             "plot": "efficiency_orca_vs_cubic",
-            "description": "Efficiency scatter means and per-run values from the final 50 seconds.",
+            "description": "Five-flow efficiency scatter using aggregate normalised goodput and mean normalised RTT from the final 50 seconds.",
+            "flow_count": FLOW_COUNT,
+            "goodput_aggregation": "Sum the five per-flow mean goodputs, then divide by the 100 Mbps bottleneck bandwidth.",
+            "delay_aggregation": "Average the five per-flow mean RTTs, then divide by the 20 ms base RTT.",
             "reporting_window_seconds": [EVALUATION_START_S, EVALUATION_END_S],
         },
     )

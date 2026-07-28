@@ -10,6 +10,7 @@ from pathlib import Path
 import os
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from orbtcpPintExperimentSupport import clone_orbtcp_pint_ini_variants
 from raynetExperimentSupport import clone_raynet_ini_variants
 
 def int_to_word(num):
@@ -255,6 +256,7 @@ if __name__ == "__main__":
         else:
             queueIniTitle = f"buffer{qs}"
         clone_raynet_ini_variants(out_dir / f"experiment5_bbr_{queueIniTitle}.ini")
+    clone_orbtcp_pint_ini_variants(out_dir)
 
     print('\nINI files generated!')
                     

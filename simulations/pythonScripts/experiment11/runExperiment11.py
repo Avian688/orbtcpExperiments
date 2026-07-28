@@ -14,7 +14,7 @@ import re
 from PyPDF2 import PdfMerger
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import collect_simulation_configs, run_simulation_configs, with_raynet_protocols
+from raynetExperimentSupport import collect_simulation_configs, protocol_config_prefix, run_simulation_configs, with_experiment_protocols
 
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
     currentProc = 0
     processList = []
-    congControlList = with_raynet_protocols(["orbtcp", "cubic","bbr3", "bbr", "satcp", "leocc"])
+    congControlList = with_experiment_protocols(["orbtcp", "cubic","bbr3", "bbr", "satcp", "leocc"])
     experiment = "experiment11"
     flowBatches = [5, 10, 20]
     clientsRtts = [50]
@@ -139,7 +139,7 @@ if __name__ == "__main__":
             for flowBatch in flowBatches:
                 for rtt in clientsRtts:
                     for run in runList:
-                        filePath = '../../paperExperiments/experiment11/results/'+ protocol.title() + '_' + str(flowBatch) + 'flows_' + str(rtt) + 'ms_Run' + str(run) + '.csv'
+                        filePath = '../../paperExperiments/experiment11/results/'+ protocol_config_prefix(protocol) + '_' + str(flowBatch) + 'flows_' + str(rtt) + 'ms_Run' + str(run) + '.csv'
                         print(filePath)
                         if os.path.exists(filePath):
                              print("Extracting CSV file for " + experiment + " " + protocol + " " + str(flowBatch) + "flows " + str(rtt) + " " + str(run))

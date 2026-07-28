@@ -14,7 +14,7 @@ import re
 from PyPDF2 import PdfMerger
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import SimulationConfig, run_simulation_configs, with_raynet_protocols
+from raynetExperimentSupport import SimulationConfig, protocol_config_prefix, run_simulation_configs, with_experiment_protocols
 
 def collect_config_entries(paperExperimentDir, congControlList, runList):
     configEntries = []
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     cores = int(os.environ.get("EXPERIMENT_CORES", "8"))
     currentProc = 0
     processList = []
-    congControlList = with_raynet_protocols(["orbtcp", "cubic", "bbr", "bbr3", "satcp", "leocc"])
+    congControlList = with_experiment_protocols(["orbtcp", "cubic", "bbr", "bbr3", "satcp", "leocc"])
     experiment = "experiment10"
     runs = 5
     runList = list(range(1,runs+1))
@@ -154,11 +154,12 @@ if __name__ == "__main__":
         for protocol in congControlList:
             for pair in listPairs:
                 for run in runList:
-                    filePath = '../../paperExperiments/experiment10/results/'+ protocol.title() + '_' + pair + '_Run' + str(run) + '.csv'
+                    protocolTitle = protocol_config_prefix(protocol)
+                    filePath = '../../paperExperiments/experiment10/results/'+ protocolTitle + '_' + pair + '_Run' + str(run) + '.csv'
                     if os.path.exists(filePath):
-                        print("Extracting CSV file for " + experiment + " " + protocol.title() + '_' + pair + '_Run' + str(run))
-
-                        processListStr.append("python3 extractSingleCsvFile.py " + filePath + " " + experiment + " " + protocol.title() + ' ' + pair + " " + str(run))
+                        print("Extracting CSV file for " + experiment + " " + protocolTitle + '_' + pair + '_Run' + str(run))
+    
+                        processListStr.append("python3 extractSingleCsvFile.py " + filePath + " " + experiment + " " + protocolTitle + ' ' + pair + " " + str(run))
         time.sleep(10)
         currentProc = 0
         while(len(processListStr) > 0):
@@ -212,7 +213,7 @@ if __name__ == "__main__":
         plotSingleRunScript = scriptDir / "plotSingleRun.py"
 
         for protocol in congControlList:
-            protocolTitle = protocol.title()
+            protocolTitle = protocol_config_prefix(protocol)
             for pair in listPairs:
                 for run in runList:
                     csvRunDir = paperExperimentDir / "csvs" / protocolTitle / pair / ("run" + str(run))

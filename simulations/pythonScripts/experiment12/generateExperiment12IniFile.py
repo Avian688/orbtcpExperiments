@@ -14,6 +14,8 @@ MSS_BYTES = 1448
 QUEUE_BDP_MULTIPLIER = 5
 LARGE_NON_BOTTLENECK_QUEUE_PACKETS = 100000
 RUNS = 5
+FLOW_COUNT = 5
+FLOW_START_WINDOW_S = 5
 
 
 def bottleneck_queue_packets() -> int:
@@ -91,22 +93,23 @@ def write_ini(out_file: Path, protocol: str) -> None:
         w('**.ppp[*].queue.typename = "BandwidthRecorderDropTailQueue"')
         # OMNeT++ uses the first matching ini assignment. Keep the bottleneck
         # capacities before the large wildcard for the access-link queues.
-        w(f"**.router1.ppp[1].queue.packetCapacity = {queue_packets}")
-        w(f"**.router2.ppp[1].queue.packetCapacity = {queue_packets}")
+        w(f"**.router1.ppp[{FLOW_COUNT}].queue.packetCapacity = {queue_packets}")
+        w(f"**.router2.ppp[{FLOW_COUNT}].queue.packetCapacity = {queue_packets}")
         w(f"**.ppp[*].queue.packetCapacity = {LARGE_NON_BOTTLENECK_QUEUE_PACKETS}")
         w(f"**.tcp.initialSsthresh = {initial_ssthresh}")
         w()
 
         for run in range(1, RUNS + 1):
             rng = random.Random(1999 + run)
-            start_time = rng.uniform(0, 0.1)
             config_name = f"{protocol.title()}_Run{run}"
             w(f"[Config {config_name}]")
             w("extends = General")
-            w("**.numberOfFlows = 1")
-            w('*.client[0].app[0].connectAddress = "server[0]"')
-            w(f"*.client[0].app[0].tOpen = {start_time}s")
-            w(f"*.client[0].app[0].tSend = {start_time}s")
+            w(f"**.numberOfFlows = {FLOW_COUNT}")
+            for flow in range(FLOW_COUNT):
+                start_time = rng.uniform(0, FLOW_START_WINDOW_S)
+                w(f'*.client[{flow}].app[0].connectAddress = "server[{flow}]"')
+                w(f"*.client[{flow}].app[0].tOpen = {start_time}s")
+                w(f"*.client[{flow}].app[0].tSend = {start_time}s")
             w(f'output-vector-file = "results/{config_name}-#0.vec"')
             w(f'output-scalar-file = "results/{config_name}-#0.sca"')
             w('*.scenarioManager.script = xmldoc("../scenarios/experiment12/reconfigurations.xml")')
@@ -124,7 +127,7 @@ def main() -> None:
     bbr_source.unlink()
 
     print(
-        "Generated experiment 12 Cubic and Orca ini files with "
+        f"Generated experiment 12 Cubic and Orca ini files with {FLOW_COUNT} flows and "
         f"{bottleneck_queue_packets()} packets at the 5 BDP bottleneck."
     )
 

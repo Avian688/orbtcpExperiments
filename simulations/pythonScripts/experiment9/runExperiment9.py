@@ -14,7 +14,7 @@ import re
 from PyPDF2 import PdfMerger
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import SimulationConfig, run_simulation_configs, with_raynet_protocols
+from raynetExperimentSupport import SimulationConfig, protocol_config_prefix, run_simulation_configs, with_experiment_protocols
 
 def collect_config_entries(paperExperimentDir, congControlList, runList):
     configEntries = []
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
     currentProc = 0
     processList = []
-    congControlList = with_raynet_protocols(["orbtcp", "cubic", "bbr", "bbr3", "satcp", "leocc"])
+    congControlList = with_experiment_protocols(["orbtcp", "cubic", "bbr", "bbr3", "satcp", "leocc"])
     experiment = "experiment9"
     buffersizes = ["mediumbuffer"]
     runs = 5
@@ -165,11 +165,12 @@ if __name__ == "__main__":
                     city2NoSpace = city2.replace(" ", "")
                     for mode in modes:
                         for run in runList:
-                            filePath = '../../paperExperiments/experiment9/results/'+ protocol.title() + '_' + city1NoSpace + "To" + city2NoSpace + "_" + mode + '_' + buf +'_Run' + str(run) + '.csv'
+                            protocolTitle = protocol_config_prefix(protocol)
+                            filePath = '../../paperExperiments/experiment9/results/'+ protocolTitle + '_' + city1NoSpace + "To" + city2NoSpace + "_" + mode + '_' + buf +'_Run' + str(run) + '.csv'
                             if os.path.exists(filePath):
-                                print("Extracting CSV file for " + experiment + " " + protocol.title() + '_' + city1NoSpace + "To" + city2NoSpace + "_" + mode + '_' + buf +'_Run' + str(run))
+                                print("Extracting CSV file for " + experiment + " " + protocolTitle + '_' + city1NoSpace + "To" + city2NoSpace + "_" + mode + '_' + buf +'_Run' + str(run))
     
-                                processListStr.append("python3 extractSingleCsvFile.py " + filePath + " " + experiment + " " + protocol.title() + ' ' + city1NoSpace+city2NoSpace + " " + mode + ' ' + buf + ' ' + str(run))
+                                processListStr.append("python3 extractSingleCsvFile.py " + filePath + " " + experiment + " " + protocolTitle + ' ' + city1NoSpace+city2NoSpace + " " + mode + ' ' + buf + ' ' + str(run))
         time.sleep(10)
         currentProc = 0
         while(len(processListStr) > 0):
@@ -198,7 +199,7 @@ if __name__ == "__main__":
         plotSingleRunScript = scriptDir / "plotSingleRun.py"
 
         for protocol in congControlList:
-            protocolTitle = protocol.title()
+            protocolTitle = protocol_config_prefix(protocol)
             for buf in buffersizes:
                 for city1, city2, modes in city_pairs:
                     sourceDestination = city1.replace(" ", "") + city2.replace(" ", "")
