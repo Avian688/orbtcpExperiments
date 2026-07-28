@@ -12,7 +12,7 @@ from raynetExperimentSupport import collect_simulation_configs, run_simulation_c
 
 
 EXPERIMENT = "experiment12"
-PROTOCOLS = ("cubic", "orca")
+PROTOCOLS = ("cubic", "bbr")
 RUNS = range(1, 6)
 SCRIPT_DIR = Path(__file__).resolve().parent
 EXPERIMENT_DIR = (SCRIPT_DIR / "../../paperExperiments" / EXPERIMENT).resolve()

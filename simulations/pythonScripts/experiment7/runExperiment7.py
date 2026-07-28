@@ -67,7 +67,7 @@ if __name__ == "__main__":
     cores = int(os.environ.get("EXPERIMENT_CORES", "30"))
     currentProc = 0
     processList = []
-    congControlList = with_experiment_protocols(["bbr3", "bbr", "orbtcp", "cubic"])
+    congControlList = with_experiment_protocols(["orbtcp", "bbr", "cubic", "bbr3", "satcp", "leocc"])
     experiment = "experiment7"
     buffersizes = ["mediumbuffer"]
     disruptionIntervals = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP

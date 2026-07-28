@@ -441,7 +441,7 @@ def main() -> int:
     os.chdir(SCRIPT_DIR)
 
     experiments = ["experiment1", "experiment2"]
-    protocols = with_experiment_protocols([])
+    protocols = with_experiment_protocols(["orbtcp", "bbr", "cubic", "bbr3", "satcp", "leocc"])
     run_list = list(range(1, args.runs + 1))
     print(f"Protocols: {protocols}")
     print(f"Runs: 1-{args.runs}")

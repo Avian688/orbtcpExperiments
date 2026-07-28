@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-RAYNET_PROTOCOLS = ["orca", "cleanslate", "astrea"]
+RAYNET_PROTOCOLS = []
 
 CORE_PROTOCOLS = ["cubic", "bbr", "bbr3", "orbtcp", "orbtcp_pint", *RAYNET_PROTOCOLS]
 LEO_PROTOCOLS = ["cubic", "bbr", "bbr3", "satcp", "orbtcp", "orbtcp_pint", "leocc", *RAYNET_PROTOCOLS]

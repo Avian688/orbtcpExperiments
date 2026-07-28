@@ -18,7 +18,7 @@ from plotDataExport import export_plot_dataframe
 from plotProtocolSupport import PROTOCOL_COLORS, PROTOCOL_LABELS
 
 
-PROTOCOLS = ("cubic", "orca")
+PROTOCOLS = ("cubic", "bbr")
 RUNS = range(1, 6)
 FLOW_COUNT = 5
 BANDWIDTH_MBPS = 100
@@ -124,12 +124,12 @@ def collect_points() -> pd.DataFrame:
 def plot(points: pd.DataFrame) -> None:
     PLOT_DIR.mkdir(parents=True, exist_ok=True)
     export_plot_dataframe(
-        "efficiency_orca_vs_cubic_points.csv",
+        "efficiency_non_raynet_points.csv",
         points,
         base_dir=PLOT_DIR / "plot_data",
         metadata={
             "experiment": "experiment12",
-            "plot": "efficiency_orca_vs_cubic",
+            "plot": "efficiency_non_raynet",
             "description": "Five-flow efficiency scatter using aggregate normalised goodput and mean normalised RTT from the final 50 seconds.",
             "flow_count": FLOW_COUNT,
             "goodput_aggregation": "Sum the five per-flow mean goodputs, then divide by the 100 Mbps bottleneck bandwidth.",
@@ -171,7 +171,7 @@ def plot(points: pd.DataFrame) -> None:
     axis.set_ylabel("Normalised Goodput")
     axis.invert_xaxis()
     figure.tight_layout()
-    figure.savefig(PLOT_DIR / "efficiency_orca_vs_cubic.pdf", dpi=1080, bbox_inches="tight")
+    figure.savefig(PLOT_DIR / "efficiency_non_raynet.pdf", dpi=1080, bbox_inches="tight")
     plt.close(figure)
 
 

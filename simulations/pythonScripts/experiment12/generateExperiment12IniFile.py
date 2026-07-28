@@ -5,7 +5,7 @@ import random
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import clone_raynet_ini_variants, common_ned_path
+from raynetExperimentSupport import common_ned_path
 
 
 BANDWIDTH_MBPS = 100
@@ -121,13 +121,10 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     write_ini(out_dir / "experiment12_cubic.ini", "cubic")
-    bbr_source = out_dir / "experiment12_bbr.ini"
-    write_ini(bbr_source, "bbr")
-    clone_raynet_ini_variants(bbr_source)
-    bbr_source.unlink()
+    write_ini(out_dir / "experiment12_bbr.ini", "bbr")
 
     print(
-        f"Generated experiment 12 Cubic and Orca ini files with {FLOW_COUNT} flows and "
+        f"Generated experiment 12 Cubic and BBR ini files with {FLOW_COUNT} flows and "
         f"{bottleneck_queue_packets()} packets at the 5 BDP bottleneck."
     )
 
