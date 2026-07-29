@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_heatmap
 from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
+from raynetExperimentSupport import protocol_config_prefix
 
 # Plot styling (same as previous script)
 import scienceplots
@@ -78,7 +79,7 @@ def compute_mean_std_normalised(key, proto, m):
         for flow, lst in [(0, flow0_runs), (1, flow1_runs)]:
             rtt_file = os.path.join(
                 SRTT_ROOT,
-                proto.title(),
+                protocol_config_prefix(proto),
                 before,
                 after,
                 QMULTDICT[m],

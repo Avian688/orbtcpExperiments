@@ -69,7 +69,7 @@ network doubledumbbellpathchange
         configurator: Ipv4NetworkConfiguratorUpdate{
             @display("p=494,17");
         }
-        broker: Broker;
+        //broker: Broker;
     connections:
         for i=0..sizeof(constantClient)-1 {
             constantClient[i].pppg++ <--> standardLine <--> constantRouter1.pppg++;

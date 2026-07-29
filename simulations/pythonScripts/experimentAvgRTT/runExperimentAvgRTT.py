@@ -16,6 +16,9 @@ import time
 import re
 from PyPDF2 import PdfMerger
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from raynetExperimentSupport import protocol_config_prefix
+
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
         protocol_path = os.path.join(root_folder, protocol)
@@ -161,7 +164,7 @@ if __name__ == "__main__":
             for buf in buffersizes:
                 for rtt in clientsRtts:
                     for run in runList:
-                        filePath = '../../paperExperiments/experimentAvgRTT/results/'+ protocol.title() + str(rtt) + 'ms' + buf + 'Run' + str(run) + '.csv'
+                        filePath = '../../paperExperiments/experimentAvgRTT/results/'+ protocol_config_prefix(protocol) + str(rtt) + 'ms' + buf + 'Run' + str(run) + '.csv'
                         print(filePath)
                         if os.path.exists(filePath):
                              print("Extracting CSV file for " + experiment + " " + protocol + " " + buf + " " + str(rtt) + " " + str(run))

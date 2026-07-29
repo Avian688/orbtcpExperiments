@@ -5,7 +5,7 @@ import random
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import common_ned_path
+from raynetExperimentSupport import common_ned_path, protocol_config_prefix
 
 
 BANDWIDTH_MBPS = 100
@@ -101,7 +101,7 @@ def write_ini(out_file: Path, protocol: str) -> None:
 
         for run in range(1, RUNS + 1):
             rng = random.Random(1999 + run)
-            config_name = f"{protocol.title()}_Run{run}"
+            config_name = f"{protocol_config_prefix(protocol)}_Run{run}"
             w(f"[Config {config_name}]")
             w("extends = General")
             w(f"**.numberOfFlows = {FLOW_COUNT}")

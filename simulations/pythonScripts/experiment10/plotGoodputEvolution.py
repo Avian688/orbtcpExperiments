@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_plot_dataframe
 from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
+from raynetExperimentSupport import protocol_config_prefix
 
 # ─── Matplotlib Styling ───────────────────────────────────────────────────────
 plt.rcParams['font.family'] = 'serif'
@@ -30,7 +31,7 @@ FRIENDLY    = PROTOCOL_LABELS
 def timeseries_stats(proto, pair):
     """Return DataFrame with columns time, mean0, std0, mean1, std1 (bps)."""
     base = os.path.join("../../../paperExperiments/experiment10/csvs",
-                        proto.title(), pair)
+                        protocol_config_prefix(proto), pair)
     runs_data = {0: [], 1: []}
 
     # collect raw time & goodput arrays per run/server

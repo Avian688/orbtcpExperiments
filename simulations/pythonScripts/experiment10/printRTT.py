@@ -7,6 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
+from raynetExperimentSupport import protocol_config_prefix
 
 # ─── Experiment Setup ─────────────────────────────────────────────────────────
 # Analyze Pair1 and Pair3 (but label Pair3 as “Pair2” in the outputs)
@@ -27,7 +28,7 @@ def avg_rtt(proto, pair):
     and return the overall mean RTT (in whatever unit the CSV uses, e.g. ms).
     """
     base = os.path.join("../../../paperExperiments/experiment10/csvs",
-                        proto.title(), pair)
+                        protocol_config_prefix(proto), pair)
     rtts = []
     for run in RUNS:
         for srv in [0, 1]:

@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_heatmap
 from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
+from raynetExperimentSupport import protocol_config_prefix
 
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = ["Times New Roman", "Times", "DejaVu Serif"]
@@ -48,7 +49,7 @@ def compute_mean_std(path_key, proto, m):
         path_key_before, path_key_after = path_key.split("_", 1)
         csv_file = os.path.join(
             "..", "..", "..",
-            "paperExperiments", "experiment8", "csvs", proto.title(),
+            "paperExperiments", "experiment8", "csvs", protocol_config_prefix(proto),
             path_key_before,
             path_key_after,
             QMULTDICT.get(m),

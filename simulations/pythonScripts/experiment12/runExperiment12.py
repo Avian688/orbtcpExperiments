@@ -8,7 +8,11 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import collect_simulation_configs, run_simulation_configs
+from raynetExperimentSupport import (
+    collect_simulation_configs,
+    protocol_config_prefix,
+    run_simulation_configs,
+)
 
 
 EXPERIMENT = "experiment12"
@@ -47,7 +51,7 @@ def wait_for_batch(active) -> None:
 
 
 def config_name(protocol: str, run: int) -> str:
-    return f"{protocol.title()}_Run{run}"
+    return f"{protocol_config_prefix(protocol)}_Run{run}"
 
 
 def generate_inputs() -> None:

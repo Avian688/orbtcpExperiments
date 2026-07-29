@@ -8,6 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
+from raynetExperimentSupport import protocol_config_prefix
 
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = ["Times New Roman", "Times", "DejaVu Serif"]
@@ -76,10 +77,10 @@ def compute_mean_std(path_key, proto, m):
         gs_index = location_to_gs_index[second_location]
 
         # Build the full path to the CSV
-        PATH = f"../../../paperExperiments/experiment8/csvs/{proto.title()}/{path_key_before}/{path_key_after}/{QMULTDICT.get(m)}/run{run}/leoconstellation.groundStation[{gs_index}].app[0]/goodput.csv"
+        PATH = f"../../../paperExperiments/experiment8/csvs/{protocol_config_prefix(proto)}/{path_key_before}/{path_key_after}/{QMULTDICT.get(m)}/run{run}/leoconstellation.groundStation[{gs_index}].app[0]/goodput.csv"
         csv_file = os.path.join(
             "..", "..", "..",
-            "paperExperiments", "experiment8", "csvs", proto.title(),
+            "paperExperiments", "experiment8", "csvs", protocol_config_prefix(proto),
             path_key_before,
             path_key_after,
             QMULTDICT.get(m),

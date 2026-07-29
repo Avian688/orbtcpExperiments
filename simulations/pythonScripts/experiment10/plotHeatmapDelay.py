@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_heatmap
 from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
+from raynetExperimentSupport import protocol_config_prefix
 
 # ─── Matplotlib Styling ───────────────────────────────────────────────────────
 plt.rcParams['font.family'] = 'serif'
@@ -75,7 +76,7 @@ def compute_mean_std_normalised(pair, proto):
         for flow in [0, 1]:
             rtt_file = os.path.join(
                 SRTT_ROOT,
-                proto.title(),
+                protocol_config_prefix(proto),
                 pair,
                 f"run{run}",
                 f"leoconstellation.userTerminal[{flow}].tcp.conn",

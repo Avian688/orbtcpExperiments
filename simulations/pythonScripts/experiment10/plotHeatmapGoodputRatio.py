@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_heatmap, export_plot_dataframe
 from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
+from raynetExperimentSupport import protocol_config_prefix
 
 # ─── Matplotlib Styling ───────────────────────────────────────────────────────
 plt.rcParams['font.family'] = 'serif'
@@ -30,7 +31,7 @@ FRIENDLY    = PROTOCOL_LABELS
 # ─── Data Extraction ──────────────────────────────────────────────────────────
 def fairness_ratio(proto, pair):
     base = os.path.join("../../../paperExperiments/experiment10/csvs",
-                        proto.title(), pair)
+                        protocol_config_prefix(proto), pair)
     vals = []
     for run in RUNS:
         p0 = os.path.join(base, f"run{run}", "leoconstellation.userTerminal[2].app[0]", "goodput.csv")
@@ -47,7 +48,7 @@ def fairness_ratio(proto, pair):
 
 def avg_goodput(proto, pair):
     base = os.path.join("../../../paperExperiments/experiment10/csvs",
-                        proto.title(), pair)
+                        protocol_config_prefix(proto), pair)
     vals = []
     for run in RUNS:
         for srv in [0, 1]:

@@ -15,13 +15,13 @@ network singledumbbell
         @display("bgb=512,395");
         int numberOfFlows = default(1);
     types:
-        channel standardLine extends DatarateChannel //look at 
+        channel standardLine extends DatarateChannel //look at
         {
             delay = 0ms;
             datarate = 10Gbps;
         }
-        
-        channel bottleneckLine extends DatarateChannel //look at 
+
+        channel bottleneckLine extends DatarateChannel //look at
         {
             delay = 0.5ms;
             datarate = 100Mbps;
@@ -54,7 +54,7 @@ network singledumbbell
         for n=0..sizeof(server)-1 {
             server[n].pppg++ <--> standardLine <--> router2.pppg++;
         }
-        
+
         router1.pppg++ <--> bottleneckLine <--> router2.pppg++;
 
 }

@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_heatmap
 from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
+from raynetExperimentSupport import protocol_config_prefix
 
 # Set up LaTeX fonts and style
 import scienceplots
@@ -41,7 +42,7 @@ def compute_mean_std_normalised_ratio(path_key, proto, m):
     before, after = path_key.split("_", 1)
     base_path = os.path.join(
         "../../../paperExperiments/experiment9/csvs",
-        proto.title(), before, after,
+        protocol_config_prefix(proto), before, after,
         QMULTDICT[m]
     )
 

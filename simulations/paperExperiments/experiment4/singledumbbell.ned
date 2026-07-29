@@ -45,7 +45,7 @@ network singledumbbell
         scenarioManager: ScenarioManager {
             @display("p=100,300;is=s");
         }
-        //broker: Broker;
+        broker: Broker;
     connections:
         for i=0..sizeof(client)-1 {
             client[i].pppg++ <--> standardLine <--> router1.pppg++;
