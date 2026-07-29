@@ -84,17 +84,18 @@ if __name__ == "__main__":
             
         with open('experiment11runTimes.txt', 'w') as f1:
             f1.write("--Experiment 11 Runtimes (s)--")
+            simulation_configs = []
             for cc in congControlList:
                 fileName = '../../paperExperiments/experiment11/experiment11_' + cc + '.ini'
                 if not os.path.exists(fileName):
                     print("Missing ini file " + fileName + ", skipping...")
                     continue
-                print("----------experiment 11 " + cc + " simulations------------")
+                print("----------queueing experiment 11 " + cc + " simulations------------")
                 iniName = "experiment11_" + cc + ".ini"
-                configs = collect_simulation_configs(
+                simulation_configs.extend(collect_simulation_configs(
                     cc, iniName, runList, "../../paperExperiments/experiment11"
-                )
-                run_simulation_configs(configs, "../../paperExperiments/experiment11", cores, f1)
+                ))
+            run_simulation_configs(simulation_configs, "../../paperExperiments/experiment11", cores, f1)
         time.sleep(5)
     currStep += 1
     currentProc = 0

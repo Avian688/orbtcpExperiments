@@ -82,14 +82,15 @@ if __name__ == "__main__":
         
         with open('experiment4runTimes.txt', 'w') as f1:
             f1.write("--Experiment 4 Runtimes (s)--")
+            simulation_configs = []
             for cc in congControlList:
                 for bs in buffersizes:
-                    print("----------experiment 4 " + cc + " " + bs + " simulations------------")
+                    print("----------queueing experiment 4 " + cc + " " + bs + " simulations------------")
                     iniName = "experiment4_" + cc + "_" + bs + ".ini"
-                    configs = collect_simulation_configs(
+                    simulation_configs.extend(collect_simulation_configs(
                         cc, iniName, runList, "../../paperExperiments/experiment4"
-                    )
-                    run_simulation_configs(configs, "../../paperExperiments/experiment4", cores, f1)
+                    ))
+            run_simulation_configs(simulation_configs, "../../paperExperiments/experiment4", cores, f1)
     
     currStep += 1
     currentProc = 0

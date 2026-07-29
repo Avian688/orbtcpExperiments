@@ -61,12 +61,14 @@ def run_simulations(cores: int) -> None:
     runtime_file.unlink(missing_ok=True)
     with runtime_file.open("w", encoding="utf-8") as output:
         output.write("--Experiment 12 Runtimes (s)--")
+        simulation_configs = []
         for protocol in PROTOCOLS:
             ini_name = f"experiment12_{protocol}.ini"
             configs = collect_simulation_configs(protocol, ini_name, RUNS, EXPERIMENT_DIR)
             if len(configs) != len(RUNS):
                 raise RuntimeError(f"Expected {len(RUNS)} configs in {ini_name}, found {len(configs)}")
-            run_simulation_configs(configs, EXPERIMENT_DIR, cores, output)
+            simulation_configs.extend(configs)
+        run_simulation_configs(simulation_configs, EXPERIMENT_DIR, cores, output)
 
 
 def expected_vec_files():
