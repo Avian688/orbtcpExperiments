@@ -10,14 +10,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_plot_dataframe
-from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_LABELS, PROTOCOL_MARKERS
+from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS, PROTOCOL_MARKERS
 
 plt.rcParams['text.usetex'] = True
 plt.rcParams['axes.labelsize'] = "medium"
 plt.rcParams['xtick.labelsize'] = "medium"
 plt.rcParams['ytick.labelsize'] = "medium"
 
-PROTOCOLS = CORE_PROTOCOLS
+PROTOCOLS = LEO_PROTOCOLS
 BWS = [100]
 DELAYS = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
 QMULTS = [0.2, 1, 4]

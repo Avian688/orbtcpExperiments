@@ -67,7 +67,7 @@ if __name__ == "__main__":
     cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
     currentProc = 0
     processList = []
-    congControlList = with_experiment_protocols(["bbr3", "bbr", "orbtcp", "cubic"])
+    congControlList = with_experiment_protocols(["bbr3", "bbr", "orbtcp", "cubic", "satcp", "leocc"])
     experiment = "experiment5"
     buffersizes = ["mediumbuffer"]#["smallbuffer", "mediumbuffer", "largebuffer"]
     clientsRtts = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP

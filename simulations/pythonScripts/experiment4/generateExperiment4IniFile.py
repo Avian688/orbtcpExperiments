@@ -33,6 +33,42 @@ def int_to_word(num):
         else: return d[num // 10 * 10] + d[num % 10]
     if (num > 100):
         raise AssertionError('num is too large: %s' % str(num))
+
+
+def write_common_tcp(f, tcp_type, algorithm_class):
+    f.write('\n' + '**.tcp.typename = "' + tcp_type + '"')
+    f.write('\n' + '**.tcp.tcpAlgorithmClass = "' + algorithm_class + '"')
+    f.write('\n' + '**.tcp.advertisedWindow = 200000000')
+    f.write('\n' + '**.tcp.windowScalingSupport = true')
+    f.write('\n' + '**.tcp.windowScalingFactor = -1')
+    f.write('\n' + '**.tcp.increasedIWEnabled = true')
+    f.write('\n' + '**.tcp.delayedAcksEnabled = false')
+    f.write('\n' + '**.tcp.timestampSupport = true')
+    f.write('\n' + '**.tcp.ecnWillingness = false')
+    f.write('\n' + '**.tcp.nagleEnabled = true')
+    f.write('\n' + '**.tcp.stopOperationTimeout = 4000s')
+    f.write('\n' + '**.tcp.mss = 1448')
+    f.write('\n' + '**.tcp.sackSupport = true')
+
+
+def write_dumbbell_apps(f, num_apps):
+    f.write('\n' + '**.client[*].numApps = ' + str(num_apps))
+    f.write('\n' + '**.client[*].app[0].typename  = "TcpGoodputSessionApp"')
+    f.write('\n' + '*.client[*].app[0].tClose = -1s')
+    f.write('\n' + '*.client[*].app[0].sendBytes = 2GB')
+    f.write('\n' + '*.client[*].app[0].dataTransferMode = "bytecount"')
+    f.write('\n' + '*.client[*].app[0].statistic-recording = true\n')
+    f.write('\n' + '**.server[*].numApps = 1')
+    f.write('\n' + '**.server[*].app[0].typename  = "TcpSinkApp"')
+    f.write('\n' + '**.server[*].app[0].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
+
+
+def write_leocc_pings(f):
+    f.write('\n' + '*.client[*].app[1].typename = "LeoccPingApp"')
+    f.write('\n' + '*.client[*].app[1].startTime = 0s')
+    f.write('\n' + '*.client[*].app[1].destAddr = "server[" + string(parentIndex()) + "]"')
+    f.write('\n' + '*.client[*].app[1].sendInterval = 10ms')
+    f.write('\n' + '*.client[*].app[1].packetSize = 1B')
            
 if __name__ == "__main__":
     simSeed = 1999
@@ -40,7 +76,7 @@ if __name__ == "__main__":
     queueSizes = [1]
     numOfRuns = 5
     numOfClients = 2
-    algorithms = ["orbtcp", "bbr", "cubic", "bbr3"]
+    algorithms = ["orbtcp", "bbr", "cubic", "bbr3", "satcp", "leocc"]
     for alg in algorithms:
         for qs in queueSizes:
             
@@ -61,6 +97,10 @@ if __name__ == "__main__":
                 algFlavour = "BbrFlavour"
             elif(alg == "bbr3"):
                 algFlavour = "Bbr3Flavour"
+            elif(alg == "satcp"):
+                algFlavour = "SatcpFlavour"
+            elif(alg == "leocc"):
+                algFlavour = "LeoccFlavour"
             else:
                 algFlavour = "OrbtcpFlavour"
                 
@@ -184,6 +224,17 @@ if __name__ == "__main__":
                     f.write('\n' + '**.server[*].app[*].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
                     f.write('\n' + '**.ppp[*].queue.typename = "BandwidthRecorderDropTailQueue"\n')
                     f.write('\n' + '**.tcp.initialSsthresh = ' + str(4000*1448) + '\n')    
+                elif(algFlavour == "SatcpFlavour"):
+                    write_common_tcp(f, "Satcp", "SatcpFlavour")
+                    write_dumbbell_apps(f, 1)
+                    f.write('\n' + '**.ppp[*].queue.typename = "BandwidthRecorderDropTailQueue"\n')
+                    f.write('\n' + '**.tcp.initialSsthresh = ' + str(400*1448) + '\n')
+                elif(algFlavour == "LeoccFlavour"):
+                    write_common_tcp(f, "Leocc", "LeoccFlavour")
+                    write_dumbbell_apps(f, 2)
+                    write_leocc_pings(f)
+                    f.write('\n' + '**.ppp[*].queue.typename = "LeoccQueue"\n')
+                    f.write('\n' + '**.tcp.initialSsthresh = ' + str(4000*1448) + '\n')
                 else:
                     f.write('\n' + '**.tcp.typename = "Orbtcp"')
                     f.write('\n' + '**.tcp.tcpAlgorithmClass = "OrbtcpFlavour"')
@@ -243,7 +294,10 @@ if __name__ == "__main__":
                             f.write('\n' + '*.client[' + str(clientNumb) + '].app[0].tOpen = '+ str(clientStart) +'s')
                             f.write('\n' + '*.client[' + str(clientNumb) + '].app[0].tSend = '+ str(clientStart) +'s\n')
                         f.write('\n' + '**.ppp[*].queue.packetCapacity = ' + str(int((bdp*qs)/1448)) + '\n')
-                        f.write('\n' + '*.scenarioManager.script = xmldoc("../scenarios/experiment4/'+ str(scenarioName) + '.xml")\n')
+                        scenario_doc = 'xmldoc("../scenarios/experiment4/'+ str(scenarioName) + '.xml")'
+                        f.write('\n' + '*.scenarioManager.script = ' + scenario_doc + '\n')
+                        if alg == "satcp":
+                            f.write('\n' + '**.tcp.scenario = ' + scenario_doc + '\n')
                         f.write('\n' + 'sim-time-limit = ' + str(rtt * 2000) +'s \n')
     out_dir = Path('../../paperExperiments/experiment4')
     for qs in queueSizes:

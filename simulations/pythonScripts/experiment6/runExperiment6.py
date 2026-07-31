@@ -68,7 +68,7 @@ if __name__ == "__main__":
     numOfRibFlows = 3
     currentProc = 0
     processList = []
-    congControlList = with_experiment_protocols(["bbr", "orbtcp", "cubic", "bbr3"])
+    congControlList = with_experiment_protocols(["bbr", "orbtcp", "cubic", "bbr3", "satcp", "leocc"])
     experiment = "experiment6"
     buffersizes = ["mediumbuffer"]#["smallbuffer", "mediumbuffer", "largebuffer"]
     clientsRtts = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP
