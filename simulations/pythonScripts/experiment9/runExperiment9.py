@@ -16,6 +16,8 @@ from PyPDF2 import PdfMerger
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from raynetExperimentSupport import SimulationConfig, protocol_config_prefix, run_simulation_configs, with_experiment_protocols
 
+MAX_SIMULATION_CORES = 15
+
 def collect_config_entries(paperExperimentDir, congControlList, runList):
     configEntries = []
 
@@ -36,7 +38,10 @@ def run_config_batch(configEntries, cores, paperExperimentDir):
         SimulationConfig(cc, "experiment9_" + cc + ".ini", configName, include_leo=True)
         for cc, configName in configEntries
     ]
-    run_simulation_configs(configs, paperExperimentDir, cores)
+    simulation_cores = min(cores, MAX_SIMULATION_CORES)
+    if simulation_cores < cores:
+        print(f"Capping Experiment 9 simulation workers at {MAX_SIMULATION_CORES} (requested {cores}).")
+    run_simulation_configs(configs, paperExperimentDir, simulation_cores)
 
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
