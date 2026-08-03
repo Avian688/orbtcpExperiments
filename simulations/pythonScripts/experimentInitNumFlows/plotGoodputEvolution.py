@@ -1,8 +1,12 @@
 import os
+import sys
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import scienceplots
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import PROTOCOL_COLORS
 # Use science-style plots
 plt.style.use("science")
 plt.rcParams['text.usetex'] = False
@@ -18,7 +22,7 @@ num_runs    = 5
 LINEWIDTH   = 0.30
 
 colors = {
-    "Orbtcp":              "tab:blue",
+    "Orbtcp":              PROTOCOL_COLORS["orbtcp"],
     "OrbtcpNoInitFlows":   "tab:orange",
     "OrbtcpNoSharedFlows": "tab:green"
 }

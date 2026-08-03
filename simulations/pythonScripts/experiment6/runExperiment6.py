@@ -202,7 +202,7 @@ if __name__ == "__main__":
         print("Plotting Goodput Ratios!\n")
         subprocess.Popen("mkdir cumulative", shell=True, cwd='../../plots/experiment6/').communicate(timeout=10)
         time.sleep(3)
-        p = subprocess.Popen("python3 ../../../pythonScripts/experiment6/plotGoodputRatio.py", shell=True, cwd='../../plots/experiment6/cumulative')
+        p = subprocess.Popen("python3 ../../../pythonScripts/runPlotVariants.py ../../../pythonScripts/experiment6/plotGoodputRatio.py", shell=True, cwd='../../plots/experiment6/cumulative')
         p.wait(timeout=3600)
         time.sleep(1)
     currStep += 1

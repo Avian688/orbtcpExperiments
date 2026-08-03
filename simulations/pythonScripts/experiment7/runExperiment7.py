@@ -197,7 +197,7 @@ if __name__ == "__main__":
         print("Plotting Aggregate Goodput!\n")
         subprocess.Popen("mkdir cumulative", shell=True, cwd='../../plots/experiment7/').communicate(timeout=10)
         time.sleep(3)
-        p = subprocess.Popen("python3 ../../../pythonScripts/experiment7/plotAggrGoodputInterval.py", shell=True, cwd='../../plots/experiment7/cumulative')
+        p = subprocess.Popen("python3 ../../../pythonScripts/runPlotVariants.py ../../../pythonScripts/experiment7/plotAggrGoodputInterval.py", shell=True, cwd='../../plots/experiment7/cumulative')
         p.wait(timeout=3600)
         time.sleep(1)
     currStep += 1

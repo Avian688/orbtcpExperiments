@@ -10,6 +10,7 @@ from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_plot_dataframe
+from plotProtocolSupport import PROTOCOL_COLORS
 
 # Use science-style plots
 plt.style.use("science")
@@ -33,7 +34,7 @@ late_starts = [10] + [20]*2 + [30]*4 + [40]*8
 
 # Assign each protocol its own color
 protocol_colors = {
-    "Orbtcp":            "tab:orange",
+    "Orbtcp":            PROTOCOL_COLORS["orbtcp"],
     "OrbtcpNoInitFlows": "tab:blue",
 }
 

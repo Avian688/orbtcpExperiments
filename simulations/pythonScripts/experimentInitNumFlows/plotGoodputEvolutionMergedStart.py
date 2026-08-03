@@ -1,8 +1,12 @@
 import os
+import sys
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import scienceplots
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from plotProtocolSupport import PROTOCOL_COLORS
 
 # Use science-style plots
 plt.style.use("science")
@@ -17,7 +21,7 @@ num_servers = 50   # only first 50 flows
 num_runs    = 5
 
 LINEWIDTH   = 0.30
-COLOR       = "tab:blue"
+COLOR       = PROTOCOL_COLORS["orbtcp"]
 
 # time grid: 0–10 seconds, integer
 times = np.arange(0, 11)

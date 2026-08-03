@@ -10,6 +10,7 @@ from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_plot_dataframe
+from plotProtocolSupport import PROTOCOL_COLORS
 
 # Use science‐style plots
 plt.style.use("science")
@@ -31,7 +32,7 @@ CAPSIZE     = 2
 
 # assign each protocol a color
 protocol_colors = {
-    "orbtcp":          "tab:orange",
+    "orbtcp":          PROTOCOL_COLORS["orbtcp"],
     "orbtcpNoAvgRTT":  "tab:blue",
 }
 

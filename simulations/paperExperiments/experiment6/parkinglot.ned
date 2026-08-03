@@ -15,13 +15,13 @@ network parkinglot
         @display("bgb=500,400");
         int numberOfRibFlows = default(3);
     types:
-        channel standardLine extends DatarateChannel //look at 
+        channel standardLine extends DatarateChannel //look at
         {
             delay = 0ms;
             datarate = 10Gbps;
         }
 
-        channel bottleneckLine extends DatarateChannel //look at 
+        channel bottleneckLine extends DatarateChannel //look at
         {
             delay = 0ms;
             datarate = 100Mbps;
@@ -51,7 +51,7 @@ network parkinglot
         configurator: AutoNetworkConfigurator {
             @display("p=450,350");
         }
-        broker: Broker;
+        //broker: Broker;
     connections:
         spineClient.pppg++ <--> standardLine <--> router[0].pppg++;
         spineServer.pppg++ <--> standardLine <--> router[numberOfRibFlows].pppg++;

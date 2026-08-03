@@ -400,9 +400,13 @@ def plot_cumulative(script_name: str) -> None:
     cumulative_dir = PLOTS_ROOT / "experiment1and2Cumulative"
     cumulative_dir.mkdir(parents=True, exist_ok=True)
     run_checked(
-        [sys.executable, str(SCRIPT_DIR / script_name)],
+        [
+            sys.executable,
+            str(SCRIPT_DIR.parent / "runPlotVariants.py"),
+            str(SCRIPT_DIR / script_name),
+        ],
         cwd=cumulative_dir,
-        description=f"Running {script_name}",
+        description=f"Running {script_name} (PINT main and full-INT comparison)",
         timeout=3600,
     )
 

@@ -19,6 +19,7 @@ sys.path.insert(0, str(SCRIPT_DIR.parent))
 
 from experiment13Support import MSS_BYTES, PINT_VARIANTS, RUNS, VARIANTS, WORKLOADS, workload_label
 from plotDataExport import export_plot_dataframe
+from plotProtocolSupport import PROTOCOL_COLORS
 
 
 SIMULATIONS_DIR = SCRIPT_DIR.parents[1]
@@ -44,8 +45,8 @@ METRIC_LABELS = {
     "tau": "Tau (ms)",
 }
 COLORS = {
-    "orbtcp": "#1f1f1f",
-    "orbtcp_pint_p100": "#006d77",
+    "orbtcp": PROTOCOL_COLORS["orbtcp"],
+    "orbtcp_pint_p100": PROTOCOL_COLORS["orbtcp_pint"],
     "orbtcp_pint_p50": "#0077b6",
     "orbtcp_pint_p25": "#3a86ff",
     "orbtcp_pint_p12_5": "#8338ec",
@@ -204,7 +205,7 @@ def plot_probability_summary(workload: str, summary: pd.DataFrame) -> None:
             pint_rows["pint_feedback_probability"],
             pint_rows["mean"],
             yerr=pint_rows["std"],
-            color="#0077b6",
+            color=COLORS["orbtcp_pint_p100"],
             marker="o",
             markersize=4,
             linewidth=1.3,
