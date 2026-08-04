@@ -1,13 +1,13 @@
-package orbtcpexperiments.simulations.paperExperiments.experiment5;
+package orbtcpexperiments.simulations.paperExperiments.experimentTuning;
+
 @namespace(inet);
 
-import inet.node.inet.StandardHost;
-import inet.node.inet.Router;
-import ned.DatarateChannel;
-import ned.IBidirectionalChannel;
 import inet.common.scenario.ScenarioManager;
-import tcppaced.networklayer.configurator.ipv4.AutoNetworkConfigurator;
+import inet.node.inet.Router;
+import inet.node.inet.StandardHost;
+import ned.DatarateChannel;
 import RLComponents.Broker;
+import tcppaced.networklayer.configurator.ipv4.AutoNetworkConfigurator;
 
 network singledumbbell
 {
@@ -15,13 +15,13 @@ network singledumbbell
         @display("bgb=512,395");
         int numberOfFlows = default(1);
     types:
-        channel standardLine extends DatarateChannel //look at
+        channel accessLine extends DatarateChannel
         {
-            delay = 0ms;
+            delay = 12.25ms;
             datarate = 10Gbps;
         }
 
-        channel bottleneckLine extends DatarateChannel //look at
+        channel bottleneckLine extends DatarateChannel
         {
             delay = 0.5ms;
             datarate = 100Mbps;
@@ -48,13 +48,12 @@ network singledumbbell
         //broker: Broker;
     connections:
         for i=0..sizeof(client)-1 {
-            client[i].pppg++ <--> standardLine <--> router1.pppg++;
+            client[i].pppg++ <--> accessLine <--> router1.pppg++;
         }
 
-        for n=0..sizeof(server)-1 {
-            server[n].pppg++ <--> standardLine <--> router2.pppg++;
+        for i=0..sizeof(server)-1 {
+            server[i].pppg++ <--> accessLine <--> router2.pppg++;
         }
 
         router1.pppg++ <--> bottleneckLine <--> router2.pppg++;
-
 }

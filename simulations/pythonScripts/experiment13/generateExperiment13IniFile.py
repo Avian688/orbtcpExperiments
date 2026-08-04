@@ -27,11 +27,15 @@ from raynetExperimentSupport import common_ned_path
 LARGE_NON_BOTTLENECK_QUEUE_PACKETS = 100000
 PINT_SETTINGS = (
     "**.**.queue.pintInitialRtt = 10ms",
+    "**.**.queue.flowCountSketchEnabled = true",
     "**.**.queue.flowCardinalityBits = 4096",
     "**.**.queue.flowSketchSeed = 1337",
+    "**.pintFlowCountBits = 8",
+    "**.pintMaxFlowCount = 65535",
     "**.**.queue.pintBits = 8",
+    "**.**.queue.pintAutoScaleEncoding = false",
     "**.**.queue.pintLogBase = 1.05",
-    "**.**.queue.pintMaxConcurrentFlows = 512",
+    "**.pintMaxConcurrentFlows = 512",
 )
 
 
