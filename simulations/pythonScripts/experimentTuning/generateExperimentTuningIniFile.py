@@ -130,7 +130,7 @@ def write_general(output, pint: bool) -> None:
     w("**.additiveIncreasePercent = 0.05")
     w("**.eta = 0.95")
     w("**.alpha = 0.01")
-    w("**.fixedAvgRTTVal = 0s")
+    w(f"**.fixedAvgRTTVal = {'0s' if pint else '0'}")
 
     if pint:
         w()
