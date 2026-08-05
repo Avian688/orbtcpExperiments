@@ -36,7 +36,6 @@ RUN_TO_PLOT = 1
 SECONDS = pd.Index(range(SIMULATION_TIME_S), name="time")
 
 FLOW_COLOR = "#0C5DA5"
-MEDIAN_COLOR = "#202020"
 REFERENCE_COLOR = "#777777"
 GOODPUT_COLOR = PROTOCOL_COLORS["orbtcp"]
 
@@ -91,21 +90,6 @@ def load_goodput(variant_key: str, flow_count: int, flow_index: int) -> pd.Serie
     return values.reindex(SECONDS).ffill().fillna(0.0)
 
 
-def sample_step_series(frame: pd.DataFrame, metric: str) -> pd.Series:
-    values = (
-        frame.drop_duplicates("time", keep="last")
-        .set_index("time")[metric]
-        .sort_index()
-    )
-    expanded_index = values.index.union(SECONDS)
-    return (
-        values.reindex(expanded_index)
-        .sort_index()
-        .ffill()
-        .reindex(SECONDS)
-    )
-
-
 def plot_flow_metric(
     axis,
     frames: list[pd.DataFrame],
@@ -115,7 +99,6 @@ def plot_flow_metric(
     extra_legend_handles: tuple[Line2D, ...] = (),
 ) -> None:
     line_alpha = max(0.10, min(0.65, 3.0 / np.sqrt(len(frames))))
-    sampled = []
     for frame in frames:
         axis.plot(
             frame["time"],
@@ -125,29 +108,11 @@ def plot_flow_metric(
             linewidth=0.75,
             drawstyle="steps-post",
         )
-        sampled.append(sample_step_series(frame, metric) * scale)
-
-    median = pd.concat(sampled, axis=1).median(axis=1, skipna=True)
-    axis.plot(
-        median.index,
-        median,
-        color=MEDIAN_COLOR,
-        linewidth=1.7,
-        drawstyle="steps-post",
-        label="Median active flow",
-    )
     axis.set_ylabel(ylabel)
     axis.set_ylim(bottom=0)
     axis.legend(
         handles=(
             Line2D([0], [0], color=FLOW_COLOR, linewidth=1.0, label="Flows"),
-            Line2D(
-                [0],
-                [0],
-                color=MEDIAN_COLOR,
-                linewidth=1.7,
-                label="Median active flow",
-            ),
             *extra_legend_handles,
         ),
         loc="upper right",
