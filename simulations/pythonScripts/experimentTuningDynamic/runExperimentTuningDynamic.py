@@ -10,17 +10,23 @@ import sys
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR.parent))
 
-from experimentTuningSupport import (
+from experimentTuningDynamicSupport import (  # noqa: E402
+    CONDITIONS,
     EXPERIMENT,
     FLOW_COUNTS,
     FULL_ORBCC,
     PINT_VARIANTS,
     RUNS,
     VARIANTS,
+    cases,
     config_name,
+    expected_simulation_count,
     ini_name,
 )
-from raynetExperimentSupport import collect_simulation_configs, run_simulation_configs
+from raynetExperimentSupport import (  # noqa: E402
+    collect_simulation_configs,
+    run_simulation_configs,
+)
 
 
 EXPERIMENT_DIR = (SCRIPT_DIR / "../../paperExperiments" / EXPERIMENT).resolve()
@@ -54,16 +60,26 @@ def batched(commands: list[tuple[str, list[str]]], cwd: Path, cores: int) -> Non
     wait_for_batch(active)
 
 
-def cases():
-    for variant in VARIANTS:
-        for flow_count in FLOW_COUNTS:
-            for run in RUNS:
-                yield variant, flow_count, run, config_name(variant, flow_count, run)
+def named_cases():
+    for variant, flow_count, condition, run in cases():
+        yield (
+            variant,
+            flow_count,
+            condition,
+            run,
+            config_name(variant, flow_count, condition, run),
+        )
 
 
 def generate_inputs() -> None:
-    run_checked([sys.executable, "generateExperimentTuningScenarios.py"], SCRIPT_DIR)
-    run_checked([sys.executable, "generateExperimentTuningIniFile.py"], SCRIPT_DIR)
+    run_checked(
+        [sys.executable, "generateExperimentTuningDynamicScenarios.py"],
+        SCRIPT_DIR,
+    )
+    run_checked(
+        [sys.executable, "generateExperimentTuningDynamicIniFile.py"],
+        SCRIPT_DIR,
+    )
 
 
 def simulation_configs():
@@ -77,9 +93,10 @@ def simulation_configs():
             protocol, ini_file, RUNS, EXPERIMENT_DIR
         )
         expected = {
-            config_name(variant, flow_count, run)
+            config_name(variant, flow_count, condition, run)
             for variant in variants
             for flow_count in FLOW_COUNTS
+            for condition in CONDITIONS
             for run in RUNS
         }
         found = {config.config_name for config in configs}
@@ -91,22 +108,26 @@ def simulation_configs():
                 f"missing={missing}, unexpected={unexpected}"
             )
         all_configs.extend(configs)
+    if len(all_configs) != expected_simulation_count():
+        raise RuntimeError(
+            f"Expected {expected_simulation_count()} configs, found {len(all_configs)}"
+        )
     return all_configs
 
 
 def run_simulations(cores: int) -> None:
     (EXPERIMENT_DIR / "results").mkdir(parents=True, exist_ok=True)
-    runtime_file = SCRIPT_DIR / "experimentTuningRunTimes.txt"
+    runtime_file = SCRIPT_DIR / "experimentTuningDynamicRunTimes.txt"
     runtime_file.unlink(missing_ok=True)
     with runtime_file.open("w", encoding="utf-8") as output:
-        output.write("-- Experiment Tuning Runtimes (s) --")
+        output.write("-- Experiment Tuning Dynamic Runtimes (s) --")
         run_simulation_configs(
             simulation_configs(), EXPERIMENT_DIR, cores, output
         )
 
 
 def expected_vec_files():
-    for _variant, _flow_count, _run, name in cases():
+    for _variant, _flow_count, _condition, _run, name in named_cases():
         yield EXPERIMENT_DIR / "results" / f"{name}-#0.vec"
 
 
@@ -135,18 +156,19 @@ def export_csvs(cores: int) -> None:
 
 def extract_csvs(cores: int) -> None:
     commands = []
-    for variant, flow_count, run, name in cases():
+    for variant, flow_count, condition, run, name in named_cases():
         csv_file = EXPERIMENT_DIR / "results" / f"{name}.csv"
         if not csv_file.is_file() or csv_file.stat().st_size == 0:
             raise FileNotFoundError(f"Missing exported CSV: {csv_file}")
         commands.append(
             (
-                f"extract {variant.key} {flow_count}flows run{run}",
+                f"extract {variant.key} {condition.key} {flow_count}flows run{run}",
                 [
                     sys.executable,
                     "extractSingleCsvFile.py",
                     str(csv_file),
                     variant.key,
+                    condition.key,
                     str(flow_count),
                     str(run),
                 ],
@@ -156,28 +178,32 @@ def extract_csvs(cores: int) -> None:
 
 
 def plot() -> None:
-    run_checked([sys.executable, "plotTuning.py"], SCRIPT_DIR)
-    run_checked([sys.executable, "plotTuningIndividual.py"], SCRIPT_DIR)
+    run_checked([sys.executable, "plotExperimentTuningDynamic.py"], SCRIPT_DIR)
 
 
 def main() -> int:
     cores = max(1, int(os.environ.get("EXPERIMENT_CORES", "1")))
     start_step = int(os.environ.get("START_STEP", "1"))
     end_step = int(os.environ.get("END_STEP", "5"))
+    print(
+        f"{EXPERIMENT}: {len(VARIANTS)} implementations x "
+        f"{len(FLOW_COUNTS)} flow loads x {len(CONDITIONS)} conditions x "
+        f"{len(RUNS)} runs = {expected_simulation_count()} simulations"
+    )
     steps = [
-        ("generate matched handover scenarios and INIs", generate_inputs),
+        ("generate matched dynamic scenarios and INIs", generate_inputs),
         ("run simulations", lambda: run_simulations(cores)),
         ("export scavetool CSVs", lambda: export_csvs(cores)),
         ("extract plotting CSVs", lambda: extract_csvs(cores)),
-        ("plot aggregate trade-offs and Run 1 time series", plot),
+        ("plot whole-run CDFs and parameter trade-offs", plot),
     ]
 
     for index, (name, function) in enumerate(steps, start=1):
         if start_step <= index <= end_step:
-            print(f"Experiment Tuning step {index}: {name}")
+            print(f"Experiment Tuning Dynamic step {index}: {name}")
             function()
         else:
-            print(f"Skipping Experiment Tuning step {index}: {name}")
+            print(f"Skipping Experiment Tuning Dynamic step {index}: {name}")
     return 0
 
 
