@@ -192,7 +192,7 @@ def build_experiment0_command(config_name: str) -> list[str]:
         "-n",
         ":".join(EXPERIMENT0_NED_PATHS),
         "--image-path=../../../../inet4.5/images",
-        "--*.visualizer.typename=",
+        "--*.visualizer.typename=\"\"",
     ]
     for lib in EXPERIMENT0_LIBS:
         command.extend(["-l", lib])
