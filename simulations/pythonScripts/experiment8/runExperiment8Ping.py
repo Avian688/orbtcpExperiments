@@ -144,9 +144,6 @@ def generate_ping_ini():
         write_line(f, "*.*.forwarding = true")
         write_line(f)
 
-        write_line(f, '*.visualizer.typename = ""')
-        write_line(f)
-
         write_line(f, '**.ppp[*].ppp.queue.typename = "DropTailQueue"')
         write_line(f, "**.ppp[*].ppp.queue.packetCapacity = 300")
         write_line(f)

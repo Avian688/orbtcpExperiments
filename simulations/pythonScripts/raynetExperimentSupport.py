@@ -241,6 +241,7 @@ def build_opp_run_command(config_name: str, ini_file: str, include_leo: bool = F
         "-n",
         ":".join(ned_paths),
         f"--image-path={image_path}",
+        "--*.visualizer.typename=",
     ]
     for lib in libs:
         command.extend(["-l", lib])
