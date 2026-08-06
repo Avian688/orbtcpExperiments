@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 import os
 import subprocess
@@ -65,8 +66,6 @@ if __name__ == "__main__":
     endStep = int(os.environ.get("END_STEP", "7"))
     currStep = 1
     cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
-    currentProc = 0
-    processList = []
     congControlList = ["orbtcp", "orbtcpNoInitFlows"]
     experiment = "experimentInitNumFlows"
     buffersizes = ["mediumbuffer"]
@@ -81,8 +80,8 @@ if __name__ == "__main__":
         subprocess.Popen("rm experimentInitNumFlowsrunTimes.txt", shell=True).communicate(timeout=30)
         
         with open('experimentInitNumFlowsrunTimes.txt', 'w') as f1:
-            exp1RunNum = 1
             f1.write("--Experiment InitNumFlows Runtimes (s)--")
+            simulationCommands = []
             for cc in congControlList:
                 for bs in buffersizes:
                     fileName =  '../../paperExperiments/experimentInitNumFlows/experimentInitNumFlows_' + cc + '_' + bs + '.ini'
@@ -93,31 +92,32 @@ if __name__ == "__main__":
                             match = re.search(r'Run(\d{1,5})\]', line)
                             if match and int(match.group(1)) in runList:
                                 configName = (line[8:])[:-2]
-                                progStart = time.time()
-                                processList.append(subprocess.Popen("opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src --image-path=../../../../inet4.5/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../orbtcp/src/orbtcp -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications experimentInitNumFlows_" + cc + "_" + bs + ".ini", shell=True, cwd='../../paperExperiments/experimentInitNumFlows', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
-                                currentProc = currentProc + 1
-                                print("Running simulation [" + configName + "]... (Run #" + str(currentProc) + ")")
-                                if(currentProc == cores):
-                                    procCompleteNum = 0
-                                    for proc in processList:
-                                        proc.wait()
-                                        now = time.time()
-                                        f1.write("Run "+ str(exp1RunNum) + ": " + str(now-progStart))
-                                        procCompleteNum = procCompleteNum + 1
-                                        print("\tRun #" + str(procCompleteNum) + " is complete!")
-                                        exp1RunNum += 1
-                                    currentProc = 0
-                                    processList.clear()
-                                    print(" ... Running next batch of simulations! ...\n")
+                                command = "opp_run -r 0 -m -u Cmdenv -c " + configName +" -n ../..:../../../src:../../../../bbr/simulations:../../../../bbr/src:../../../../inet4.5/examples:../../../../inet4.5/showcases:../../../../inet4.5/src:../../../../inet4.5/tests/validation:../../../../inet4.5/tests/networks:../../../../inet4.5/tutorials:../../../../tcpPaced/src:../../../../tcpPaced/simulations:../../../../cubic/simulations:../../../../cubic/src:../../../../orbtcp/simulations:../../../../orbtcp/src:../../../../tcpGoodputApplications/simulations:../../../../tcpGoodputApplications/src --image-path=../../../../inet4.5/images -l ../../../src/orbtcpExperiments -l ../../../../bbr/src/bbr -l ../../../../inet4.5/src/INET -l ../../../../tcpPaced/src/tcpPaced -l ../../../../cubic/src/cubic -l ../../../../orbtcp/src/orbtcp -l ../../../../tcpGoodputApplications/src/tcpGoodputApplications experimentInitNumFlows_" + cc + "_" + bs + ".ini"
+                                simulationCommands.append((configName, command))
                             else:
                                 continue
-        
-        for proc in processList:
-            proc.wait()
+
+            failures = []
+            with ThreadPoolExecutor(max_workers=max(1, cores)) as executor:
+                futures = {
+                    executor.submit(subprocess.run, command, shell=True, cwd='../../paperExperiments/experimentInitNumFlows', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL): configName
+                    for configName, command in simulationCommands
+                }
+                for future in as_completed(futures):
+                    configName = futures[future]
+                    result = future.result()
+                    f1.write("\n" + configName + ": " + str(result.returncode))
+                    if result.returncode == 0:
+                        print("Simulation [" + configName + "] complete!")
+                    else:
+                        failures.append(configName)
+                        print("Simulation [" + configName + "] failed!")
+            if failures:
+                raise RuntimeError("Experiment InitNumFlows simulations failed: " + ", ".join(failures))
     
     currStep += 1
     currentProc = 0
-    processList.clear()
+    processList = []
     
     if(currStep <= endStep and currStep >= startStep): #STEP 2
         currentProc = 0

@@ -20,8 +20,11 @@ from experimentTuningSupport import (
     BANDWIDTH_MBPS,
     EVALUATION_END_S,
     EVALUATION_START_S,
+    EXACT_PINT,
     EXPERIMENT,
     FAMILIES,
+    FLOW_COUNT_EXACT_VARIANTS,
+    FLOW_COUNT_SKETCH_VARIANTS,
     FLOW_COUNTS,
     FULL_ORBCC,
     MSS_BYTES,
@@ -52,6 +55,8 @@ METRICS = (
     ("mean_queue_delay_ms", "Queueing delay (ms)"),
     ("jain_fairness", "Jain fairness"),
 )
+FLOW_COUNT_HEATMAP_BITS = (4, 6, 8, 10, 16)
+FLOW_COUNT_HEATMAP_SOURCES = ("Sketch-derived", "Exact counter")
 
 
 def metric_path(
@@ -380,6 +385,218 @@ def plot_family(family: str, aggregate: pd.DataFrame) -> None:
     )
 
 
+def flow_count_heatmap_rows(aggregate: pd.DataFrame) -> pd.DataFrame:
+    sketch_variants = {
+        int(variant.flow_count_bits): variant
+        for variant in FLOW_COUNT_SKETCH_VARIANTS
+    }
+    exact_variants = {
+        int(variant.flow_count_bits): variant
+        for variant in FLOW_COUNT_EXACT_VARIANTS
+    }
+    rows = []
+
+    for source in FLOW_COUNT_HEATMAP_SOURCES:
+        for flow_count in FLOW_COUNTS:
+            for bits in FLOW_COUNT_HEATMAP_BITS:
+                if source == "Sketch-derived":
+                    variant = sketch_variants.get(bits)
+                elif bits == 16:
+                    variant = EXACT_PINT
+                else:
+                    variant = exact_variants[bits]
+
+                for metric, metric_label in METRICS:
+                    available = variant is not None
+                    summary = (
+                        aggregate_row(aggregate, variant.key, flow_count)
+                        if available
+                        else None
+                    )
+                    rows.append(
+                        {
+                            "count_source": source,
+                            "flow_count": flow_count,
+                            "field_bits": bits,
+                            "field_label": (
+                                "16 (unencoded)" if bits == 16 else str(bits)
+                            ),
+                            "variant": variant.key if available else None,
+                            "available": available,
+                            "metric": metric,
+                            "metric_label": metric_label,
+                            "mean": (
+                                float(summary[f"{metric}_mean"])
+                                if available
+                                else np.nan
+                            ),
+                            "population_std": (
+                                float(summary[f"{metric}_std"])
+                                if available
+                                else np.nan
+                            ),
+                        }
+                    )
+
+    return pd.DataFrame(rows)
+
+
+def plot_flow_count_heatmap(aggregate: pd.DataFrame) -> None:
+    heatmap_rows = flow_count_heatmap_rows(aggregate)
+    row_keys = [
+        (source, flow_count)
+        for source in FLOW_COUNT_HEATMAP_SOURCES
+        for flow_count in FLOW_COUNTS
+    ]
+    row_labels = [
+        f"{source}, {flow_count} flows"
+        for source, flow_count in row_keys
+    ]
+    column_labels = [
+        "16\n(unencoded)" if bits == 16 else str(bits)
+        for bits in FLOW_COUNT_HEATMAP_BITS
+    ]
+    metric_formats = {
+        "normalized_goodput": ".3f",
+        "mean_queue_delay_ms": ".2f",
+        "jain_fairness": ".3f",
+    }
+
+    figure, axes = plt.subplots(
+        1,
+        len(METRICS),
+        figsize=(14.6, 5.5),
+        squeeze=False,
+    )
+
+    for metric_index, (metric, metric_label) in enumerate(METRICS):
+        axis = axes[0, metric_index]
+        means = np.full(
+            (len(row_keys), len(FLOW_COUNT_HEATMAP_BITS)), np.nan
+        )
+        standard_deviations = np.full_like(means, np.nan)
+
+        for row_index, (source, flow_count) in enumerate(row_keys):
+            for column_index, bits in enumerate(FLOW_COUNT_HEATMAP_BITS):
+                cell = heatmap_rows[
+                    (heatmap_rows["count_source"] == source)
+                    & (heatmap_rows["flow_count"] == flow_count)
+                    & (heatmap_rows["field_bits"] == bits)
+                    & (heatmap_rows["metric"] == metric)
+                ]
+                if len(cell) != 1:
+                    raise RuntimeError(
+                        "Expected one heatmap cell for "
+                        f"{source}/{flow_count}flows/{bits}bits/{metric}, "
+                        f"found {len(cell)}"
+                    )
+                means[row_index, column_index] = float(cell.iloc[0]["mean"])
+                standard_deviations[row_index, column_index] = float(
+                    cell.iloc[0]["population_std"]
+                )
+
+        valid_values = means[np.isfinite(means)]
+        if valid_values.size == 0:
+            raise RuntimeError(f"No values available for {metric} heatmap")
+        minimum = float(np.min(valid_values))
+        maximum = float(np.max(valid_values))
+        if minimum == maximum:
+            maximum = minimum + 1.0
+
+        color_map_name = (
+            "viridis_r" if metric == "mean_queue_delay_ms" else "viridis"
+        )
+        color_map = plt.get_cmap(color_map_name).copy()
+        color_map.set_bad("#E8E8E8")
+        image = axis.imshow(
+            np.ma.masked_invalid(means),
+            aspect="auto",
+            interpolation="none",
+            cmap=color_map,
+            vmin=minimum,
+            vmax=maximum,
+        )
+
+        for row_index in range(len(row_keys)):
+            for column_index in range(len(FLOW_COUNT_HEATMAP_BITS)):
+                mean = means[row_index, column_index]
+                standard_deviation = standard_deviations[
+                    row_index, column_index
+                ]
+                if not np.isfinite(mean):
+                    label = "N/A"
+                    text_color = "#555555"
+                else:
+                    value_format = metric_formats[metric]
+                    label = (
+                        f"{mean:{value_format}}\n"
+                        f"+/-{standard_deviation:{value_format}}"
+                    )
+                    red, green, blue, _alpha = color_map(image.norm(mean))
+                    luminance = 0.299 * red + 0.587 * green + 0.114 * blue
+                    text_color = "black" if luminance > 0.55 else "white"
+                axis.text(
+                    column_index,
+                    row_index,
+                    label,
+                    ha="center",
+                    va="center",
+                    color=text_color,
+                    fontsize=7,
+                )
+
+        axis.set_title(metric_label)
+        axis.set_xticks(
+            range(len(FLOW_COUNT_HEATMAP_BITS)), column_labels
+        )
+        axis.set_yticks(range(len(row_keys)), row_labels)
+        axis.set_xlabel("Bits per flow-count field")
+        axis.axhline(
+            len(FLOW_COUNTS) - 0.5,
+            color="white",
+            linewidth=1.8,
+        )
+        figure.colorbar(image, ax=axis, fraction=0.046, pad=0.04)
+
+    figure.suptitle("Flow-count tuning heatmap", y=1.015)
+    figure.text(
+        0.5,
+        0.005,
+        "Cells show five-run mean and population SD. N/A was not simulated.",
+        ha="center",
+        fontsize=8,
+        color="#555555",
+    )
+    figure.tight_layout(rect=(0, 0.035, 1, 0.97))
+    figure.savefig(
+        PLOT_ROOT / "flow_count_heatmap.pdf",
+        dpi=600,
+        bbox_inches="tight",
+    )
+    plt.close(figure)
+
+    export_plot_dataframe(
+        "flow_count_heatmap_points.csv",
+        heatmap_rows,
+        base_dir=PLOT_ROOT / "plot_data",
+        metadata={
+            "experiment": EXPERIMENT,
+            "description": (
+                "Flow-count encoding heatmap values. Sketch-derived and exact "
+                "counter rows use the same header field widths. The unencoded "
+                "sketch cell is N/A because that configuration was not simulated."
+            ),
+            "flow_counts": FLOW_COUNTS,
+            "field_bits": FLOW_COUNT_HEATMAP_BITS,
+            "runs": list(RUNS),
+            "reporting_window_seconds": [
+                EVALUATION_START_S,
+                EVALUATION_END_S,
+            ],
+        },
+    )
+
+
 def main() -> None:
     PLOT_ROOT.mkdir(parents=True, exist_ok=True)
     run_metrics = collect_all_runs()
@@ -408,6 +625,7 @@ def main() -> None:
     )
     for family in FAMILIES:
         plot_family(family, aggregate)
+    plot_flow_count_heatmap(aggregate)
 
 
 if __name__ == "__main__":

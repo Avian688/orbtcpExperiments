@@ -16,7 +16,7 @@ from PyPDF2 import PdfMerger
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from raynetExperimentSupport import SimulationConfig, protocol_config_prefix, run_simulation_configs, with_experiment_protocols
 
-MAX_SIMULATION_CORES = 15
+DEFAULT_LEO_SIMULATION_CORES = 15
 
 def collect_config_entries(paperExperimentDir, congControlList, runList):
     configEntries = []
@@ -33,15 +33,13 @@ def collect_config_entries(paperExperimentDir, congControlList, runList):
 
     return configEntries
 
-def run_config_batch(configEntries, cores, paperExperimentDir):
+def run_config_batch(configEntries, simulationCores, paperExperimentDir):
     configs = [
         SimulationConfig(cc, "experiment9_" + cc + ".ini", configName, include_leo=True)
         for cc, configName in configEntries
     ]
-    simulation_cores = min(cores, MAX_SIMULATION_CORES)
-    if simulation_cores < cores:
-        print(f"Capping Experiment 9 simulation workers at {MAX_SIMULATION_CORES} (requested {cores}).")
-    run_simulation_configs(configs, paperExperimentDir, simulation_cores)
+    print(f"Running Experiment 9 simulations with up to {simulationCores} workers.")
+    run_simulation_configs(configs, paperExperimentDir, simulationCores)
 
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
@@ -92,6 +90,7 @@ if __name__ == "__main__":
     endStep = int(os.environ.get("END_STEP", "6"))
     currStep = 1
     cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
+    simulationCores = max(1, int(os.environ.get("LEO_SIMULATION_CORES", str(DEFAULT_LEO_SIMULATION_CORES))))
     currentProc = 0
     processList = []
     congControlList = with_experiment_protocols(["orbtcp", "cubic", "bbr", "bbr3", "satcp", "leocc"])
@@ -117,7 +116,7 @@ if __name__ == "__main__":
         os.makedirs(resultsDir, exist_ok=True)
 
         configEntries = collect_config_entries(paperExperimentDir, congControlList, runList)
-        run_config_batch(configEntries, cores, paperExperimentDir)
+        run_config_batch(configEntries, simulationCores, paperExperimentDir)
     
     currStep += 1
     currentProc = 0

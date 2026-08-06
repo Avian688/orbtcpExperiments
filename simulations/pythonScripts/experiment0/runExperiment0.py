@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -128,37 +129,49 @@ def run_checked(command, cwd: Path) -> None:
 
 def batched(commands, cwd: Path, cores: int) -> None:
     active: list[tuple[str, subprocess.Popen]] = []
-    for label, command in commands:
-        print(f"Starting {label}")
-        active.append(
-            (
-                label,
-                subprocess.Popen(
-                    command,
-                    cwd=cwd,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                ),
-            )
-        )
-        if len(active) >= cores:
-            wait_for_batch(active)
-            active.clear()
-    wait_for_batch(active)
-
-
-def wait_for_batch(active: list[tuple[str, subprocess.Popen]]) -> None:
+    remaining = iter(commands)
     failures = []
-    for label, process in active:
-        status = process.wait()
-        if status == 0:
-            print(f"Completed {label}")
-        else:
-            failures.append((label, status))
-            print(f"FAILED {label} with exit code {status}")
+    cores = max(1, cores)
+
+    while True:
+        while len(active) < cores:
+            try:
+                label, command = next(remaining)
+            except StopIteration:
+                break
+            print(f"Starting {label}")
+            active.append(
+                (
+                    label,
+                    subprocess.Popen(
+                        command,
+                        cwd=cwd,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                    ),
+                )
+            )
+
+        if not active:
+            break
+
+        completed = [(label, process) for label, process in active if process.poll() is not None]
+        if not completed:
+            time.sleep(0.05)
+            continue
+
+        for label, process in completed:
+            active.remove((label, process))
+            status = process.returncode
+            if status == 0:
+                print(f"Completed {label}")
+            else:
+                failures.append((label, status))
+                print(f"FAILED {label} with exit code {status}")
+
     if failures:
         failed = ", ".join(f"{label}={status}" for label, status in failures)
-        raise RuntimeError(f"Experiment 0 batch failed: {failed}")
+        raise RuntimeError(f"Experiment 0 simulation run failed: {failed}")
 
 
 def generate_inputs() -> None:

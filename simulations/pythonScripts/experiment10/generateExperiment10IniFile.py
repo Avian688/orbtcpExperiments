@@ -140,13 +140,7 @@ if __name__ == "__main__":
             f.write('\n' + '*.configurator.optimizeRoutes = false')
             f.write('\n' + '*.*.forwarding = true\n')
             
-            f.write('\n' + '*.visualizer.dataLinkVisualizer.packetFilter = "*"')
-            f.write('\n' + '*.visualizer.networkRouteVisualizer.displayRoutes = true')
-            f.write('\n' + '*.visualizer.networkRouteVisualizer.packetFilter = "*"')
-            f.write('\n' + '*.visualizer.routingTableVisualizer.destinationFilter = "*"')
-            f.write('\n' + '*.visualizer.statisticVisualizer.sourceFilter = "**.app[*]"')
-            f.write('\n' + '*.visualizer.statisticVisualizer.signalName = "rtt"')
-            f.write('\n' + '*.visualizer.statisticVisualizer.unit = "s"\n')
+            f.write('\n' + '*.visualizer.typename = ""\n')
             
             f.write('\n' + '**.ppp[*].ppp.queue.typename = "DropTailQueue"')
             f.write('\n' + '**.ppp[*].ppp.queue.packetCapacity = 300\n')

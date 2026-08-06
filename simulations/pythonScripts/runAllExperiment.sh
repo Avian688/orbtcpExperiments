@@ -2,6 +2,8 @@
 
 set -uo pipefail
 
+export LEO_SIMULATION_CORES="${LEO_SIMULATION_CORES:-15}"
+
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 default_experiments=(0 1 3 4 5 6 7 8 9 10 11 12 13)
 
@@ -11,9 +13,12 @@ Usage:
   ./runAllExperiment.sh all
   ./runAllExperiment.sh 0 1 3 5 9
   EXPERIMENT_CORES=30 ./runAllExperiment.sh all
+  EXPERIMENT_CORES=30 LEO_SIMULATION_CORES=20 ./runAllExperiment.sh 8 9 10
 
 Notes:
   experiment2 is covered by experiment1/runExperiment1and2.py.
+  LEO_SIMULATION_CORES controls only Experiment 8-10 simulation workers and defaults to 15.
+  EXPERIMENT_CORES still controls their CSV export, extraction, and plotting workers.
   Experiment 3+ simulation attempts time out after 9000 seconds and retry three times by default.
   Override with EXPERIMENT_SIM_TIMEOUT_SECONDS, EXPERIMENT_RETRIES, or EXPERIMENT_RESUME=1.
   If no arguments are supplied, the script falls back to the interactive menu.
@@ -63,6 +68,9 @@ run_experiment() {
   echo "Working directory: $script_dir/$folder"
   if [[ -n "${EXPERIMENT_CORES:-}" ]]; then
     echo "EXPERIMENT_CORES=$EXPERIMENT_CORES"
+  fi
+  if [[ "$i" =~ ^(8|9|10)$ ]]; then
+    echo "LEO_SIMULATION_CORES=$LEO_SIMULATION_CORES"
   fi
 
   if [[ ! -d "$script_dir/$folder" ]]; then

@@ -42,7 +42,7 @@ network leoconstellation
         bool enableInterSatelliteLinks = default(true);
         @display("bgi=background_earth,s;bgb=2160,1080");
     submodules:
-        visualizer: <default(firstAvailableOrEmpty("IntegratedCanvasVisualizer"))> like IIntegratedVisualizer if typename != "" {
+        visualizer: <default("")> like IIntegratedVisualizer if typename != "" {
             parameters:
                 @display("p=100,400;is=s");
         }

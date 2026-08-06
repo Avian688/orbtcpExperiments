@@ -144,13 +144,7 @@ def generate_ping_ini():
         write_line(f, "*.*.forwarding = true")
         write_line(f)
 
-        write_line(f, '*.visualizer.dataLinkVisualizer.packetFilter = "*"')
-        write_line(f, "*.visualizer.networkRouteVisualizer.displayRoutes = true")
-        write_line(f, '*.visualizer.networkRouteVisualizer.packetFilter = "*"')
-        write_line(f, '*.visualizer.routingTableVisualizer.destinationFilter = "*"')
-        write_line(f, '*.visualizer.statisticVisualizer.sourceFilter = "**.app[*]"')
-        write_line(f, '*.visualizer.statisticVisualizer.signalName = "rtt"')
-        write_line(f, '*.visualizer.statisticVisualizer.unit = "s"')
+        write_line(f, '*.visualizer.typename = ""')
         write_line(f)
 
         write_line(f, '**.ppp[*].ppp.queue.typename = "DropTailQueue"')

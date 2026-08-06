@@ -516,23 +516,46 @@ def _run_simulation_configs(configs, cwd, cores: int, runtime_file=None) -> None
             f"up to {cores} at a time with a {timeout_seconds:g}s timeout.\n"
         )
         failed = []
-        for offset in range(0, len(pending), cores):
-            batch = pending[offset : offset + cores]
-            running_batch = []
-            try:
-                for config in batch:
-                    running_batch.append(_start_simulation(config, cwd, attempt))
+        remaining = iter(pending)
+        running_simulations = []
+
+        try:
+            while True:
+                # Keep the requested number of simulations live. A completed job
+                # immediately frees a slot for the next configuration.
+                while len(running_simulations) < cores:
+                    try:
+                        config = next(remaining)
+                    except StopIteration:
+                        break
+                    running_simulations.append(_start_simulation(config, cwd, attempt))
                     print(f"  started: {config.config_name}")
-                for running in running_batch:
+
+                if not running_simulations:
+                    break
+
+                completed = []
+                now = time.monotonic()
+                for running in running_simulations:
+                    timed_out = now - running.started >= timeout_seconds
+                    if timed_out or running.process.poll() is not None:
+                        completed.append(running)
+
+                if not completed:
+                    time.sleep(0.05)
+                    continue
+
+                for running in completed:
+                    running_simulations.remove(running)
                     if not _finish_simulation(running, cwd, timeout_seconds, runtime_file):
                         failed.append(running.config)
-            except BaseException:
-                for running in running_batch:
-                    _terminate_process_group(running.process)
-                    if not running.log_file.closed:
-                        running.log_file.write("\nterminated because the batch was interrupted\n")
-                        running.log_file.close()
-                raise
+        except BaseException:
+            for running in running_simulations:
+                _terminate_process_group(running.process)
+                if not running.log_file.closed:
+                    running.log_file.write("\nterminated because the run was interrupted\n")
+                    running.log_file.close()
+            raise
 
         pending = failed
         if pending and attempt < attempts:
