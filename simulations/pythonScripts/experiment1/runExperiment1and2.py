@@ -111,16 +111,27 @@ def clean_result_files(entry: ConfigEntry) -> None:
         (result_dir(entry) / f"{entry.config_name}{suffix}").unlink(missing_ok=True)
 
 
-def run_single_simulation(entry: ConfigEntry, attempt: int, resume: bool) -> tuple[ConfigEntry, bool, int, Path]:
-    result_dir(entry).mkdir(parents=True, exist_ok=True)
-    if resume and matching_vec_files(entry):
-        return entry, True, 0, Path()
+def retry_log_path(log_dir: Path, config_name: str, attempt: int) -> Path | None:
+    if attempt == 1:
+        if log_dir.is_dir():
+            for stale_log in log_dir.glob(f"{config_name}.attempt*.log"):
+                stale_log.unlink(missing_ok=True)
+        return None
 
-    clean_result_files(entry)
-    log_dir = LOG_ROOT / entry.experiment / entry.protocol / "simulations"
     log_dir.mkdir(parents=True, exist_ok=True)
-    log_path = log_dir / f"{entry.config_name}.attempt{attempt}.log"
-    command = build_simulation_command(entry.protocol, entry.ini_name, entry.config_name)
+    return log_dir / f"{config_name}.attempt{attempt}.log"
+
+
+def run_with_retry_logging(
+    command: list[str], cwd: Path, log_path: Path | None
+) -> subprocess.CompletedProcess:
+    if log_path is None:
+        return subprocess.run(
+            command,
+            cwd=str(cwd),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
 
     started = time.time()
     with log_path.open("w", encoding="utf-8") as log_file:
@@ -128,12 +139,37 @@ def run_single_simulation(entry: ConfigEntry, attempt: int, resume: bool) -> tup
         log_file.flush()
         result = subprocess.run(
             command,
-            cwd=str(PAPER_ROOT / entry.experiment),
+            cwd=str(cwd),
             stdout=log_file,
             stderr=subprocess.STDOUT,
         )
         log_file.write(f"\nExit code: {result.returncode}\n")
         log_file.write(f"Elapsed seconds: {time.time() - started:.2f}\n")
+    return result
+
+
+def log_status(log_path: Path | None) -> str:
+    return (
+        f"log: {log_path}"
+        if log_path is not None
+        else "first-attempt output suppressed; retry will be logged"
+    )
+
+
+def run_single_simulation(
+    entry: ConfigEntry, attempt: int, resume: bool
+) -> tuple[ConfigEntry, bool, int, Path | None]:
+    result_dir(entry).mkdir(parents=True, exist_ok=True)
+    if resume and matching_vec_files(entry):
+        return entry, True, 0, None
+
+    clean_result_files(entry)
+    log_dir = LOG_ROOT / entry.experiment / entry.protocol / "simulations"
+    log_path = retry_log_path(log_dir, entry.config_name, attempt)
+    command = build_simulation_command(entry.protocol, entry.ini_name, entry.config_name)
+    result = run_with_retry_logging(
+        command, PAPER_ROOT / entry.experiment, log_path
+    )
 
     ok = result.returncode == 0 and bool(matching_vec_files(entry))
     return entry, ok, result.returncode, log_path
@@ -164,7 +200,10 @@ def run_simulations(entries: list[ConfigEntry], args: argparse.Namespace) -> Non
                     print(f"  complete: {entry.config_name}")
                 else:
                     failed.append(entry)
-                    print(f"  failed/missing vec: {entry.config_name} (exit {return_code}, log: {log_path})")
+                    print(
+                        f"  failed/missing vec: {entry.config_name} "
+                        f"(exit {return_code}, {log_status(log_path)})"
+                    )
 
         pending = failed
         if pending and attempt < total_attempts:
@@ -181,10 +220,12 @@ def csv_name_for_vec(vec_file: Path) -> str:
     return vec_file.stem + ".csv"
 
 
-def export_single_csv(entry: ConfigEntry, attempt: int) -> tuple[ConfigEntry, bool, int, Path]:
+def export_single_csv(
+    entry: ConfigEntry, attempt: int
+) -> tuple[ConfigEntry, bool, int, Path | None]:
     vec_files = matching_vec_files(entry)
     if not vec_files:
-        return entry, False, 127, Path()
+        return entry, False, 127, None
 
     vec_file = vec_files[0]
     csv_name = csv_name_for_vec(vec_file)
@@ -192,8 +233,7 @@ def export_single_csv(entry: ConfigEntry, attempt: int) -> tuple[ConfigEntry, bo
     csv_path.unlink(missing_ok=True)
 
     log_dir = LOG_ROOT / entry.experiment / entry.protocol / "scavetool"
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_path = log_dir / f"{entry.config_name}.attempt{attempt}.log"
+    log_path = retry_log_path(log_dir, entry.config_name, attempt)
     command = [
         "opp_scavetool",
         "export",
@@ -204,16 +244,9 @@ def export_single_csv(entry: ConfigEntry, attempt: int) -> tuple[ConfigEntry, bo
         f"results/{vec_file.name}",
     ]
 
-    with log_path.open("w", encoding="utf-8") as log_file:
-        log_file.write("$ " + " ".join(command) + "\n\n")
-        log_file.flush()
-        result = subprocess.run(
-            command,
-            cwd=str(PAPER_ROOT / entry.experiment),
-            stdout=log_file,
-            stderr=subprocess.STDOUT,
-        )
-        log_file.write(f"\nExit code: {result.returncode}\n")
+    result = run_with_retry_logging(
+        command, PAPER_ROOT / entry.experiment, log_path
+    )
 
     ok = result.returncode == 0 and csv_path.exists()
     return entry, ok, result.returncode, log_path
@@ -241,7 +274,10 @@ def export_csvs(entries: list[ConfigEntry], args: argparse.Namespace) -> None:
                     print(f"  csv complete: {entry.config_name}")
                 else:
                     failed.append(entry)
-                    print(f"  csv failed/missing: {entry.config_name} (exit {return_code}, log: {log_path})")
+                    print(
+                        f"  csv failed/missing: {entry.config_name} "
+                        f"(exit {return_code}, {log_status(log_path)})"
+                    )
 
         pending = failed
 
@@ -258,16 +294,17 @@ def has_extracted_data(entry: ConfigEntry) -> bool:
     return run_dir.is_dir() and any(run_dir.rglob("*.csv"))
 
 
-def extract_single_csv(entry: ConfigEntry, attempt: int) -> tuple[ConfigEntry, bool, int, Path]:
+def extract_single_csv(
+    entry: ConfigEntry, attempt: int
+) -> tuple[ConfigEntry, bool, int, Path | None]:
     csv_path = expected_csv_path(entry)
     if not csv_path.exists():
-        return entry, False, 127, Path()
+        return entry, False, 127, None
 
     shutil.rmtree(extracted_run_dir(entry), ignore_errors=True)
 
     log_dir = LOG_ROOT / entry.experiment / entry.protocol / "extract"
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_path = log_dir / f"{entry.config_name}.attempt{attempt}.log"
+    log_path = retry_log_path(log_dir, entry.config_name, attempt)
     command = [
         sys.executable,
         "extractSingleCsvFile.py",
@@ -277,11 +314,7 @@ def extract_single_csv(entry: ConfigEntry, attempt: int) -> tuple[ConfigEntry, b
         str(entry.run),
     ]
 
-    with log_path.open("w", encoding="utf-8") as log_file:
-        log_file.write("$ " + " ".join(command) + "\n\n")
-        log_file.flush()
-        result = subprocess.run(command, cwd=str(SCRIPT_DIR), stdout=log_file, stderr=subprocess.STDOUT)
-        log_file.write(f"\nExit code: {result.returncode}\n")
+    result = run_with_retry_logging(command, SCRIPT_DIR, log_path)
 
     ok = result.returncode == 0 and has_extracted_data(entry)
     return entry, ok, result.returncode, log_path
@@ -309,7 +342,10 @@ def extract_csvs(entries: list[ConfigEntry], args: argparse.Namespace) -> None:
                     print(f"  extract complete: {entry.config_name}")
                 else:
                     failed.append(entry)
-                    print(f"  extract failed/missing: {entry.config_name} (exit {return_code}, log: {log_path})")
+                    print(
+                        f"  extract failed/missing: {entry.config_name} "
+                        f"(exit {return_code}, {log_status(log_path)})"
+                    )
 
         pending = failed
 

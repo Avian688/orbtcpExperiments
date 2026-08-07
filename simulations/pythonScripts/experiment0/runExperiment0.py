@@ -127,11 +127,13 @@ def run_checked(command, cwd: Path) -> None:
     subprocess.run(command, cwd=cwd, check=True)
 
 
-def batched(commands, cwd: Path, cores: int) -> None:
-    active: list[tuple[str, subprocess.Popen]] = []
+def batched(commands, cwd: Path, cores: int, log_dir: Path | None = None) -> None:
+    active: list[tuple[str, subprocess.Popen, object | None, Path | None]] = []
     remaining = iter(commands)
     failures = []
     cores = max(1, cores)
+    if log_dir is not None:
+        log_dir.mkdir(parents=True, exist_ok=True)
 
     while True:
         while len(active) < cores:
@@ -140,34 +142,54 @@ def batched(commands, cwd: Path, cores: int) -> None:
             except StopIteration:
                 break
             print(f"Starting {label}")
+            log_file = None
+            log_path = None
+            output_kwargs = {
+                "stdout": subprocess.DEVNULL,
+                "stderr": subprocess.DEVNULL,
+            }
+            if log_dir is not None:
+                safe_label = label.replace("/", "_").replace(" ", "_")
+                log_path = log_dir / f"{safe_label}.log"
+                log_file = log_path.open("w", encoding="utf-8")
+                log_file.write("$ " + " ".join(command) + "\n\n")
+                log_file.flush()
+                output_kwargs = {
+                    "stdout": log_file,
+                    "stderr": subprocess.STDOUT,
+                }
+
+            try:
+                process = subprocess.Popen(command, cwd=cwd, **output_kwargs)
+            except BaseException:
+                if log_file is not None:
+                    log_file.close()
+                raise
             active.append(
-                (
-                    label,
-                    subprocess.Popen(
-                        command,
-                        cwd=cwd,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                    ),
-                )
+                (label, process, log_file, log_path)
             )
 
         if not active:
             break
 
-        completed = [(label, process) for label, process in active if process.poll() is not None]
+        completed = [entry for entry in active if entry[1].poll() is not None]
         if not completed:
             time.sleep(0.05)
             continue
 
-        for label, process in completed:
-            active.remove((label, process))
+        for label, process, log_file, log_path in completed:
+            active.remove((label, process, log_file, log_path))
             status = process.returncode
+            if log_file is not None:
+                log_file.write(f"\nExit code: {status}\n")
+                log_file.close()
             if status == 0:
                 print(f"Completed {label}")
             else:
                 failures.append((label, status))
                 print(f"FAILED {label} with exit code {status}")
+                if log_path is not None:
+                    print(f"  log: {log_path}")
 
     if failures:
         failed = ", ".join(f"{label}={status}" for label, status in failures)
@@ -227,6 +249,10 @@ def expected_vec_files() -> list[Path]:
 def run_simulations(cores: int) -> None:
     check_library_freshness()
     (EXPERIMENT_DIR / "results").mkdir(parents=True, exist_ok=True)
+    retry_log_dir = EXPERIMENT_DIR.parents[1] / "logs" / "experiment0" / "simulations"
+    if retry_log_dir.is_dir():
+        for stale_log in retry_log_dir.glob("*.log"):
+            stale_log.unlink(missing_ok=True)
     batched(simulation_commands(), EXPERIMENT_DIR, cores)
     missing = [path for path in expected_vec_files() if not path.is_file()]
     if missing:
@@ -236,7 +262,7 @@ def run_simulations(cores: int) -> None:
             stem = path.name.removesuffix("-#0.vec")
             print(f"  {path.name}")
             retry.append((stem, build_experiment0_command(stem)))
-        batched(retry, EXPERIMENT_DIR, cores)
+        batched(retry, EXPERIMENT_DIR, cores, log_dir=retry_log_dir)
 
 
 def export_csvs(cores: int) -> None:

@@ -274,8 +274,8 @@ class _RunningSimulation:
     config: SimulationConfig
     process: subprocess.Popen
     started: float
-    log_file: object
-    log_path: Path
+    log_file: object | None
+    log_path: Path | None
 
 
 _ACTIVE_SIMULATION_PROCESSES: dict[int, subprocess.Popen] = {}
@@ -423,13 +423,20 @@ def _start_simulation(config: SimulationConfig, cwd: Path, attempt: int) -> _Run
         config.config_name,
         include_leo=config.include_leo,
     )
-    log_path = _logs_dir(cwd) / f"{config.config_name}.attempt{attempt}.log"
-    log_file = log_path.open("w", encoding="utf-8")
-    log_file.write("$ " + " ".join(command) + "\n\n")
-    log_file.flush()
+    log_path = None
+    log_file = None
+    logs_dir = cwd.parents[1] / "logs" / cwd.name / "simulations"
+    if attempt == 1 and logs_dir.is_dir():
+        for stale_log in logs_dir.glob(f"{config.config_name}.attempt*.log"):
+            stale_log.unlink(missing_ok=True)
+    elif attempt > 1:
+        log_path = _logs_dir(cwd) / f"{config.config_name}.attempt{attempt}.log"
+        log_file = log_path.open("w", encoding="utf-8")
+        log_file.write("$ " + " ".join(command) + "\n\n")
+        log_file.flush()
 
-    output_kwargs = {}
-    if simulation_output_kwargs(config.protocol):
+    output_kwargs = simulation_output_kwargs(config.protocol)
+    if log_file is not None:
         output_kwargs = {"stdout": log_file, "stderr": subprocess.STDOUT}
 
     try:
@@ -440,7 +447,8 @@ def _start_simulation(config: SimulationConfig, cwd: Path, attempt: int) -> _Run
             **output_kwargs,
         )
     except BaseException:
-        log_file.close()
+        if log_file is not None:
+            log_file.close()
         raise
     _register_process(process)
     return _RunningSimulation(config, process, time.monotonic(), log_file, log_path)
@@ -474,14 +482,18 @@ def _finish_simulation(
     else:
         status = f"complete in {elapsed:.1f}s"
 
-    running.log_file.write(f"\n{status}\n")
-    running.log_file.close()
+    if running.log_file is not None:
+        running.log_file.write(f"\n{status}\n")
+        running.log_file.close()
     if runtime_file is not None:
         runtime_file.write(f"\n{running.config.config_name}: {status}")
         runtime_file.flush()
     print(f"  {running.config.config_name}: {status}")
     if not complete:
-        print(f"    log: {running.log_path}")
+        if running.log_path is None:
+            print("    first-attempt output was suppressed; retry output will be logged")
+        else:
+            print(f"    log: {running.log_path}")
     return complete
 
 
@@ -553,7 +565,7 @@ def _run_simulation_configs(configs, cwd, cores: int, runtime_file=None) -> None
         except BaseException:
             for running in running_simulations:
                 _terminate_process_group(running.process)
-                if not running.log_file.closed:
+                if running.log_file is not None and not running.log_file.closed:
                     running.log_file.write("\nterminated because the run was interrupted\n")
                     running.log_file.close()
             raise
