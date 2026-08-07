@@ -7,6 +7,7 @@ import sys
 
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 import pandas as pd
 import scienceplots
@@ -57,6 +58,12 @@ METRICS = (
 )
 FLOW_COUNT_HEATMAP_BITS = (4, 6, 8, 10, 16)
 FLOW_COUNT_HEATMAP_SOURCES = ("Sketch-derived", "Exact counter")
+HIGHER_IS_BETTER_CMAP = LinearSegmentedColormap.from_list(
+    "r_y_g", ["red", "yellow", "green"], N=256
+)
+LOWER_IS_BETTER_CMAP = LinearSegmentedColormap.from_list(
+    "g_y_r", ["green", "yellow", "red"], N=256
+)
 
 
 def metric_path(
@@ -503,10 +510,12 @@ def plot_flow_count_heatmap(aggregate: pd.DataFrame) -> None:
         if minimum == maximum:
             maximum = minimum + 1.0
 
-        color_map_name = (
-            "viridis_r" if metric == "mean_queue_delay_ms" else "viridis"
+        color_map = (
+            LOWER_IS_BETTER_CMAP
+            if metric == "mean_queue_delay_ms"
+            else HIGHER_IS_BETTER_CMAP
         )
-        color_map = plt.get_cmap(color_map_name).copy()
+        color_map = color_map.copy()
         color_map.set_bad("#E8E8E8")
         image = axis.imshow(
             np.ma.masked_invalid(means),
