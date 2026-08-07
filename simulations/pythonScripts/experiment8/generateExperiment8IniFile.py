@@ -7,6 +7,7 @@
 import random
 import math
 import csv
+import os
 import sys
 from pathlib import Path
 
@@ -48,6 +49,7 @@ if __name__ == "__main__":
     bandwidth = 12500000
     numOfRuns = 5
     groundStationsCsv = 'ground_stations.csv'
+    routingCorpusRoot = os.environ.get("LEO_ROUTING_CORPUS_ROOT", "").strip()
     algorithms = ["orbtcp", "bbr", "cubic", "bbr3", "satcp", "leocc"]
     queueSizes = [1] #[0.2, 1, 4]
     cities_coordinates = {
@@ -180,6 +182,9 @@ if __name__ == "__main__":
             f.write('\n' + '**.numOfGS = ' + str(len(entries)+len(cities_coordinates)))
             f.write('\n' + '**.dataRate = 100Mbps')
             f.write('\n' + '**.loadFiles = true')
+            if routingCorpusRoot:
+                escapedRoutingRoot = routingCorpusRoot.replace('\\', '\\\\').replace('"', '\\"')
+                f.write('\n' + '*.configurator.configLocation = "' + escapedRoutingRoot + '"')
             
             currentGsNum = 0
             for key, value in cities_coordinates.items():
