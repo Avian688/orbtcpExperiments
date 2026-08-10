@@ -8,7 +8,7 @@ from pathlib import Path
 import sys
 
 import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import LinearSegmentedColormap, Normalize
 from matplotlib.lines import Line2D
 import numpy as np
 import pandas as pd
@@ -52,6 +52,7 @@ SCENARIO_ROOT = (
     SIMULATIONS_DIR / "paperExperiments" / "scenarios" / EXPERIMENT
 )
 PLOT_ROOT = SIMULATIONS_DIR / "plots" / EXPERIMENT / "cumulative"
+HEATMAP_ROOT = PLOT_ROOT / "heatmaps"
 SECONDS = pd.Index(range(SIMULATION_TIME_S), name="second")
 
 METRICS = (
@@ -92,16 +93,33 @@ MATCHED_RUN_ALPHA = 0.12
 HIGHER_IS_BETTER_CMAP = LinearSegmentedColormap.from_list(
     "r_y_g", ["red", "yellow", "green"], N=256
 )
+LOWER_IS_BETTER_CMAP = LinearSegmentedColormap.from_list(
+    "g_y_r", ["green", "yellow", "red"], N=256
+)
 PARAMETER_HEATMAP_METRICS = (
-    ("normalized_goodput", "Normalized goodput", True, ".3f"),
-    ("mean_queue_delay_ms", "Queueing delay (ms)", False, ".2f"),
+    (
+        "normalized_goodput",
+        "Normalized goodput",
+        "goodput",
+        True,
+        ".3f",
+    ),
+    (
+        "mean_queue_delay_ms",
+        "Queueing delay (ms)",
+        "queueing_delay",
+        False,
+        ".2f",
+    ),
     (
         "aggregate_retransmission_mbps",
         "Retransmission rate (Mbps)",
+        "retransmissions",
         False,
         ".2f",
     ),
 )
+LOWER_IS_BETTER_SCALE_QUANTILE = 0.90
 PARAMETER_HEATMAP_GROUPS = (
     (
         "flow_count",
@@ -812,32 +830,6 @@ def parameter_heatmap_row_definitions() -> list[dict[str, object]]:
     return rows
 
 
-def exact_pint_retention(
-    values: np.ndarray,
-    exact_values: np.ndarray,
-    higher_is_better: bool,
-) -> np.ndarray:
-    if values.shape != exact_values.shape:
-        raise RuntimeError(
-            "Candidate and Exact PINT run arrays must have matching shapes"
-        )
-    if not np.all(np.isfinite(values)) or not np.all(np.isfinite(exact_values)):
-        raise RuntimeError("Heatmap retention inputs must be finite")
-
-    values = np.maximum(values, 0.0)
-    exact_values = np.maximum(exact_values, 0.0)
-    retention = np.ones_like(values, dtype=float)
-    if higher_is_better:
-        nonzero_reference = exact_values > 0
-        retention[nonzero_reference] = (
-            values[nonzero_reference] / exact_values[nonzero_reference]
-        )
-    else:
-        worse = values > exact_values
-        retention[worse] = exact_values[worse] / values[worse]
-    return np.clip(retention, 0.0, 1.0) * 100.0
-
-
 def parameter_decision_heatmap_rows(
     run_metrics: pd.DataFrame,
 ) -> pd.DataFrame:
@@ -852,27 +844,19 @@ def parameter_decision_heatmap_rows(
     for row_definition in row_definitions:
         variant = row_definition["variant"]
         for column_index, (condition, flow_count) in enumerate(columns):
-            for metric, metric_label, higher_is_better, _value_format in (
-                PARAMETER_HEATMAP_METRICS
-            ):
+            for (
+                metric,
+                metric_label,
+                file_stem,
+                higher_is_better,
+                _value_format,
+            ) in PARAMETER_HEATMAP_METRICS:
                 values = ordered_run_values(
                     run_metrics,
                     variant.key,
                     flow_count,
                     condition.key,
                     metric,
-                )
-                exact_values = ordered_run_values(
-                    run_metrics,
-                    EXACT_PINT.key,
-                    flow_count,
-                    condition.key,
-                    metric,
-                )
-                retention = exact_pint_retention(
-                    values,
-                    exact_values,
-                    higher_is_better,
                 )
                 rows.append(
                     {
@@ -888,25 +872,67 @@ def parameter_decision_heatmap_rows(
                         "flow_count": flow_count,
                         "metric": metric,
                         "metric_label": metric_label,
+                        "file_stem": file_stem,
                         "higher_is_better": higher_is_better,
                         "mean": float(np.mean(values)),
                         "population_std": float(np.std(values)),
-                        "exact_pint_mean": float(np.mean(exact_values)),
-                        "exact_pint_population_std": float(
-                            np.std(exact_values)
-                        ),
-                        "retention_mean_percent": float(np.mean(retention)),
-                        "retention_population_std_percent": float(
-                            np.std(retention)
-                        ),
                     }
                 )
     return pd.DataFrame(rows)
 
 
-def plot_parameter_decision_heatmaps(run_metrics: pd.DataFrame) -> None:
-    heatmap_rows = parameter_decision_heatmap_rows(run_metrics)
-    row_definitions = parameter_heatmap_row_definitions()
+def nice_upper_bound(value: float) -> float:
+    if not np.isfinite(value) or value <= 0:
+        return 1.0
+    magnitude = 10 ** np.floor(np.log10(value))
+    scaled = value / magnitude
+    if scaled <= 1:
+        factor = 1
+    elif scaled <= 2:
+        factor = 2
+    elif scaled <= 5:
+        factor = 5
+    else:
+        factor = 10
+    return float(factor * magnitude)
+
+
+def parameter_heatmap_scales(
+    heatmap_rows: pd.DataFrame,
+) -> dict[str, tuple[float, float]]:
+    scales = {"normalized_goodput": (0.8, 1.0)}
+    for metric, _label, _stem, higher_is_better, _format in (
+        PARAMETER_HEATMAP_METRICS
+    ):
+        if higher_is_better:
+            continue
+        values = heatmap_rows.loc[heatmap_rows["metric"] == metric, "mean"]
+        values = pd.to_numeric(values, errors="coerce").dropna().to_numpy()
+        if values.size == 0:
+            raise RuntimeError(f"No values available to scale {metric}")
+        upper = float(np.quantile(values, LOWER_IS_BETTER_SCALE_QUANTILE))
+        if upper <= 0:
+            upper = float(np.max(values))
+        scales[metric] = (0.0, nice_upper_bound(upper))
+    return scales
+
+
+def plot_parameter_heatmap(
+    family: str,
+    group_label: str,
+    metric: str,
+    metric_label: str,
+    file_stem: str,
+    higher_is_better: bool,
+    value_format: str,
+    heatmap_rows: pd.DataFrame,
+    color_limits: tuple[float, float],
+) -> None:
+    row_definitions = [
+        row
+        for row in parameter_heatmap_row_definitions()
+        if row["family"] == family
+    ]
     columns = [
         (condition, flow_count)
         for condition in CONDITIONS
@@ -916,150 +942,170 @@ def plot_parameter_decision_heatmaps(run_metrics: pd.DataFrame) -> None:
         f"{condition.label}\n{flow_count} flows"
         for condition, flow_count in columns
     ]
-    row_labels = [row["row_label"] for row in row_definitions]
+    row_labels = [row["parameter_label"] for row in row_definitions]
+    means = np.full((len(row_definitions), len(columns)), np.nan)
+    standard_deviations = np.full_like(means, np.nan)
 
-    figure, axes = plt.subplots(
-        1,
-        len(PARAMETER_HEATMAP_METRICS),
-        figsize=(18.5, 9.0),
-        squeeze=False,
-    )
-    last_image = None
-
-    for metric_index, (
-        metric,
-        metric_label,
-        _higher_is_better,
-        value_format,
-    ) in enumerate(PARAMETER_HEATMAP_METRICS):
-        axis = axes[0, metric_index]
-        means = np.full((len(row_definitions), len(columns)), np.nan)
-        standard_deviations = np.full_like(means, np.nan)
-        retention = np.full_like(means, np.nan)
-
-        metric_rows = heatmap_rows[heatmap_rows["metric"] == metric]
-        for row in metric_rows.itertuples(index=False):
-            means[row.row_index, row.column_index] = row.mean
-            standard_deviations[row.row_index, row.column_index] = (
-                row.population_std
-            )
-            retention[row.row_index, row.column_index] = (
-                row.retention_mean_percent
-            )
-
-        if not np.all(np.isfinite(means)) or not np.all(np.isfinite(retention)):
-            raise RuntimeError(f"Incomplete parameter heatmap for {metric}")
-
-        last_image = axis.imshow(
-            retention,
-            aspect="auto",
-            interpolation="none",
-            cmap=HIGHER_IS_BETTER_CMAP,
-            vmin=0,
-            vmax=100,
-        )
-
-        for row_index in range(len(row_definitions)):
-            for column_index in range(len(columns)):
-                mean = means[row_index, column_index]
-                standard_deviation = standard_deviations[
-                    row_index, column_index
-                ]
-                score = retention[row_index, column_index]
-                red, green, blue, _alpha = HIGHER_IS_BETTER_CMAP(score / 100)
-                luminance = 0.299 * red + 0.587 * green + 0.114 * blue
-                axis.text(
-                    column_index,
-                    row_index,
-                    (
-                        f"{mean:{value_format}}\n"
-                        f"+/-{standard_deviation:{value_format}}"
-                    ),
-                    ha="center",
-                    va="center",
-                    color="black" if luminance > 0.55 else "white",
-                    fontsize=6.2,
+    metric_rows = heatmap_rows[
+        (heatmap_rows["family"] == family)
+        & (heatmap_rows["metric"] == metric)
+    ]
+    for local_row_index, row_definition in enumerate(row_definitions):
+        for column_index in range(len(columns)):
+            cell = metric_rows[
+                (metric_rows["variant"] == row_definition["variant"].key)
+                & (metric_rows["column_index"] == column_index)
+            ]
+            if len(cell) != 1:
+                raise RuntimeError(
+                    "Expected one dynamic heatmap cell for "
+                    f"{family}/{metric}/row{local_row_index}/column{column_index}, "
+                    f"found {len(cell)}"
                 )
-
-        axis.set_title(metric_label)
-        axis.set_xticks(range(len(columns)), column_labels)
-        axis.set_xlabel("Dynamic condition and concurrent flows")
-        axis.set_yticks(range(len(row_definitions)))
-        if metric_index == 0:
-            axis.set_yticklabels(row_labels)
-        else:
-            axis.set_yticklabels([])
-
-        axis.set_xticks(np.arange(-0.5, len(columns), 1), minor=True)
-        axis.set_yticks(
-            np.arange(-0.5, len(row_definitions), 1), minor=True
-        )
-        axis.grid(which="minor", color="white", linewidth=0.55)
-        axis.tick_params(which="minor", bottom=False, left=False)
-        axis.axvline(len(FLOW_COUNTS) - 0.5, color="#202020", linewidth=1.4)
-
-        row_boundary = 0
-        for _family, _group_label, variants in PARAMETER_HEATMAP_GROUPS[:-1]:
-            row_boundary += len(variants)
-            axis.axhline(
-                row_boundary - 0.5,
-                color="#202020",
-                linewidth=1.4,
+            means[local_row_index, column_index] = float(cell.iloc[0]["mean"])
+            standard_deviations[local_row_index, column_index] = float(
+                cell.iloc[0]["population_std"]
             )
 
-    figure.suptitle("OrbCC-PINT dynamic parameter decision", y=0.975)
+    if not np.all(np.isfinite(means)):
+        raise RuntimeError(f"Incomplete parameter heatmap for {family}/{metric}")
+
+    color_minimum, color_maximum = color_limits
+    color_map = (
+        HIGHER_IS_BETTER_CMAP if higher_is_better else LOWER_IS_BETTER_CMAP
+    )
+    color_norm = Normalize(
+        vmin=color_minimum,
+        vmax=color_maximum,
+        clip=True,
+    )
+    figure, axis = plt.subplots(figsize=(10.2, 4.8))
+    image = axis.imshow(
+        means,
+        origin="upper",
+        aspect="auto",
+        interpolation="nearest",
+        cmap=color_map,
+        norm=color_norm,
+    )
+
+    axis.set_xticks(range(len(columns)), column_labels)
+    axis.set_yticks(range(len(row_definitions)), row_labels)
+    axis.set_xlabel("Dynamic condition and concurrent flows")
+    axis.set_ylabel(group_label)
+    axis.axvline(len(FLOW_COUNTS) - 0.5, color="white", linewidth=2.0)
+
+    for row_index in range(len(row_definitions)):
+        for column_index in range(len(columns)):
+            axis.text(
+                column_index,
+                row_index,
+                (
+                    f"{means[row_index, column_index]:{value_format}}"
+                    "+/-"
+                    f"{standard_deviations[row_index, column_index]:{value_format}}"
+                ),
+                ha="center",
+                va="center",
+                color="black",
+                fontsize=8,
+            )
+
+    axis.set_title(f"{group_label}: {metric_label}")
+    colorbar = figure.colorbar(image, ax=axis, fraction=0.046, pad=0.04)
+    colorbar.set_label(metric_label)
+    colorbar.set_ticks(np.linspace(color_minimum, color_maximum, num=3))
     figure.text(
         0.5,
-        0.035,
+        0.015,
         (
-            "Colours show matched-run retention against Exact PINT: 100% "
-            "means no degradation, with lower delay and retransmissions treated "
-            "as better. Cells show raw 10-run mean +/- population SD; each "
-            "group changes only the named parameter."
+            "Cells show 10-run mean +/- population SD. Values outside the "
+            "shared metric colour range are clipped to the end colour."
         ),
         ha="center",
         fontsize=8,
         color="#555555",
     )
-    figure.subplots_adjust(
-        left=0.16,
-        right=0.92,
-        bottom=0.12,
-        top=0.91,
-        wspace=0.16,
-    )
-    colorbar_axis = figure.add_axes((0.94, 0.2, 0.012, 0.62))
-    colorbar = figure.colorbar(last_image, cax=colorbar_axis)
-    colorbar.set_label("Performance retention vs Exact PINT (%)")
+    figure.tight_layout(rect=(0, 0.055, 1, 1))
+    HEATMAP_ROOT.mkdir(parents=True, exist_ok=True)
     figure.savefig(
-        PLOT_ROOT / "parameter_decision_heatmaps.pdf",
+        HEATMAP_ROOT / f"{family}_{file_stem}_heatmap.pdf",
         dpi=600,
         bbox_inches="tight",
     )
     plt.close(figure)
 
+    export_rows = metric_rows.copy()
+    export_rows["color_vmin"] = color_minimum
+    export_rows["color_vmax"] = color_maximum
+    export_rows["color_direction"] = (
+        "higher_is_better" if higher_is_better else "lower_is_better"
+    )
     export_plot_dataframe(
-        "parameter_decision_heatmaps_points.csv",
-        heatmap_rows,
-        base_dir=PLOT_ROOT / "plot_data",
+        f"{family}_{file_stem}_heatmap_points.csv",
+        export_rows,
+        base_dir=PLOT_ROOT / "plot_data" / "heatmaps",
         metadata={
             "experiment": EXPERIMENT,
+            "family": family,
+            "metric": metric,
             "description": (
-                "Final values for the three dynamic parameter-decision heatmaps. "
-                "Cell text is the raw 10-run mean and population standard "
-                "deviation. Colour is the mean matched-run, direction-aware "
-                "performance retention against Exact PINT, capped at 100 percent."
+                "Final raw means and population standard deviations for one "
+                "dynamic parameter-decision heatmap. All feature heatmaps for "
+                "this metric use the same colour limits."
             ),
             "runs": list(RUNS),
             "flow_counts": FLOW_COUNTS,
             "conditions": [condition.key for condition in CONDITIONS],
-            "metrics": [
-                metric for metric, _label, _higher, _format in (
-                    PARAMETER_HEATMAP_METRICS
-                )
-            ],
+            "color_vmin": color_minimum,
+            "color_vmax": color_maximum,
+            "color_direction": (
+                "higher_is_better"
+                if higher_is_better
+                else "lower_is_better"
+            ),
+            "lower_is_better_scale_quantile": (
+                LOWER_IS_BETTER_SCALE_QUANTILE
+                if not higher_is_better
+                else None
+            ),
         },
     )
+
+
+def plot_parameter_decision_heatmaps(run_metrics: pd.DataFrame) -> None:
+    heatmap_rows = parameter_decision_heatmap_rows(run_metrics)
+    color_scales = parameter_heatmap_scales(heatmap_rows)
+
+    obsolete_outputs = (
+        PLOT_ROOT / "parameter_decision_heatmaps.pdf",
+        PLOT_ROOT / "plot_data" / "parameter_decision_heatmaps_points.csv",
+        PLOT_ROOT
+        / "plot_data"
+        / "parameter_decision_heatmaps_points.csv.metadata.json",
+    )
+    for obsolete_output in obsolete_outputs:
+        obsolete_output.unlink(missing_ok=True)
+
+    for family, group_label, _variants in PARAMETER_HEATMAP_GROUPS:
+        for (
+            metric,
+            metric_label,
+            file_stem,
+            higher_is_better,
+            value_format,
+        ) in PARAMETER_HEATMAP_METRICS:
+            plot_parameter_heatmap(
+                family,
+                group_label,
+                metric,
+                metric_label,
+                file_stem,
+                higher_is_better,
+                value_format,
+                heatmap_rows,
+                color_scales[metric],
+            )
 
 
 def main() -> None:
