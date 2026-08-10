@@ -20,6 +20,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR.parent))
 
 from experimentTuningDynamicSupport import (  # noqa: E402
+    COMBINED_PINT,
     CONDITIONS,
     EXACT_PINT,
     EXPERIMENT,
@@ -53,7 +54,10 @@ SCENARIO_ROOT = (
 )
 PLOT_ROOT = SIMULATIONS_DIR / "plots" / EXPERIMENT / "cumulative"
 HEATMAP_ROOT = PLOT_ROOT / "heatmaps"
+PAPER_PLOT_ROOT = SIMULATIONS_DIR / "plots" / EXPERIMENT / "paperPlots"
 SECONDS = pd.Index(range(SIMULATION_TIME_S), name="second")
+RECOVERY_WINDOW_S = 3
+T_CRITICAL_95_DF9 = 2.262
 
 METRICS = (
     (
@@ -137,6 +141,37 @@ PARAMETER_HEATMAP_GROUPS = (
         (*SAMPLING_VARIANTS, EXACT_PINT),
     ),
 )
+PAPER_TUNING_PANELS = (
+    (
+        "flow_count",
+        "Flow-count sketch",
+        "jain_fairness",
+        100.0,
+        True,
+        "Jain fairness change (pp; higher is better)",
+    ),
+    (
+        "utilization",
+        "Utilization encoding",
+        "mean_queue_delay_ms",
+        1.0,
+        False,
+        "Queue-delay change (ms; lower is better)",
+    ),
+    (
+        "sampling",
+        "Feedback sampling",
+        "mean_recovery_deficit_percent",
+        1.0,
+        False,
+        "Goodput-deficit change (pp; lower is better)",
+    ),
+)
+PAPER_VALIDATION_METRICS = (
+    ("normalized_goodput", "Normalized goodput"),
+    ("mean_queue_delay_ms", "Queueing delay (ms)"),
+    ("retransmission_overhead_percent", "Retransmission overhead (%)"),
+)
 
 
 def metric_path(
@@ -187,6 +222,51 @@ def load_trace(run: int) -> dict:
     if not path.is_file():
         raise FileNotFoundError(f"Missing dynamic trace: {path}")
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def jain_fairness(values: np.ndarray) -> float:
+    values = np.maximum(np.asarray(values, dtype=float), 0.0)
+    denominator = len(values) * float(np.sum(np.square(values)))
+    if denominator <= 0:
+        return 0.0
+    return float(np.square(np.sum(values)) / denominator)
+
+
+def mean_recovery_deficit_percent(
+    aggregate_goodput_bps: pd.Series,
+    trace: dict,
+) -> float:
+    deficits = []
+    for state in trace["states"][1:]:
+        # Skip the partial one-second interval containing the disconnection.
+        first_full_second = int(np.ceil(float(state["reconnect_time_s"])))
+        seconds = list(
+            range(
+                first_full_second,
+                min(first_full_second + RECOVERY_WINDOW_S, SIMULATION_TIME_S),
+            )
+        )
+        if len(seconds) != RECOVERY_WINDOW_S:
+            raise RuntimeError(
+                "A dynamic trace does not contain the full post-handover "
+                f"recovery window at state {state['state_index']}"
+            )
+        goodput_mbps = (
+            aggregate_goodput_bps.reindex(seconds).to_numpy(dtype=float)
+            / 1_000_000
+        )
+        if not np.all(np.isfinite(goodput_mbps)):
+            raise RuntimeError(
+                "Missing aggregate goodput samples in the post-handover "
+                f"recovery window at state {state['state_index']}"
+            )
+        capacity_mbps = float(state["bandwidth_mbps"])
+        deficits.extend(
+            np.clip(1.0 - goodput_mbps / capacity_mbps, 0.0, 1.0) * 100.0
+        )
+    if not deficits:
+        raise RuntimeError("Dynamic trace contains no handovers to evaluate")
+    return float(np.mean(deficits))
 
 
 def path_and_queue_means(queue_frame: pd.DataFrame, trace: dict) -> tuple[float, float]:
@@ -291,10 +371,10 @@ def collect_run_metrics(
             )
         )
 
-    aggregate_goodput_bps = pd.concat(goodput_series, axis=1).sum(axis=1)
-    aggregate_retransmission_bps = pd.concat(
-        retransmission_series, axis=1
-    ).sum(axis=1)
+    goodput_frame = pd.concat(goodput_series, axis=1)
+    retransmission_frame = pd.concat(retransmission_series, axis=1)
+    aggregate_goodput_bps = goodput_frame.sum(axis=1)
+    aggregate_retransmission_bps = retransmission_frame.sum(axis=1)
     queue_frame = read_vector(
         metric_path(
             variant.key,
@@ -306,10 +386,19 @@ def collect_run_metrics(
         ),
         "queueLength",
     )
+    trace = load_trace(run)
     mean_queue_delay_ms, mean_available_capacity_mbps = path_and_queue_means(
-        queue_frame, load_trace(run)
+        queue_frame, trace
     )
-    aggregate_goodput_mbps = float(aggregate_goodput_bps.mean() / 1_000_000)
+    mean_goodput_bps = float(aggregate_goodput_bps.mean())
+    mean_retransmission_bps = float(aggregate_retransmission_bps.mean())
+    if mean_goodput_bps <= 0:
+        raise RuntimeError(
+            f"Non-positive aggregate goodput for {variant.key}/"
+            f"{condition.key}/{flow_count}flows/run{run}"
+        )
+    aggregate_goodput_mbps = mean_goodput_bps / 1_000_000
+    aggregate_retransmission_mbps = mean_retransmission_bps / 1_000_000
 
     return {
         "variant": variant.key,
@@ -330,9 +419,17 @@ def collect_run_metrics(
             if mean_available_capacity_mbps > 0
             else 0.0
         ),
+        "jain_fairness": jain_fairness(
+            goodput_frame.mean(axis=0).to_numpy(dtype=float)
+        ),
         "mean_queue_delay_ms": mean_queue_delay_ms,
-        "aggregate_retransmission_mbps": float(
-            aggregate_retransmission_bps.mean() / 1_000_000
+        "mean_recovery_deficit_percent": mean_recovery_deficit_percent(
+            aggregate_goodput_bps,
+            trace,
+        ),
+        "aggregate_retransmission_mbps": aggregate_retransmission_mbps,
+        "retransmission_overhead_percent": (
+            mean_retransmission_bps / mean_goodput_bps * 100.0
         ),
     }
 
@@ -1108,6 +1205,440 @@ def plot_parameter_decision_heatmaps(run_metrics: pd.DataFrame) -> None:
             )
 
 
+def confidence_summary(values: np.ndarray) -> dict[str, float]:
+    values = np.asarray(values, dtype=float)
+    if len(values) != len(RUNS) or not np.all(np.isfinite(values)):
+        raise RuntimeError(
+            f"Expected {len(RUNS)} finite trace-level values, found {len(values)}"
+        )
+    mean = float(np.mean(values))
+    sample_std = float(np.std(values, ddof=1))
+    margin = T_CRITICAL_95_DF9 * sample_std / np.sqrt(len(values))
+    return {
+        "mean": mean,
+        "population_std": float(np.std(values)),
+        "sample_std": sample_std,
+        "ci95_lower": mean - margin,
+        "ci95_upper": mean + margin,
+        "ci95_margin": margin,
+    }
+
+
+def paired_metric_deltas(
+    run_metrics: pd.DataFrame,
+    variant: Variant,
+    metric: str,
+    scale: float,
+) -> pd.DataFrame:
+    keys = ["flow_count", "condition", "run"]
+    candidate = run_metrics[run_metrics["variant"] == variant.key][
+        [*keys, metric]
+    ].rename(columns={metric: "candidate_value"})
+    exact = run_metrics[run_metrics["variant"] == EXACT_PINT.key][
+        [*keys, metric]
+    ].rename(columns={metric: "exact_value"})
+    paired = candidate.merge(exact, on=keys, how="inner", validate="one_to_one")
+    expected_rows = len(FLOW_COUNTS) * len(CONDITIONS) * len(RUNS)
+    if len(paired) != expected_rows:
+        raise RuntimeError(
+            f"Expected {expected_rows} paired values for {variant.key}/{metric}, "
+            f"found {len(paired)}"
+        )
+    paired["delta"] = (
+        paired["candidate_value"] - paired["exact_value"]
+    ) * scale
+    return paired
+
+
+def selected_parameter_variant(family: str) -> Variant:
+    if family == "flow_count":
+        candidates = FLOW_COUNT_SKETCH_VARIANTS
+        selected_value = COMBINED_PINT.flow_count_bits
+        attribute = "flow_count_bits"
+    elif family == "utilization":
+        candidates = UTILIZATION_VARIANTS
+        selected_value = COMBINED_PINT.utilization_bits
+        attribute = "utilization_bits"
+    elif family == "sampling":
+        candidates = (*SAMPLING_VARIANTS, EXACT_PINT)
+        selected_value = COMBINED_PINT.feedback_probability
+        attribute = "feedback_probability"
+    else:
+        raise ValueError(f"Unknown tuning family: {family}")
+
+    matches = [
+        variant
+        for variant in candidates
+        if np.isclose(float(getattr(variant, attribute)), float(selected_value))
+    ]
+    if len(matches) != 1:
+        raise RuntimeError(
+            f"Expected one selected {family} variant for {selected_value}, "
+            f"found {len(matches)}"
+        )
+    return matches[0]
+
+
+def tuning_panel_rows(
+    run_metrics: pd.DataFrame,
+    family: str,
+    metric: str,
+    scale: float,
+    higher_is_better: bool,
+) -> pd.DataFrame:
+    variants = next(
+        variants
+        for group_family, _label, variants in PARAMETER_HEATMAP_GROUPS
+        if group_family == family
+    )
+    selected_variant = selected_parameter_variant(family)
+    rows = []
+
+    for x_index, variant in enumerate(variants):
+        paired = paired_metric_deltas(run_metrics, variant, metric, scale)
+        trace_values = (
+            paired.groupby("run", sort=True)["delta"]
+            .mean()
+            .reindex(RUNS)
+            .to_numpy(dtype=float)
+        )
+        summary = confidence_summary(trace_values)
+        workload_means = (
+            paired.groupby(["flow_count", "condition"], sort=False)["delta"]
+            .mean()
+            .reset_index()
+        )
+        worst_index = (
+            workload_means["delta"].idxmin()
+            if higher_is_better
+            else workload_means["delta"].idxmax()
+        )
+        worst = workload_means.loc[worst_index]
+        rows.append(
+            {
+                "family": family,
+                "metric": metric,
+                "variant": variant.key,
+                "variant_label": parameter_heatmap_label(family, variant),
+                "x_index": x_index,
+                "selected": variant == selected_variant,
+                "higher_is_better": higher_is_better,
+                **summary,
+                "worst_workload_mean": float(worst["delta"]),
+                "worst_flow_count": int(worst["flow_count"]),
+                "worst_condition": str(worst["condition"]),
+                "trace_values": trace_values.tolist(),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def plot_paper_tuning_decisions(run_metrics: pd.DataFrame) -> None:
+    figure, axes = plt.subplots(1, len(PAPER_TUNING_PANELS), figsize=(12, 4.3))
+    export_rows = []
+    primary_color = PROTOCOL_COLORS["orbtcp"]
+
+    for axis, (
+        family,
+        title,
+        metric,
+        scale,
+        higher_is_better,
+        y_label,
+    ) in zip(axes, PAPER_TUNING_PANELS, strict=True):
+        panel_rows = tuning_panel_rows(
+            run_metrics,
+            family,
+            metric,
+            scale,
+            higher_is_better,
+        )
+        export_rows.append(panel_rows)
+        x_values = panel_rows["x_index"].to_numpy(dtype=float)
+        means = panel_rows["mean"].to_numpy(dtype=float)
+        margins = panel_rows["ci95_margin"].to_numpy(dtype=float)
+
+        selected_index = int(
+            panel_rows.loc[panel_rows["selected"], "x_index"].iloc[0]
+        )
+        axis.axvspan(
+            selected_index - 0.24,
+            selected_index + 0.24,
+            color=primary_color,
+            alpha=0.10,
+            zorder=0,
+        )
+        axis.errorbar(
+            x_values,
+            means,
+            yerr=margins,
+            color=primary_color,
+            marker="o",
+            markersize=5,
+            linewidth=1.6,
+            capsize=3,
+            zorder=3,
+        )
+        axis.scatter(
+            x_values,
+            panel_rows["worst_workload_mean"],
+            color="#B21F35",
+            marker="x",
+            s=34,
+            linewidths=1.3,
+            zorder=4,
+        )
+        selected_mean = float(
+            panel_rows.loc[panel_rows["selected"], "mean"].iloc[0]
+        )
+        axis.scatter(
+            [selected_index],
+            [selected_mean],
+            color=primary_color,
+            edgecolor="black",
+            marker="*",
+            s=115,
+            linewidth=0.7,
+            zorder=5,
+        )
+        axis.axhline(0, color="#555555", linestyle="--", linewidth=1.0)
+        axis.set_xticks(
+            x_values,
+            panel_rows["variant_label"].str.replace(" ", "\n", n=1),
+        )
+        axis.set_title(title)
+        axis.set_ylabel(y_label)
+        axis.set_xlabel(family_x_label(family))
+        axis.grid(True, axis="y", alpha=0.25, linewidth=0.6)
+
+    legend_handles = (
+        Line2D(
+            [0],
+            [0],
+            color=PROTOCOL_COLORS["orbtcp"],
+            marker="o",
+            linewidth=1.6,
+            label="Mean paired change (95% CI)",
+        ),
+        Line2D(
+            [0],
+            [0],
+            color="#B21F35",
+            marker="x",
+            linestyle="none",
+            label="Worst workload mean",
+        ),
+        Line2D(
+            [0],
+            [0],
+            color=PROTOCOL_COLORS["orbtcp"],
+            marker="*",
+            markeredgecolor="black",
+            linestyle="none",
+            markersize=10,
+            label="Selected value",
+        ),
+    )
+    figure.legend(
+        handles=legend_handles,
+        loc="upper center",
+        ncol=3,
+        frameon=False,
+        bbox_to_anchor=(0.5, 0.995),
+    )
+    figure.suptitle("OrbCC-PINT parameter selection under dynamic paths", y=1.07)
+    figure.text(
+        0.5,
+        0.01,
+        (
+            "Paired against Exact PINT. Confidence intervals use ten trace-level "
+            "averages; the red x is the worst of six flow/loss workloads. "
+            f"Recovery uses the first {RECOVERY_WINDOW_S} complete seconds "
+            "after reconnect."
+        ),
+        ha="center",
+        fontsize=8,
+        color="#555555",
+    )
+    figure.tight_layout(rect=(0, 0.055, 1, 0.90))
+    PAPER_PLOT_ROOT.mkdir(parents=True, exist_ok=True)
+    figure.savefig(
+        PAPER_PLOT_ROOT / "tuning_decisions.pdf",
+        dpi=600,
+        bbox_inches="tight",
+    )
+    plt.close(figure)
+
+    export_plot_dataframe(
+        "tuning_decisions_points.csv",
+        pd.concat(export_rows, ignore_index=True),
+        base_dir=PAPER_PLOT_ROOT / "plot_data",
+        metadata={
+            "experiment": EXPERIMENT,
+            "description": (
+                "Final points for the three-panel parameter-selection figure. "
+                "Each confidence interval treats a matched dynamic trace as the "
+                "independent unit after averaging its six workloads."
+            ),
+            "runs": list(RUNS),
+            "flow_counts": FLOW_COUNTS,
+            "conditions": [condition.key for condition in CONDITIONS],
+            "recovery_window_seconds": RECOVERY_WINDOW_S,
+            "combined_configuration": COMBINED_PINT.label,
+        },
+    )
+
+
+def validation_variant_styles() -> tuple[
+    tuple[Variant, str, str, str, str], ...
+]:
+    return (
+        (
+            COMBINED_PINT,
+            "OrbCC-PINT (combined)",
+            PROTOCOL_COLORS["orbtcp"],
+            "o",
+            "-",
+        ),
+        (EXACT_PINT, "Exact PINT", "#303030", "s", "--"),
+        (FULL_ORBCC, "OrbCC (full INT)", "#888888", "^", ":"),
+    )
+
+
+def plot_paper_combined_validation(run_metrics: pd.DataFrame) -> None:
+    columns = [
+        (condition, flow_count)
+        for condition in CONDITIONS
+        for flow_count in FLOW_COUNTS
+    ]
+    column_labels = [
+        f"{condition.label}\n{flow_count} flows"
+        for condition, flow_count in columns
+    ]
+    figure, axes = plt.subplots(
+        len(PAPER_VALIDATION_METRICS),
+        1,
+        figsize=(10.2, 8.2),
+        sharex=True,
+    )
+    export_rows = []
+    offsets = (-0.12, 0.0, 0.12)
+
+    for axis, (metric, metric_label) in zip(
+        axes, PAPER_VALIDATION_METRICS, strict=True
+    ):
+        for style_index, (
+            variant,
+            variant_label,
+            color,
+            marker,
+            linestyle,
+        ) in enumerate(validation_variant_styles()):
+            means = []
+            margins = []
+            for column_index, (condition, flow_count) in enumerate(columns):
+                values = ordered_run_values(
+                    run_metrics,
+                    variant.key,
+                    flow_count,
+                    condition.key,
+                    metric,
+                )
+                summary = confidence_summary(values)
+                means.append(summary["mean"])
+                margins.append(summary["ci95_margin"])
+                export_rows.append(
+                    {
+                        "metric": metric,
+                        "metric_label": metric_label,
+                        "variant": variant.key,
+                        "variant_label": variant_label,
+                        "column_index": column_index,
+                        "condition": condition.key,
+                        "flow_count": flow_count,
+                        **summary,
+                        "run_values": values.tolist(),
+                    }
+                )
+
+            means = np.asarray(means)
+            margins = np.asarray(margins)
+            shifted_x = np.arange(len(columns), dtype=float) + offsets[style_index]
+            condition_slices = (
+                (0, len(FLOW_COUNTS)),
+                (len(FLOW_COUNTS), len(columns)),
+            )
+            for start, end in condition_slices:
+                axis.errorbar(
+                    shifted_x[start:end],
+                    means[start:end],
+                    yerr=margins[start:end],
+                    color=color,
+                    marker=marker,
+                    linestyle=linestyle,
+                    linewidth=1.5,
+                    markersize=4.5,
+                    capsize=2.5,
+                    label=variant_label if start == 0 else None,
+                )
+
+        axis.axvline(len(FLOW_COUNTS) - 0.5, color="#888888", linewidth=1.0)
+        axis.set_ylabel(metric_label)
+        axis.set_ylim(bottom=0)
+        axis.grid(True, axis="y", alpha=0.25, linewidth=0.6)
+
+    axes[-1].set_xticks(range(len(columns)), column_labels)
+    axes[-1].set_xlabel("Dynamic condition and concurrent flows")
+    legend_handles, legend_labels = axes[0].get_legend_handles_labels()
+    figure.legend(
+        handles=legend_handles,
+        labels=legend_labels,
+        loc="upper center",
+        ncol=3,
+        frameon=False,
+        bbox_to_anchor=(0.5, 0.995),
+    )
+    figure.suptitle("Combined OrbCC-PINT validation", y=1.025)
+    figure.text(
+        0.5,
+        0.01,
+        "Points show ten-run means with 95% confidence intervals.",
+        ha="center",
+        fontsize=8,
+        color="#555555",
+    )
+    figure.tight_layout(rect=(0, 0.035, 1, 0.94))
+    PAPER_PLOT_ROOT.mkdir(parents=True, exist_ok=True)
+    figure.savefig(
+        PAPER_PLOT_ROOT / "combined_validation.pdf",
+        dpi=600,
+        bbox_inches="tight",
+    )
+    plt.close(figure)
+
+    export_plot_dataframe(
+        "combined_validation_points.csv",
+        pd.DataFrame(export_rows),
+        base_dir=PAPER_PLOT_ROOT / "plot_data",
+        metadata={
+            "experiment": EXPERIMENT,
+            "description": (
+                "Final points for the combined OrbCC-PINT validation figure. "
+                "Confidence intervals are calculated across ten matched traces."
+            ),
+            "runs": list(RUNS),
+            "flow_counts": FLOW_COUNTS,
+            "conditions": [condition.key for condition in CONDITIONS],
+            "combined_configuration": COMBINED_PINT.label,
+        },
+    )
+
+
+def plot_paper_figures(run_metrics: pd.DataFrame) -> None:
+    plot_paper_tuning_decisions(run_metrics)
+    plot_paper_combined_validation(run_metrics)
+
+
 def main() -> None:
     PLOT_ROOT.mkdir(parents=True, exist_ok=True)
     run_metrics = collect_all_runs()
@@ -1136,6 +1667,7 @@ def main() -> None:
         for condition in CONDITIONS:
             plot_family_tradeoff(family, condition, run_metrics)
     plot_parameter_decision_heatmaps(run_metrics)
+    plot_paper_figures(run_metrics)
 
 
 if __name__ == "__main__":

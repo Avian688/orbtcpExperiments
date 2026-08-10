@@ -11,6 +11,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR.parent))
 
 from experimentTuningDynamicSupport import (  # noqa: E402
+    COMBINED_PINT,
     CONDITIONS,
     EXPERIMENT,
     FLOW_COUNTS,
@@ -20,6 +21,7 @@ from experimentTuningDynamicSupport import (  # noqa: E402
     VARIANTS,
     cases,
     config_name,
+    expected_combined_simulation_count,
     expected_simulation_count,
     ini_name,
 )
@@ -30,6 +32,16 @@ from raynetExperimentSupport import (  # noqa: E402
 
 
 EXPERIMENT_DIR = (SCRIPT_DIR / "../../paperExperiments" / EXPERIMENT).resolve()
+COMBINED_ONLY_ENV = "TUNING_DYNAMIC_COMBINED_ONLY"
+
+
+def combined_only_enabled() -> bool:
+    return os.environ.get(COMBINED_ONLY_ENV, "").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 def run_checked(command: list[str], cwd: Path) -> None:
@@ -62,6 +74,8 @@ def batched(commands: list[tuple[str, list[str]]], cwd: Path, cores: int) -> Non
 
 def named_cases():
     for variant, flow_count, condition, run in cases():
+        if combined_only_enabled() and variant != COMBINED_PINT:
+            continue
         yield (
             variant,
             flow_count,
@@ -112,6 +126,24 @@ def simulation_configs():
         raise RuntimeError(
             f"Expected {expected_simulation_count()} configs, found {len(all_configs)}"
         )
+    if combined_only_enabled():
+        combined_names = {
+            config_name(COMBINED_PINT, flow_count, condition, run)
+            for flow_count in FLOW_COUNTS
+            for condition in CONDITIONS
+            for run in RUNS
+        }
+        all_configs = [
+            config
+            for config in all_configs
+            if config.config_name in combined_names
+        ]
+        if len(all_configs) != expected_combined_simulation_count():
+            raise RuntimeError(
+                "Expected "
+                f"{expected_combined_simulation_count()} combined configs, "
+                f"found {len(all_configs)}"
+            )
     return all_configs
 
 
@@ -185,17 +217,23 @@ def main() -> int:
     cores = max(1, int(os.environ.get("EXPERIMENT_CORES", "1")))
     start_step = int(os.environ.get("START_STEP", "1"))
     end_step = int(os.environ.get("END_STEP", "5"))
-    print(
-        f"{EXPERIMENT}: {len(VARIANTS)} implementations x "
-        f"{len(FLOW_COUNTS)} flow loads x {len(CONDITIONS)} conditions x "
-        f"{len(RUNS)} runs = {expected_simulation_count()} simulations"
-    )
+    if combined_only_enabled():
+        print(
+            f"{EXPERIMENT}: combined 8/8/p=1 extension only = "
+            f"{expected_combined_simulation_count()} simulations"
+        )
+    else:
+        print(
+            f"{EXPERIMENT}: {len(VARIANTS)} implementations x "
+            f"{len(FLOW_COUNTS)} flow loads x {len(CONDITIONS)} conditions x "
+            f"{len(RUNS)} runs = {expected_simulation_count()} simulations"
+        )
     steps = [
         ("generate matched dynamic scenarios and INIs", generate_inputs),
         ("run simulations", lambda: run_simulations(cores)),
         ("export scavetool CSVs", lambda: export_csvs(cores)),
         ("extract plotting CSVs", lambda: extract_csvs(cores)),
-        ("plot CDFs, parameter trade-offs, and decision heatmaps", plot),
+        ("plot cumulative, heatmap, and paper figures", plot),
     ]
 
     for index, (name, function) in enumerate(steps, start=1):

@@ -17,10 +17,9 @@ from experimentTuningSupport import (  # noqa: E402
     FLOW_COUNT_VARIANTS,
     FULL_ORBCC,
     MSS_BYTES,
-    PINT_VARIANTS,
+    PINT_VARIANTS as TUNING_PINT_VARIANTS,
     SAMPLING_VARIANTS,
     UTILIZATION_VARIANTS,
-    VARIANTS,
     Variant,
     family_label,
     family_tick_labels,
@@ -56,6 +55,19 @@ QUEUE_PACKETS = round(
     / MSS_BYTES
 )
 FAMILIES = ("flow_count", "utilization", "sampling")
+
+COMBINED_PINT = Variant(
+    key="pint_combined_8_8_p1",
+    label="OrbCC-PINT (8-bit count, 8-bit utilization, p=1)",
+    config_prefix="OrbtcpPintCombined8_8P1",
+    family="combined",
+    flow_count_bits=8,
+    flow_count_sketch=True,
+    utilization_bits=8,
+    feedback_probability=1.0,
+)
+PINT_VARIANTS = (*TUNING_PINT_VARIANTS, COMBINED_PINT)
+VARIANTS = (FULL_ORBCC, *PINT_VARIANTS)
 
 
 @dataclass(frozen=True)
@@ -123,7 +135,12 @@ def expected_simulation_count() -> int:
     return len(VARIANTS) * len(FLOW_COUNTS) * len(CONDITIONS) * len(RUNS)
 
 
+def expected_combined_simulation_count() -> int:
+    return len(FLOW_COUNTS) * len(CONDITIONS) * len(RUNS)
+
+
 __all__ = (
+    "COMBINED_PINT",
     "CONDITIONS",
     "EXACT_PINT",
     "EXPERIMENT",
@@ -157,6 +174,7 @@ __all__ = (
     "cases",
     "config_name",
     "expected_simulation_count",
+    "expected_combined_simulation_count",
     "family_label",
     "family_plot_variants",
     "family_tick_labels",
