@@ -77,6 +77,6 @@ network leoconstellation
             parameters:
                 @display("p=350.04,200.535,m,n,numOfClients;r=10;i=device/receiverdish");
         }
-        broker: Broker;
+        //broker: Broker;
     connections allowunconnected:
 }

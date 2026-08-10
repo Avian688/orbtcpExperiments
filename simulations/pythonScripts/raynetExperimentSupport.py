@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import signal
@@ -309,8 +310,52 @@ def _result_paths(config: SimulationConfig, cwd: Path) -> tuple[Path, Path]:
     return prefix.with_name(prefix.name + "-#0.vec"), prefix.with_name(prefix.name + "-#0.sca")
 
 
+def _completion_marker_path(config: SimulationConfig, cwd: Path) -> Path:
+    return cwd / "results" / f"{config.config_name}-#0.complete.json"
+
+
+def _result_signature(config: SimulationConfig, cwd: Path):
+    signature = []
+    for path in _result_paths(config, cwd):
+        if not path.is_file():
+            return None
+        stat = path.stat()
+        if stat.st_size <= 0:
+            return None
+        signature.append({"name": path.name, "size": stat.st_size, "mtime_ns": stat.st_mtime_ns})
+    return signature
+
+
+def _write_completion_marker(config: SimulationConfig, cwd: Path, signature) -> None:
+    marker = _completion_marker_path(config, cwd)
+    temporary_marker = marker.with_suffix(marker.suffix + ".tmp")
+    payload = {
+        "version": 1,
+        "config_name": config.config_name,
+        "ini_file": config.ini_file,
+        "results": signature,
+    }
+    temporary_marker.write_text(json.dumps(payload, sort_keys=True) + "\n", encoding="utf-8")
+    os.replace(temporary_marker, marker)
+
+
 def _has_complete_results(config: SimulationConfig, cwd: Path) -> bool:
-    return all(path.is_file() and path.stat().st_size > 0 for path in _result_paths(config, cwd))
+    marker = _completion_marker_path(config, cwd)
+    signature = _result_signature(config, cwd)
+    if signature is None or not marker.is_file():
+        return False
+
+    try:
+        payload = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+
+    return (
+        payload.get("version") == 1
+        and payload.get("config_name") == config.config_name
+        and payload.get("ini_file") == config.ini_file
+        and payload.get("results") == signature
+    )
 
 
 def _clean_result_files(config: SimulationConfig, cwd: Path) -> None:
@@ -472,11 +517,21 @@ def _finish_simulation(
         _unregister_process(running.process)
 
     elapsed = time.monotonic() - running.started
-    complete = not timed_out and return_code == 0 and _has_complete_results(running.config, cwd)
+    signature = _result_signature(running.config, cwd)
+    complete = not timed_out and return_code == 0 and signature is not None
+    marker_error = None
+    if complete:
+        try:
+            _write_completion_marker(running.config, cwd, signature)
+        except OSError as error:
+            complete = False
+            marker_error = error
     if timed_out:
         status = f"timed out after {elapsed:.1f}s"
     elif return_code != 0:
         status = f"failed with exit code {return_code}"
+    elif marker_error is not None:
+        status = f"finished but could not record completion: {marker_error}"
     elif not complete:
         status = "finished without complete vec/sca output"
     else:
@@ -517,7 +572,7 @@ def _run_simulation_configs(configs, cwd, cores: int, runtime_file=None) -> None
     skipped = len(configs) - len(pending)
 
     if skipped:
-        print(f"Skipping {skipped} config(s) with complete vec/sca outputs because EXPERIMENT_RESUME is enabled.")
+        print(f"Skipping {skipped} config(s) with verified completion markers because EXPERIMENT_RESUME is enabled.")
 
     attempts = retries + 1
     for attempt in range(1, attempts + 1):

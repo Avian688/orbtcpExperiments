@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.lines import Line2D
 import numpy as np
 import pandas as pd
@@ -29,7 +30,9 @@ from experimentTuningDynamicSupport import (  # noqa: E402
     FULL_ORBCC,
     MSS_BYTES,
     RUNS,
+    SAMPLING_VARIANTS,
     SIMULATION_TIME_S,
+    UTILIZATION_VARIANTS,
     VARIANTS,
     Variant,
     family_label,
@@ -85,6 +88,37 @@ AVAILABLE_CAPACITY_COLOR = "#777777"
 PINT_COLOR = "#0C5DA5"
 EXACT_COUNT_COLOR = "#00A087"
 MATCHED_RUN_ALPHA = 0.12
+
+HIGHER_IS_BETTER_CMAP = LinearSegmentedColormap.from_list(
+    "r_y_g", ["red", "yellow", "green"], N=256
+)
+PARAMETER_HEATMAP_METRICS = (
+    ("normalized_goodput", "Normalized goodput", True, ".3f"),
+    ("mean_queue_delay_ms", "Queueing delay (ms)", False, ".2f"),
+    (
+        "aggregate_retransmission_mbps",
+        "Retransmission rate (Mbps)",
+        False,
+        ".2f",
+    ),
+)
+PARAMETER_HEATMAP_GROUPS = (
+    (
+        "flow_count",
+        "Flow-count sketch",
+        (*FLOW_COUNT_SKETCH_VARIANTS, EXACT_PINT),
+    ),
+    (
+        "utilization",
+        "Utilization",
+        (*UTILIZATION_VARIANTS, EXACT_PINT),
+    ),
+    (
+        "sampling",
+        "Sampling",
+        (*SAMPLING_VARIANTS, EXACT_PINT),
+    ),
+)
 
 
 def metric_path(
@@ -744,6 +778,290 @@ def plot_family_tradeoff(
     )
 
 
+def parameter_heatmap_label(family: str, variant: Variant) -> str:
+    if family == "flow_count":
+        if variant == EXACT_PINT:
+            return "Exact (16-bit)"
+        return f"{variant.flow_count_bits}-bit sketch"
+    if family == "utilization":
+        if variant == EXACT_PINT:
+            return "Exact"
+        return f"{variant.utilization_bits} bits"
+    if family == "sampling":
+        if variant == EXACT_PINT:
+            return "p=1 (exact)"
+        return variant.label
+    raise ValueError(f"Unknown tuning family: {family}")
+
+
+def parameter_heatmap_row_definitions() -> list[dict[str, object]]:
+    rows = []
+    for family, group_label, variants in PARAMETER_HEATMAP_GROUPS:
+        for variant in variants:
+            parameter_label = parameter_heatmap_label(family, variant)
+            rows.append(
+                {
+                    "row_index": len(rows),
+                    "family": family,
+                    "group_label": group_label,
+                    "parameter_label": parameter_label,
+                    "row_label": f"{group_label}: {parameter_label}",
+                    "variant": variant,
+                }
+            )
+    return rows
+
+
+def exact_pint_retention(
+    values: np.ndarray,
+    exact_values: np.ndarray,
+    higher_is_better: bool,
+) -> np.ndarray:
+    if values.shape != exact_values.shape:
+        raise RuntimeError(
+            "Candidate and Exact PINT run arrays must have matching shapes"
+        )
+    if not np.all(np.isfinite(values)) or not np.all(np.isfinite(exact_values)):
+        raise RuntimeError("Heatmap retention inputs must be finite")
+
+    values = np.maximum(values, 0.0)
+    exact_values = np.maximum(exact_values, 0.0)
+    retention = np.ones_like(values, dtype=float)
+    if higher_is_better:
+        nonzero_reference = exact_values > 0
+        retention[nonzero_reference] = (
+            values[nonzero_reference] / exact_values[nonzero_reference]
+        )
+    else:
+        worse = values > exact_values
+        retention[worse] = exact_values[worse] / values[worse]
+    return np.clip(retention, 0.0, 1.0) * 100.0
+
+
+def parameter_decision_heatmap_rows(
+    run_metrics: pd.DataFrame,
+) -> pd.DataFrame:
+    rows = []
+    row_definitions = parameter_heatmap_row_definitions()
+    columns = [
+        (condition, flow_count)
+        for condition in CONDITIONS
+        for flow_count in FLOW_COUNTS
+    ]
+
+    for row_definition in row_definitions:
+        variant = row_definition["variant"]
+        for column_index, (condition, flow_count) in enumerate(columns):
+            for metric, metric_label, higher_is_better, _value_format in (
+                PARAMETER_HEATMAP_METRICS
+            ):
+                values = ordered_run_values(
+                    run_metrics,
+                    variant.key,
+                    flow_count,
+                    condition.key,
+                    metric,
+                )
+                exact_values = ordered_run_values(
+                    run_metrics,
+                    EXACT_PINT.key,
+                    flow_count,
+                    condition.key,
+                    metric,
+                )
+                retention = exact_pint_retention(
+                    values,
+                    exact_values,
+                    higher_is_better,
+                )
+                rows.append(
+                    {
+                        "row_index": row_definition["row_index"],
+                        "column_index": column_index,
+                        "family": row_definition["family"],
+                        "group_label": row_definition["group_label"],
+                        "parameter_label": row_definition["parameter_label"],
+                        "row_label": row_definition["row_label"],
+                        "variant": variant.key,
+                        "condition": condition.key,
+                        "condition_label": condition.label,
+                        "flow_count": flow_count,
+                        "metric": metric,
+                        "metric_label": metric_label,
+                        "higher_is_better": higher_is_better,
+                        "mean": float(np.mean(values)),
+                        "population_std": float(np.std(values)),
+                        "exact_pint_mean": float(np.mean(exact_values)),
+                        "exact_pint_population_std": float(
+                            np.std(exact_values)
+                        ),
+                        "retention_mean_percent": float(np.mean(retention)),
+                        "retention_population_std_percent": float(
+                            np.std(retention)
+                        ),
+                    }
+                )
+    return pd.DataFrame(rows)
+
+
+def plot_parameter_decision_heatmaps(run_metrics: pd.DataFrame) -> None:
+    heatmap_rows = parameter_decision_heatmap_rows(run_metrics)
+    row_definitions = parameter_heatmap_row_definitions()
+    columns = [
+        (condition, flow_count)
+        for condition in CONDITIONS
+        for flow_count in FLOW_COUNTS
+    ]
+    column_labels = [
+        f"{condition.label}\n{flow_count} flows"
+        for condition, flow_count in columns
+    ]
+    row_labels = [row["row_label"] for row in row_definitions]
+
+    figure, axes = plt.subplots(
+        1,
+        len(PARAMETER_HEATMAP_METRICS),
+        figsize=(18.5, 9.0),
+        squeeze=False,
+    )
+    last_image = None
+
+    for metric_index, (
+        metric,
+        metric_label,
+        _higher_is_better,
+        value_format,
+    ) in enumerate(PARAMETER_HEATMAP_METRICS):
+        axis = axes[0, metric_index]
+        means = np.full((len(row_definitions), len(columns)), np.nan)
+        standard_deviations = np.full_like(means, np.nan)
+        retention = np.full_like(means, np.nan)
+
+        metric_rows = heatmap_rows[heatmap_rows["metric"] == metric]
+        for row in metric_rows.itertuples(index=False):
+            means[row.row_index, row.column_index] = row.mean
+            standard_deviations[row.row_index, row.column_index] = (
+                row.population_std
+            )
+            retention[row.row_index, row.column_index] = (
+                row.retention_mean_percent
+            )
+
+        if not np.all(np.isfinite(means)) or not np.all(np.isfinite(retention)):
+            raise RuntimeError(f"Incomplete parameter heatmap for {metric}")
+
+        last_image = axis.imshow(
+            retention,
+            aspect="auto",
+            interpolation="none",
+            cmap=HIGHER_IS_BETTER_CMAP,
+            vmin=0,
+            vmax=100,
+        )
+
+        for row_index in range(len(row_definitions)):
+            for column_index in range(len(columns)):
+                mean = means[row_index, column_index]
+                standard_deviation = standard_deviations[
+                    row_index, column_index
+                ]
+                score = retention[row_index, column_index]
+                red, green, blue, _alpha = HIGHER_IS_BETTER_CMAP(score / 100)
+                luminance = 0.299 * red + 0.587 * green + 0.114 * blue
+                axis.text(
+                    column_index,
+                    row_index,
+                    (
+                        f"{mean:{value_format}}\n"
+                        f"+/-{standard_deviation:{value_format}}"
+                    ),
+                    ha="center",
+                    va="center",
+                    color="black" if luminance > 0.55 else "white",
+                    fontsize=6.2,
+                )
+
+        axis.set_title(metric_label)
+        axis.set_xticks(range(len(columns)), column_labels)
+        axis.set_xlabel("Dynamic condition and concurrent flows")
+        axis.set_yticks(range(len(row_definitions)))
+        if metric_index == 0:
+            axis.set_yticklabels(row_labels)
+        else:
+            axis.set_yticklabels([])
+
+        axis.set_xticks(np.arange(-0.5, len(columns), 1), minor=True)
+        axis.set_yticks(
+            np.arange(-0.5, len(row_definitions), 1), minor=True
+        )
+        axis.grid(which="minor", color="white", linewidth=0.55)
+        axis.tick_params(which="minor", bottom=False, left=False)
+        axis.axvline(len(FLOW_COUNTS) - 0.5, color="#202020", linewidth=1.4)
+
+        row_boundary = 0
+        for _family, _group_label, variants in PARAMETER_HEATMAP_GROUPS[:-1]:
+            row_boundary += len(variants)
+            axis.axhline(
+                row_boundary - 0.5,
+                color="#202020",
+                linewidth=1.4,
+            )
+
+    figure.suptitle("OrbCC-PINT dynamic parameter decision", y=0.975)
+    figure.text(
+        0.5,
+        0.035,
+        (
+            "Colours show matched-run retention against Exact PINT: 100% "
+            "means no degradation, with lower delay and retransmissions treated "
+            "as better. Cells show raw 10-run mean +/- population SD; each "
+            "group changes only the named parameter."
+        ),
+        ha="center",
+        fontsize=8,
+        color="#555555",
+    )
+    figure.subplots_adjust(
+        left=0.16,
+        right=0.92,
+        bottom=0.12,
+        top=0.91,
+        wspace=0.16,
+    )
+    colorbar_axis = figure.add_axes((0.94, 0.2, 0.012, 0.62))
+    colorbar = figure.colorbar(last_image, cax=colorbar_axis)
+    colorbar.set_label("Performance retention vs Exact PINT (%)")
+    figure.savefig(
+        PLOT_ROOT / "parameter_decision_heatmaps.pdf",
+        dpi=600,
+        bbox_inches="tight",
+    )
+    plt.close(figure)
+
+    export_plot_dataframe(
+        "parameter_decision_heatmaps_points.csv",
+        heatmap_rows,
+        base_dir=PLOT_ROOT / "plot_data",
+        metadata={
+            "experiment": EXPERIMENT,
+            "description": (
+                "Final values for the three dynamic parameter-decision heatmaps. "
+                "Cell text is the raw 10-run mean and population standard "
+                "deviation. Colour is the mean matched-run, direction-aware "
+                "performance retention against Exact PINT, capped at 100 percent."
+            ),
+            "runs": list(RUNS),
+            "flow_counts": FLOW_COUNTS,
+            "conditions": [condition.key for condition in CONDITIONS],
+            "metrics": [
+                metric for metric, _label, _higher, _format in (
+                    PARAMETER_HEATMAP_METRICS
+                )
+            ],
+        },
+    )
+
+
 def main() -> None:
     PLOT_ROOT.mkdir(parents=True, exist_ok=True)
     run_metrics = collect_all_runs()
@@ -771,6 +1089,7 @@ def main() -> None:
             )
         for condition in CONDITIONS:
             plot_family_tradeoff(family, condition, run_metrics)
+    plot_parameter_decision_heatmaps(run_metrics)
 
 
 if __name__ == "__main__":

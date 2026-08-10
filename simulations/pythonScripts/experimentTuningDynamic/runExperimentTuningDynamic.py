@@ -195,7 +195,7 @@ def main() -> int:
         ("run simulations", lambda: run_simulations(cores)),
         ("export scavetool CSVs", lambda: export_csvs(cores)),
         ("extract plotting CSVs", lambda: extract_csvs(cores)),
-        ("plot whole-run CDFs and parameter trade-offs", plot),
+        ("plot CDFs, parameter trade-offs, and decision heatmaps", plot),
     ]
 
     for index, (name, function) in enumerate(steps, start=1):
