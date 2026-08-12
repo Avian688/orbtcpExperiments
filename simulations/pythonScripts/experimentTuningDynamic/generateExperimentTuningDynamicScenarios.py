@@ -11,16 +11,19 @@ from experimentTuningDynamicSupport import (
     EXPERIMENT,
     FLOW_COUNTS,
     HANDOVER_INTERVAL_S,
-    MAX_BANDWIDTH_MBPS,
+    MAX_BANDWIDTH_PER_FLOW_MBPS,
     MAX_HANDOVER_DOWNTIME_MS,
     MAX_LOSS_PER,
     MAX_RTT_MS,
-    MIN_BANDWIDTH_MBPS,
+    MIN_BANDWIDTH_PER_FLOW_MBPS,
     MIN_HANDOVER_DOWNTIME_MS,
     MIN_LOSS_PER,
     MIN_RTT_MS,
     RUNS,
     SIMULATION_TIME_S,
+    bandwidth_range_mbps,
+    bottleneck_bandwidth_mbps,
+    fair_share_bdp_packets,
     scenario_name,
     trace_name,
 )
@@ -61,15 +64,29 @@ def avoid_integer_repeat(value: int, previous: int | None, low: int, high: int) 
     return value + 1 if value < high else value - 1
 
 
+def avoid_decimal_repeat(
+    value: float,
+    previous: float | None,
+    low: float,
+    high: float,
+    decimals: int,
+) -> float:
+    if previous is None or value != previous:
+        return value
+    step = 10 ** -decimals
+    adjusted = value + step if value + step <= high else max(low, value - step)
+    return round(adjusted, decimals)
+
+
 def build_traces() -> dict[int, list[dict[str, float | int | None]]]:
     traces = {run: [] for run in RUNS}
     for state_index in range(STATE_COUNT):
-        bandwidths = stratified_values(
-            MIN_BANDWIDTH_MBPS,
-            MAX_BANDWIDTH_MBPS,
+        bandwidths_per_flow = stratified_values(
+            MIN_BANDWIDTH_PER_FLOW_MBPS,
+            MAX_BANDWIDTH_PER_FLOW_MBPS,
             state_index,
             1,
-            integer=True,
+            decimals=2,
         )
         rtts = stratified_values(
             MIN_RTT_MS,
@@ -95,11 +112,14 @@ def build_traces() -> dict[int, list[dict[str, float | int | None]]]:
 
         for run_offset, run in enumerate(RUNS):
             previous = traces[run][-1] if traces[run] else None
-            bandwidth = avoid_integer_repeat(
-                int(bandwidths[run_offset]),
-                int(previous["bandwidth_mbps"]) if previous else None,
-                MIN_BANDWIDTH_MBPS,
-                MAX_BANDWIDTH_MBPS,
+            bandwidth_per_flow = avoid_decimal_repeat(
+                float(bandwidths_per_flow[run_offset]),
+                float(previous["bandwidth_per_flow_mbps"])
+                if previous
+                else None,
+                MIN_BANDWIDTH_PER_FLOW_MBPS,
+                MAX_BANDWIDTH_PER_FLOW_MBPS,
+                2,
             )
             rtt = avoid_integer_repeat(
                 int(rtts[run_offset]),
@@ -122,7 +142,7 @@ def build_traces() -> dict[int, list[dict[str, float | int | None]]]:
                     "handover_time_s": handover_time_s,
                     "reconnect_time_s": reconnect_time_s,
                     "downtime_ms": downtime_ms,
-                    "bandwidth_mbps": bandwidth,
+                    "bandwidth_per_flow_mbps": bandwidth_per_flow,
                     "rtt_ms": rtt,
                     "loss_per": float(loss_rates[run_offset]),
                 }
@@ -162,6 +182,9 @@ def append_initial_state(
     lines: list[str], flow_count: int, state: dict, has_loss: bool
 ) -> None:
     one_way_link_delay_ms = float(state["rtt_ms"]) / 6
+    bandwidth_mbps = bottleneck_bandwidth_mbps(
+        flow_count, float(state["bandwidth_per_flow_mbps"])
+    )
     forward_per = float(state["loss_per"]) if has_loss else 0.0
     lines.append('    <at t="0">')
     append_access_path(lines, flow_count, one_way_link_delay_ms, set_rate=True)
@@ -178,7 +201,7 @@ def append_initial_state(
             module,
             flow_count,
             "datarate",
-            f'{int(state["bandwidth_mbps"])}Mbps',
+            f"{bandwidth_mbps:.12g}Mbps",
         )
     append_channel_parameter(
         lines, "router1", flow_count, "per", f"{forward_per:.12g}"
@@ -204,6 +227,9 @@ def append_connection(
     per: float | None = None,
 ) -> None:
     one_way_link_delay_ms = float(state["rtt_ms"]) / 6
+    bandwidth_mbps = bottleneck_bandwidth_mbps(
+        flow_count, float(state["bandwidth_per_flow_mbps"])
+    )
     lines.append(
         f'        <connect src-module="{source}" src-gate="pppg$o[{flow_count}]"'
     )
@@ -212,7 +238,7 @@ def append_connection(
     )
     lines.append('                 channel-type="ned.DatarateChannel">')
     lines.append(
-        f'                 <param name="datarate" value="{int(state["bandwidth_mbps"])}Mbps" />'
+        f'                 <param name="datarate" value="{bandwidth_mbps:.12g}Mbps" />'
     )
     lines.append(
         f'                 <param name="delay" value="{one_way_link_delay_ms:.12g}ms" />'
@@ -268,6 +294,16 @@ def main() -> None:
                     "run": run,
                     "simulation_time_s": SIMULATION_TIME_S,
                     "handover_interval_s": HANDOVER_INTERVAL_S,
+                    "bandwidth_policy": "constant fair-share range per flow",
+                    "bandwidth_per_flow_range_mbps": [
+                        MIN_BANDWIDTH_PER_FLOW_MBPS,
+                        MAX_BANDWIDTH_PER_FLOW_MBPS,
+                    ],
+                    "aggregate_bandwidth_ranges_mbps": {
+                        str(flow_count): list(bandwidth_range_mbps(flow_count))
+                        for flow_count in FLOW_COUNTS
+                    },
+                    "reference_fair_share_bdp_packets": fair_share_bdp_packets(),
                     "states": states,
                 },
                 indent=2,
@@ -283,7 +319,9 @@ def main() -> None:
     scenario_count = len(FLOW_COUNTS) * len(CONDITIONS) * len(RUNS)
     print(
         f"Generated {scenario_count} matched scenarios and {len(RUNS)} "
-        f"balanced traces for {EXPERIMENT}."
+        f"balanced traces for {EXPERIMENT}. Fair-share bandwidth is "
+        f"{MIN_BANDWIDTH_PER_FLOW_MBPS}-{MAX_BANDWIDTH_PER_FLOW_MBPS} Mbps "
+        "per flow."
     )
 
 

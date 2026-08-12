@@ -14,13 +14,17 @@ from experimentTuningDynamicSupport import (
     FULL_ORBCC,
     MSS_BYTES,
     PINT_VARIANTS,
-    QUEUE_PACKETS,
+    QUEUE_BDP_MULTIPLIER,
+    REFERENCE_BANDWIDTH_PER_FLOW_MBPS,
+    REFERENCE_RTT_MS,
     RUNS,
     SIMULATION_TIME_S,
     Variant,
+    bandwidth_range_mbps,
     config_name,
     expected_simulation_count,
     ini_name,
+    queue_packets,
     scenario_name,
 )
 
@@ -179,7 +183,15 @@ def write_config(
     )
     output.write('**.ppp[*].queue.typename = "DropTailQueue"\n')
     output.write(
-        f"*.router1.ppp[{flow_count}].queue.packetCapacity = {QUEUE_PACKETS}\n"
+        f"# {QUEUE_BDP_MULTIPLIER} BDP at "
+        f"{REFERENCE_BANDWIDTH_PER_FLOW_MBPS:.12g} Mbps per flow and "
+        f"{REFERENCE_RTT_MS:.12g} ms; dynamic link range is "
+        f"{bandwidth_range_mbps(flow_count)[0]:.12g}-"
+        f"{bandwidth_range_mbps(flow_count)[1]:.12g} Mbps.\n"
+    )
+    output.write(
+        f"*.router1.ppp[{flow_count}].queue.packetCapacity = "
+        f"{queue_packets(flow_count)}\n"
     )
     output.write(
         f"**.ppp[*].queue.packetCapacity = "

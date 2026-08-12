@@ -7,7 +7,7 @@ import random
 from pathlib import Path
 
 from experimentTuningSupport import (
-    BANDWIDTH_MBPS,
+    BANDWIDTH_PER_FLOW_MBPS,
     EXPERIMENT,
     FLOW_COUNTS,
     HANDOVER_INTERVAL_S,
@@ -16,6 +16,7 @@ from experimentTuningSupport import (
     RTT_MS,
     RUNS,
     SIMULATION_TIME_S,
+    bottleneck_bandwidth_mbps,
     scenario_name,
 )
 
@@ -26,6 +27,7 @@ ACCESS_RATE = "10Gbps"
 
 def write_initial_path(lines: list[str], flow_count: int) -> None:
     access_delay_ms = (RTT_MS - 2 * BOTTLENECK_DELAY_MS) / 4
+    bandwidth_mbps = bottleneck_bandwidth_mbps(flow_count)
     lines.append('    <at t="0">')
 
     for index in range(flow_count):
@@ -53,7 +55,7 @@ def write_initial_path(lines: list[str], flow_count: int) -> None:
         lines.append(
             f'        <set-channel-param src-module="{module}" '
             f'src-gate="pppg$o[{flow_count}]" par="datarate" '
-            f'value="{BANDWIDTH_MBPS}Mbps"/>'
+            f'value="{bandwidth_mbps}Mbps"/>'
         )
     lines.append("    </at>")
 
@@ -74,6 +76,7 @@ def write_handover_start(lines: list[str], flow_count: int, time_s: int) -> None
 def write_handover_end(
     lines: list[str], flow_count: int, reconnect_time_s: float
 ) -> None:
+    bandwidth_mbps = bottleneck_bandwidth_mbps(flow_count)
     lines.append(f'    <at t="{reconnect_time_s:.6f}">')
     lines.append(
         f'        <connect src-module="router1" src-gate="pppg$o[{flow_count}]"'
@@ -83,7 +86,7 @@ def write_handover_end(
     )
     lines.append('                 channel-type="ned.DatarateChannel">')
     lines.append(
-        f'                 <param name="datarate" value="{BANDWIDTH_MBPS}Mbps" />'
+        f'                 <param name="datarate" value="{bandwidth_mbps}Mbps" />'
     )
     lines.append(
         f'                 <param name="delay" value="{BOTTLENECK_DELAY_MS}ms" />'
@@ -97,7 +100,7 @@ def write_handover_end(
     )
     lines.append('                 channel-type="ned.DatarateChannel">')
     lines.append(
-        f'                 <param name="datarate" value="{BANDWIDTH_MBPS}Mbps" />'
+        f'                 <param name="datarate" value="{bandwidth_mbps}Mbps" />'
     )
     lines.append(
         f'                 <param name="delay" value="{BOTTLENECK_DELAY_MS}ms" />'
@@ -145,7 +148,8 @@ def generate_scenario(flow_count: int, run: int, out_dir: Path) -> None:
                 "flow_count": flow_count,
                 "run": run,
                 "rtt_ms": RTT_MS,
-                "bandwidth_mbps": BANDWIDTH_MBPS,
+                "bandwidth_per_flow_mbps": BANDWIDTH_PER_FLOW_MBPS,
+                "bandwidth_mbps": bottleneck_bandwidth_mbps(flow_count),
                 "handover_events": events,
             },
             indent=2,

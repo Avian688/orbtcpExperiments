@@ -13,13 +13,15 @@ from experimentTuningSupport import (
     FULL_ORBCC,
     MSS_BYTES,
     PINT_VARIANTS,
-    QUEUE_PACKETS,
+    QUEUE_BDP_MULTIPLIER,
     RTT_MS,
     RUNS,
     SIMULATION_TIME_S,
     Variant,
+    bottleneck_bandwidth_mbps,
     config_name,
     ini_name,
+    queue_packets,
     scenario_name,
 )
 
@@ -178,12 +180,18 @@ def write_config(output, variant: Variant, flow_count: int, run: int) -> None:
     output.write("extends = General\n")
     output.write(f"seed-set = {run}\n")
     output.write(f"**.numberOfFlows = {flow_count}\n")
+    # OMNeT++ uses the first matching assignment, so this must precede the fallback.
     output.write(
         f'*.router1.ppp[{flow_count}].queue.typename = "{queue_type}"\n'
     )
     output.write('**.ppp[*].queue.typename = "DropTailQueue"\n')
     output.write(
-        f"*.router1.ppp[{flow_count}].queue.packetCapacity = {QUEUE_PACKETS}\n"
+        f"# {QUEUE_BDP_MULTIPLIER} BDP at "
+        f"{bottleneck_bandwidth_mbps(flow_count)} Mbps and {RTT_MS} ms.\n"
+    )
+    output.write(
+        f"*.router1.ppp[{flow_count}].queue.packetCapacity = "
+        f"{queue_packets(flow_count)}\n"
     )
     output.write(
         f"**.ppp[*].queue.packetCapacity = "

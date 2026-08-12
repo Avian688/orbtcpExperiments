@@ -9,7 +9,8 @@ EXPERIMENT = "experimentTuning"
 RUNS = range(1, 6)
 FLOW_COUNTS = (5, 20, 100)
 RTT_MS = 50
-BANDWIDTH_MBPS = 100
+# Keep the fair-share operating point comparable while varying flow count.
+BANDWIDTH_PER_FLOW_MBPS = 6
 HANDOVER_INTERVAL_S = 15
 MIN_HANDOVER_DOWNTIME_MS = 45
 MAX_HANDOVER_DOWNTIME_MS = 120
@@ -18,11 +19,28 @@ EVALUATION_START_S = 110
 EVALUATION_END_S = 240
 FLOW_JOIN_WINDOW_S = 100
 MSS_BYTES = 1448
-QUEUE_BDP_MULTIPLIER = 2
-QUEUE_PACKETS = int(
-    (BANDWIDTH_MBPS * 125_000 * (RTT_MS / 1000) * QUEUE_BDP_MULTIPLIER)
-    / MSS_BYTES
-)
+QUEUE_BDP_MULTIPLIER = 1
+
+
+def bottleneck_bandwidth_mbps(flow_count: int) -> int:
+    if flow_count <= 0:
+        raise ValueError("flow_count must be positive")
+    return flow_count * BANDWIDTH_PER_FLOW_MBPS
+
+
+def fair_share_bdp_packets(
+    bandwidth_per_flow_mbps: float = BANDWIDTH_PER_FLOW_MBPS,
+    rtt_ms: float = RTT_MS,
+) -> float:
+    return bandwidth_per_flow_mbps * 125_000 * (rtt_ms / 1000) / MSS_BYTES
+
+
+def queue_packets(flow_count: int) -> int:
+    return round(
+        fair_share_bdp_packets()
+        * flow_count
+        * QUEUE_BDP_MULTIPLIER
+    )
 
 
 @dataclass(frozen=True)

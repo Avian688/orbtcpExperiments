@@ -29,6 +29,8 @@ from experimentTuningDynamicSupport import (  # noqa: E402
     FLOW_COUNT_SKETCH_VARIANTS,
     FLOW_COUNTS,
     FULL_ORBCC,
+    MAX_BANDWIDTH_PER_FLOW_MBPS,
+    MIN_BANDWIDTH_PER_FLOW_MBPS,
     MSS_BYTES,
     RUNS,
     SAMPLING_VARIANTS,
@@ -36,6 +38,8 @@ from experimentTuningDynamicSupport import (  # noqa: E402
     UTILIZATION_VARIANTS,
     VARIANTS,
     Variant,
+    bandwidth_range_mbps,
+    bottleneck_bandwidth_mbps,
     family_label,
     family_plot_variants,
     family_tick_labels,
@@ -148,7 +152,7 @@ PAPER_TUNING_PANELS = (
         "jain_fairness",
         100.0,
         True,
-        "Jain fairness change (pp; higher is better)",
+        "Jain fairness difference vs Exact PINT (pp; + is better)",
     ),
     (
         "utilization",
@@ -156,7 +160,7 @@ PAPER_TUNING_PANELS = (
         "mean_queue_delay_ms",
         1.0,
         False,
-        "Queue-delay change (ms; lower is better)",
+        "Queue-delay difference vs Exact PINT (ms; - is better)",
     ),
     (
         "sampling",
@@ -164,7 +168,33 @@ PAPER_TUNING_PANELS = (
         "mean_recovery_deficit_percent",
         1.0,
         False,
-        "Goodput-deficit change (pp; lower is better)",
+        "Goodput-deficit difference vs Exact PINT (pp; - is better)",
+    ),
+)
+PAPER_TUNING_SIMPLE_PANELS = (
+    (
+        "flow_count",
+        "Flow-count sketch",
+        "jain_fairness",
+        1.0,
+        True,
+        "Jain fairness (higher is better)",
+    ),
+    (
+        "utilization",
+        "Utilization encoding",
+        "mean_queue_delay_ms",
+        1.0,
+        False,
+        "Queueing delay (ms; lower is better)",
+    ),
+    (
+        "sampling",
+        "Feedback sampling",
+        "mean_recovery_deficit_percent",
+        1.0,
+        False,
+        "Post-handover goodput deficit (%; lower is better)",
     ),
 )
 PAPER_VALIDATION_METRICS = (
@@ -172,6 +202,20 @@ PAPER_VALIDATION_METRICS = (
     ("mean_queue_delay_ms", "Queueing delay (ms)"),
     ("retransmission_overhead_percent", "Retransmission overhead (%)"),
 )
+
+
+def bandwidth_metadata() -> dict[str, object]:
+    return {
+        "bandwidth_policy": "constant fair-share range per flow",
+        "bandwidth_per_flow_range_mbps": [
+            MIN_BANDWIDTH_PER_FLOW_MBPS,
+            MAX_BANDWIDTH_PER_FLOW_MBPS,
+        ],
+        "aggregate_bandwidth_ranges_mbps": {
+            str(flow_count): list(bandwidth_range_mbps(flow_count))
+            for flow_count in FLOW_COUNTS
+        },
+    }
 
 
 def metric_path(
@@ -217,11 +261,21 @@ def load_interval_rate(path: Path, metric: str) -> pd.Series:
     return values.reindex(SECONDS).ffill().fillna(0.0)
 
 
-def load_trace(run: int) -> dict:
+def load_trace(run: int, flow_count: int) -> dict:
     path = SCENARIO_ROOT / f"{trace_name(run)}.json"
     if not path.is_file():
         raise FileNotFoundError(f"Missing dynamic trace: {path}")
-    return json.loads(path.read_text(encoding="utf-8"))
+    trace = json.loads(path.read_text(encoding="utf-8"))
+    states = []
+    for source_state in trace["states"]:
+        state = dict(source_state)
+        state["bandwidth_mbps"] = bottleneck_bandwidth_mbps(
+            flow_count, float(state["bandwidth_per_flow_mbps"])
+        )
+        states.append(state)
+    trace["flow_count"] = flow_count
+    trace["states"] = states
+    return trace
 
 
 def jain_fairness(values: np.ndarray) -> float:
@@ -341,6 +395,9 @@ def collect_run_metrics(
     condition,
     run: int,
 ) -> dict[str, object]:
+    minimum_bandwidth_mbps, maximum_bandwidth_mbps = bandwidth_range_mbps(
+        flow_count
+    )
     goodput_series = []
     retransmission_series = []
     for flow_index in range(flow_count):
@@ -386,7 +443,7 @@ def collect_run_metrics(
         ),
         "queueLength",
     )
-    trace = load_trace(run)
+    trace = load_trace(run, flow_count)
     mean_queue_delay_ms, mean_available_capacity_mbps = path_and_queue_means(
         queue_frame, trace
     )
@@ -405,6 +462,10 @@ def collect_run_metrics(
         "variant_label": variant.label,
         "family": variant.family,
         "flow_count": flow_count,
+        "bandwidth_per_flow_min_mbps": MIN_BANDWIDTH_PER_FLOW_MBPS,
+        "bandwidth_per_flow_max_mbps": MAX_BANDWIDTH_PER_FLOW_MBPS,
+        "bottleneck_bandwidth_min_mbps": minimum_bandwidth_mbps,
+        "bottleneck_bandwidth_max_mbps": maximum_bandwidth_mbps,
         "condition": condition.key,
         "condition_label": condition.label,
         "run": run,
@@ -622,6 +683,7 @@ def plot_family_metric(
         pd.concat(export_rows, ignore_index=True),
         base_dir=PLOT_ROOT / "plot_data",
         metadata={
+            **bandwidth_metadata(),
             "experiment": EXPERIMENT,
             "family": family,
             "metric": metric,
@@ -879,6 +941,7 @@ def plot_family_tradeoff(
         pd.DataFrame(export_rows),
         base_dir=PLOT_ROOT / "plot_data",
         metadata={
+            **bandwidth_metadata(),
             "experiment": EXPERIMENT,
             "family": family,
             "condition": condition.key,
@@ -1143,6 +1206,7 @@ def plot_parameter_heatmap(
         export_rows,
         base_dir=PLOT_ROOT / "plot_data" / "heatmaps",
         metadata={
+            **bandwidth_metadata(),
             "experiment": EXPERIMENT,
             "family": family,
             "metric": metric,
@@ -1333,8 +1397,83 @@ def tuning_panel_rows(
     return pd.DataFrame(rows)
 
 
-def plot_paper_tuning_decisions(run_metrics: pd.DataFrame) -> None:
-    figure, axes = plt.subplots(1, len(PAPER_TUNING_PANELS), figsize=(12, 4.3))
+def direct_tuning_panel_rows(
+    run_metrics: pd.DataFrame,
+    family: str,
+    metric: str,
+    scale: float,
+    higher_is_better: bool,
+) -> pd.DataFrame:
+    variants = next(
+        variants
+        for group_family, _label, variants in PARAMETER_HEATMAP_GROUPS
+        if group_family == family
+    )
+    selected_variant = selected_parameter_variant(family)
+    expected_rows = len(FLOW_COUNTS) * len(CONDITIONS) * len(RUNS)
+    rows = []
+
+    for x_index, variant in enumerate(variants):
+        values = run_metrics[run_metrics["variant"] == variant.key][
+            ["flow_count", "condition", "run", metric]
+        ].copy()
+        if len(values) != expected_rows:
+            raise RuntimeError(
+                f"Expected {expected_rows} direct values for "
+                f"{variant.key}/{metric}, found {len(values)}"
+            )
+        values["plot_value"] = values[metric] * scale
+        trace_values = (
+            values.groupby("run", sort=True)["plot_value"]
+            .mean()
+            .reindex(RUNS)
+            .to_numpy(dtype=float)
+        )
+        summary = confidence_summary(trace_values)
+        workload_means = (
+            values.groupby(["flow_count", "condition"], sort=False)[
+                "plot_value"
+            ]
+            .mean()
+            .reset_index()
+        )
+        worst_index = (
+            workload_means["plot_value"].idxmin()
+            if higher_is_better
+            else workload_means["plot_value"].idxmax()
+        )
+        worst = workload_means.loc[worst_index]
+        rows.append(
+            {
+                "family": family,
+                "metric": metric,
+                "variant": variant.key,
+                "variant_label": parameter_heatmap_label(family, variant),
+                "x_index": x_index,
+                "selected": variant == selected_variant,
+                "higher_is_better": higher_is_better,
+                **summary,
+                "worst_workload_mean": float(worst["plot_value"]),
+                "worst_flow_count": int(worst["flow_count"]),
+                "worst_condition": str(worst["condition"]),
+                "trace_values": trace_values.tolist(),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def plot_tuning_decision_figure(
+    run_metrics: pd.DataFrame,
+    panels,
+    panel_rows_function,
+    output_stem: str,
+    figure_title: str,
+    mean_legend_label: str,
+    footer: str,
+    description: str,
+    draw_zero_reference: bool,
+) -> None:
+    figure, axes = plt.subplots(1, len(panels), figsize=(12, 4.3))
     export_rows = []
     primary_color = PROTOCOL_COLORS["orbtcp"]
 
@@ -1345,8 +1484,8 @@ def plot_paper_tuning_decisions(run_metrics: pd.DataFrame) -> None:
         scale,
         higher_is_better,
         y_label,
-    ) in zip(axes, PAPER_TUNING_PANELS, strict=True):
-        panel_rows = tuning_panel_rows(
+    ) in zip(axes, panels, strict=True):
+        panel_rows = panel_rows_function(
             run_metrics,
             family,
             metric,
@@ -1401,7 +1540,8 @@ def plot_paper_tuning_decisions(run_metrics: pd.DataFrame) -> None:
             linewidth=0.7,
             zorder=5,
         )
-        axis.axhline(0, color="#555555", linestyle="--", linewidth=1.0)
+        if draw_zero_reference:
+            axis.axhline(0, color="#555555", linestyle="--", linewidth=1.0)
         axis.set_xticks(
             x_values,
             panel_rows["variant_label"].str.replace(" ", "\n", n=1),
@@ -1418,7 +1558,7 @@ def plot_paper_tuning_decisions(run_metrics: pd.DataFrame) -> None:
             color=PROTOCOL_COLORS["orbtcp"],
             marker="o",
             linewidth=1.6,
-            label="Mean paired change (95% CI)",
+            label=mean_legend_label,
         ),
         Line2D(
             [0],
@@ -1446,16 +1586,11 @@ def plot_paper_tuning_decisions(run_metrics: pd.DataFrame) -> None:
         frameon=False,
         bbox_to_anchor=(0.5, 0.995),
     )
-    figure.suptitle("OrbCC-PINT parameter selection under dynamic paths", y=1.07)
+    figure.suptitle(figure_title, y=1.07)
     figure.text(
         0.5,
         0.01,
-        (
-            "Paired against Exact PINT. Confidence intervals use ten trace-level "
-            "averages; the red x is the worst of six flow/loss workloads. "
-            f"Recovery uses the first {RECOVERY_WINDOW_S} complete seconds "
-            "after reconnect."
-        ),
+        footer,
         ha="center",
         fontsize=8,
         color="#555555",
@@ -1463,29 +1598,72 @@ def plot_paper_tuning_decisions(run_metrics: pd.DataFrame) -> None:
     figure.tight_layout(rect=(0, 0.055, 1, 0.90))
     PAPER_PLOT_ROOT.mkdir(parents=True, exist_ok=True)
     figure.savefig(
-        PAPER_PLOT_ROOT / "tuning_decisions.pdf",
+        PAPER_PLOT_ROOT / f"{output_stem}.pdf",
         dpi=600,
         bbox_inches="tight",
     )
     plt.close(figure)
 
     export_plot_dataframe(
-        "tuning_decisions_points.csv",
+        f"{output_stem}_points.csv",
         pd.concat(export_rows, ignore_index=True),
         base_dir=PAPER_PLOT_ROOT / "plot_data",
         metadata={
+            **bandwidth_metadata(),
             "experiment": EXPERIMENT,
-            "description": (
-                "Final points for the three-panel parameter-selection figure. "
-                "Each confidence interval treats a matched dynamic trace as the "
-                "independent unit after averaging its six workloads."
-            ),
+            "description": description,
             "runs": list(RUNS),
             "flow_counts": FLOW_COUNTS,
             "conditions": [condition.key for condition in CONDITIONS],
             "recovery_window_seconds": RECOVERY_WINDOW_S,
             "combined_configuration": COMBINED_PINT.label,
         },
+    )
+
+
+def plot_paper_tuning_decisions(run_metrics: pd.DataFrame) -> None:
+    plot_tuning_decision_figure(
+        run_metrics=run_metrics,
+        panels=PAPER_TUNING_PANELS,
+        panel_rows_function=tuning_panel_rows,
+        output_stem="tuning_decisions",
+        figure_title="OrbCC-PINT parameter selection under dynamic paths",
+        mean_legend_label="Mean paired difference (95% CI)",
+        footer=(
+            "Paired against Exact PINT. Confidence intervals use ten trace-level "
+            "averages; the red x is the worst of six flow/loss workloads. "
+            f"Recovery uses the first {RECOVERY_WINDOW_S} complete seconds "
+            "after reconnect."
+        ),
+        description=(
+            "Final paired differences for the three-panel parameter-selection "
+            "figure. Each confidence interval treats a matched dynamic trace as "
+            "the independent unit after averaging its six workloads."
+        ),
+        draw_zero_reference=True,
+    )
+
+
+def plot_paper_tuning_decisions_simple(run_metrics: pd.DataFrame) -> None:
+    plot_tuning_decision_figure(
+        run_metrics=run_metrics,
+        panels=PAPER_TUNING_SIMPLE_PANELS,
+        panel_rows_function=direct_tuning_panel_rows,
+        output_stem="tuning_decisions_simple",
+        figure_title="OrbCC-PINT parameter selection: direct metrics",
+        mean_legend_label="Mean value (95% CI)",
+        footer=(
+            "Direct metric values, without an Exact-PINT subtraction. Confidence "
+            "intervals use ten trace-level averages; the red x is the worst of "
+            f"six flow/loss workloads. Recovery uses the first {RECOVERY_WINDOW_S} "
+            "complete seconds after reconnect."
+        ),
+        description=(
+            "Final direct values for the simpler three-panel parameter-selection "
+            "figure. Each confidence interval treats a matched dynamic trace as "
+            "the independent unit after averaging its six workloads."
+        ),
+        draw_zero_reference=False,
     )
 
 
@@ -1621,6 +1799,7 @@ def plot_paper_combined_validation(run_metrics: pd.DataFrame) -> None:
         pd.DataFrame(export_rows),
         base_dir=PAPER_PLOT_ROOT / "plot_data",
         metadata={
+            **bandwidth_metadata(),
             "experiment": EXPERIMENT,
             "description": (
                 "Final points for the combined OrbCC-PINT validation figure. "
@@ -1636,6 +1815,7 @@ def plot_paper_combined_validation(run_metrics: pd.DataFrame) -> None:
 
 def plot_paper_figures(run_metrics: pd.DataFrame) -> None:
     plot_paper_tuning_decisions(run_metrics)
+    plot_paper_tuning_decisions_simple(run_metrics)
     plot_paper_combined_validation(run_metrics)
 
 
@@ -1647,6 +1827,7 @@ def main() -> None:
         run_metrics,
         base_dir=PLOT_ROOT / "plot_data",
         metadata={
+            **bandwidth_metadata(),
             "experiment": EXPERIMENT,
             "description": (
                 "Whole-run metrics for 10 matched rapidly changing traces. "

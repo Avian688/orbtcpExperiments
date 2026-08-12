@@ -17,7 +17,6 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR.parent))
 
 from experimentTuningSupport import (  # noqa: E402
-    BANDWIDTH_MBPS,
     EXPERIMENT,
     FLOW_COUNTS,
     MSS_BYTES,
@@ -25,6 +24,7 @@ from experimentTuningSupport import (  # noqa: E402
     RUNS,
     SIMULATION_TIME_S,
     VARIANTS,
+    bottleneck_bandwidth_mbps,
 )
 from plotProtocolSupport import PROTOCOL_COLORS  # noqa: E402
 
@@ -121,6 +121,7 @@ def plot_flow_metric(
 
 
 def plot_configuration(variant, flow_count: int) -> None:
+    bandwidth_mbps = bottleneck_bandwidth_mbps(flow_count)
     goodputs = [
         load_goodput(variant.key, flow_count, flow_index)
         for flow_index in range(flow_count)
@@ -160,7 +161,7 @@ def plot_configuration(variant, flow_count: int) -> None:
         label="Aggregate goodput",
     )
     goodput_axis.axhline(
-        BANDWIDTH_MBPS,
+        bandwidth_mbps,
         color=REFERENCE_COLOR,
         linestyle="--",
         linewidth=1.2,
@@ -208,7 +209,8 @@ def plot_configuration(variant, flow_count: int) -> None:
         axis.set_xlabel("Time (s)")
 
     figure.suptitle(
-        f"{variant.label}: {flow_count} flows, Run {RUN_TO_PLOT}",
+        f"{variant.label}: {flow_count} flows, {bandwidth_mbps} Mbps, "
+        f"Run {RUN_TO_PLOT}",
         y=0.995,
     )
     figure.tight_layout(rect=(0, 0, 1, 0.975))

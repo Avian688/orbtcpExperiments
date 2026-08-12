@@ -35,26 +35,53 @@ SIMULATION_TIME_S = 300
 HANDOVER_INTERVAL_S = 15
 MIN_HANDOVER_DOWNTIME_MS = 45
 MAX_HANDOVER_DOWNTIME_MS = 120
-MIN_BANDWIDTH_MBPS = 50
-MAX_BANDWIDTH_MBPS = 100
+# Apply the same fair-share trace to every flow-count workload.
+MIN_BANDWIDTH_PER_FLOW_MBPS = 4
+MAX_BANDWIDTH_PER_FLOW_MBPS = 8
 MIN_RTT_MS = 1
 MAX_RTT_MS = 100
 MIN_LOSS_PER = 0.0
 MAX_LOSS_PER = 0.01
 FLOW_START_WINDOW_S = 1.0
-QUEUE_BDP_MULTIPLIER = 2
-REFERENCE_BANDWIDTH_MBPS = (MIN_BANDWIDTH_MBPS + MAX_BANDWIDTH_MBPS) / 2
+QUEUE_BDP_MULTIPLIER = 1
+REFERENCE_BANDWIDTH_PER_FLOW_MBPS = (
+    MIN_BANDWIDTH_PER_FLOW_MBPS + MAX_BANDWIDTH_PER_FLOW_MBPS
+) / 2
 REFERENCE_RTT_MS = (MIN_RTT_MS + MAX_RTT_MS) / 2
-QUEUE_PACKETS = round(
-    (
-        REFERENCE_BANDWIDTH_MBPS
-        * 125_000
-        * (REFERENCE_RTT_MS / 1000)
+FAMILIES = ("flow_count", "utilization", "sampling")
+
+
+def bottleneck_bandwidth_mbps(
+    flow_count: int, bandwidth_per_flow_mbps: float
+) -> float:
+    if flow_count <= 0:
+        raise ValueError("flow_count must be positive")
+    if bandwidth_per_flow_mbps <= 0:
+        raise ValueError("bandwidth_per_flow_mbps must be positive")
+    return flow_count * bandwidth_per_flow_mbps
+
+
+def bandwidth_range_mbps(flow_count: int) -> tuple[float, float]:
+    return (
+        bottleneck_bandwidth_mbps(flow_count, MIN_BANDWIDTH_PER_FLOW_MBPS),
+        bottleneck_bandwidth_mbps(flow_count, MAX_BANDWIDTH_PER_FLOW_MBPS),
+    )
+
+
+def fair_share_bdp_packets(
+    bandwidth_per_flow_mbps: float = REFERENCE_BANDWIDTH_PER_FLOW_MBPS,
+    rtt_ms: float = REFERENCE_RTT_MS,
+) -> float:
+    return bandwidth_per_flow_mbps * 125_000 * (rtt_ms / 1000) / MSS_BYTES
+
+
+def queue_packets(flow_count: int) -> int:
+    return round(
+        fair_share_bdp_packets()
+        * flow_count
         * QUEUE_BDP_MULTIPLIER
     )
-    / MSS_BYTES
-)
-FAMILIES = ("flow_count", "utilization", "sampling")
+
 
 COMBINED_PINT = Variant(
     key="pint_combined_8_8_p1",
@@ -153,24 +180,28 @@ __all__ = (
     "FULL_ORBCC",
     "HANDOVER_INTERVAL_S",
     "LOSS",
-    "MAX_BANDWIDTH_MBPS",
+    "MAX_BANDWIDTH_PER_FLOW_MBPS",
     "MAX_HANDOVER_DOWNTIME_MS",
     "MAX_LOSS_PER",
     "MAX_RTT_MS",
-    "MIN_BANDWIDTH_MBPS",
+    "MIN_BANDWIDTH_PER_FLOW_MBPS",
     "MIN_HANDOVER_DOWNTIME_MS",
     "MIN_LOSS_PER",
     "MIN_RTT_MS",
     "MSS_BYTES",
     "NO_LOSS",
     "PINT_VARIANTS",
-    "QUEUE_PACKETS",
+    "QUEUE_BDP_MULTIPLIER",
+    "REFERENCE_BANDWIDTH_PER_FLOW_MBPS",
+    "REFERENCE_RTT_MS",
     "RUNS",
     "SAMPLING_VARIANTS",
     "SIMULATION_TIME_S",
     "VARIANTS",
     "Variant",
     "UTILIZATION_VARIANTS",
+    "bandwidth_range_mbps",
+    "bottleneck_bandwidth_mbps",
     "cases",
     "config_name",
     "expected_simulation_count",
@@ -180,7 +211,9 @@ __all__ = (
     "family_tick_labels",
     "family_variant_series",
     "family_x_label",
+    "fair_share_bdp_packets",
     "ini_name",
+    "queue_packets",
     "scenario_name",
     "trace_name",
 )

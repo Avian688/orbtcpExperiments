@@ -18,7 +18,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR.parent))
 
 from experimentTuningSupport import (
-    BANDWIDTH_MBPS,
+    BANDWIDTH_PER_FLOW_MBPS,
     EVALUATION_END_S,
     EVALUATION_START_S,
     EXACT_PINT,
@@ -32,6 +32,7 @@ from experimentTuningSupport import (
     RTT_MS,
     RUNS,
     VARIANTS,
+    bottleneck_bandwidth_mbps,
     family_label,
     family_tick_labels,
     family_variant_series,
@@ -111,6 +112,7 @@ def jain_index(values: np.ndarray) -> float:
 
 
 def collect_run_metrics(variant, flow_count: int, run: int) -> dict[str, object]:
+    bandwidth_mbps = bottleneck_bandwidth_mbps(flow_count)
     flow_goodputs = []
     flow_rtts = []
     for flow_index in range(flow_count):
@@ -158,7 +160,7 @@ def collect_run_metrics(variant, flow_count: int, run: int) -> dict[str, object]
         "queueLength",
     )
     queue_delay_ms = (
-        queue_packets * MSS_BYTES * 8 / (BANDWIDTH_MBPS * 1_000_000) * 1000
+        queue_packets * MSS_BYTES * 8 / (bandwidth_mbps * 1_000_000) * 1000
     )
 
     return {
@@ -166,13 +168,15 @@ def collect_run_metrics(variant, flow_count: int, run: int) -> dict[str, object]
         "variant_label": variant.label,
         "family": variant.family,
         "flow_count": flow_count,
+        "bandwidth_per_flow_mbps": BANDWIDTH_PER_FLOW_MBPS,
+        "bottleneck_bandwidth_mbps": bandwidth_mbps,
         "run": run,
         "flow_count_bits": variant.flow_count_bits,
         "flow_count_sketch": variant.flow_count_sketch,
         "utilization_bits": variant.utilization_bits,
         "feedback_probability": variant.feedback_probability,
         "normalized_goodput": float(
-            aggregate_goodput.mean() / (BANDWIDTH_MBPS * 1_000_000)
+            aggregate_goodput.mean() / (bandwidth_mbps * 1_000_000)
         ),
         "normalized_rtt": float(
             rtt_frame.mean(axis=1).mean() / (RTT_MS / 1000)
@@ -205,6 +209,8 @@ def aggregate_runs(run_metrics: pd.DataFrame) -> pd.DataFrame:
             "variant_label": first["variant_label"],
             "family": first["family"],
             "flow_count": flow_count,
+            "bandwidth_per_flow_mbps": first["bandwidth_per_flow_mbps"],
+            "bottleneck_bandwidth_mbps": first["bottleneck_bandwidth_mbps"],
             "flow_count_bits": first["flow_count_bits"],
             "flow_count_sketch": first["flow_count_sketch"],
             "utilization_bits": first["utilization_bits"],
@@ -383,6 +389,12 @@ def plot_family(family: str, aggregate: pd.DataFrame) -> None:
                 "reference."
             ),
             "flow_counts": FLOW_COUNTS,
+            "bandwidth_policy": "constant fair-share bandwidth per flow",
+            "bandwidth_per_flow_mbps": BANDWIDTH_PER_FLOW_MBPS,
+            "bottleneck_bandwidth_mbps": {
+                str(flow_count): bottleneck_bandwidth_mbps(flow_count)
+                for flow_count in FLOW_COUNTS
+            },
             "runs": list(RUNS),
             "reporting_window_seconds": [
                 EVALUATION_START_S,
@@ -424,6 +436,10 @@ def flow_count_heatmap_rows(aggregate: pd.DataFrame) -> pd.DataFrame:
                         {
                             "count_source": source,
                             "flow_count": flow_count,
+                            "bandwidth_per_flow_mbps": BANDWIDTH_PER_FLOW_MBPS,
+                            "bottleneck_bandwidth_mbps": (
+                                bottleneck_bandwidth_mbps(flow_count)
+                            ),
                             "field_bits": bits,
                             "field_label": (
                                 "16 (unencoded)" if bits == 16 else str(bits)
@@ -596,6 +612,12 @@ def plot_flow_count_heatmap(aggregate: pd.DataFrame) -> None:
                 "sketch cell is N/A because that configuration was not simulated."
             ),
             "flow_counts": FLOW_COUNTS,
+            "bandwidth_policy": "constant fair-share bandwidth per flow",
+            "bandwidth_per_flow_mbps": BANDWIDTH_PER_FLOW_MBPS,
+            "bottleneck_bandwidth_mbps": {
+                str(flow_count): bottleneck_bandwidth_mbps(flow_count)
+                for flow_count in FLOW_COUNTS
+            },
             "field_bits": FLOW_COUNT_HEATMAP_BITS,
             "runs": list(RUNS),
             "reporting_window_seconds": [
@@ -621,6 +643,12 @@ def main() -> None:
                 "hard handovers. Goodput includes handover downtime."
             ),
             "reporting_window_seconds": [EVALUATION_START_S, EVALUATION_END_S],
+            "bandwidth_policy": "constant fair-share bandwidth per flow",
+            "bandwidth_per_flow_mbps": BANDWIDTH_PER_FLOW_MBPS,
+            "bottleneck_bandwidth_mbps": {
+                str(flow_count): bottleneck_bandwidth_mbps(flow_count)
+                for flow_count in FLOW_COUNTS
+            },
         },
     )
     export_plot_dataframe(
@@ -630,6 +658,12 @@ def main() -> None:
         metadata={
             "experiment": EXPERIMENT,
             "description": "Five-run means and population standard deviations.",
+            "bandwidth_policy": "constant fair-share bandwidth per flow",
+            "bandwidth_per_flow_mbps": BANDWIDTH_PER_FLOW_MBPS,
+            "bottleneck_bandwidth_mbps": {
+                str(flow_count): bottleneck_bandwidth_mbps(flow_count)
+                for flow_count in FLOW_COUNTS
+            },
         },
     )
     for family in FAMILIES:
