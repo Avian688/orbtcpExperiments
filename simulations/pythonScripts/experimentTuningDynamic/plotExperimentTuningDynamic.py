@@ -151,24 +151,21 @@ PAPER_TUNING_PANELS = (
         "Flow-count sketch",
         "jain_fairness",
         100.0,
-        True,
-        "Jain fairness difference vs Exact PINT (pp; + is better)",
+        "Jain fairness difference\n(percentage points)",
     ),
     (
         "utilization",
         "Utilization encoding",
         "mean_queue_delay_ms",
         1.0,
-        False,
-        "Queue-delay difference vs Exact PINT (ms; - is better)",
+        "Mean queueing-delay difference (ms)",
     ),
     (
         "sampling",
         "Feedback sampling",
         "mean_recovery_deficit_percent",
         1.0,
-        False,
-        "Goodput-deficit difference vs Exact PINT (pp; - is better)",
+        "Post-handover goodput-deficit difference\n(percentage points)",
     ),
 )
 PAPER_TUNING_SIMPLE_PANELS = (
@@ -177,24 +174,67 @@ PAPER_TUNING_SIMPLE_PANELS = (
         "Flow-count sketch",
         "jain_fairness",
         1.0,
-        True,
-        "Jain fairness (higher is better)",
+        "Jain fairness",
     ),
     (
         "utilization",
         "Utilization encoding",
         "mean_queue_delay_ms",
         1.0,
-        False,
-        "Queueing delay (ms; lower is better)",
+        "Mean queueing delay (ms)",
     ),
     (
         "sampling",
         "Feedback sampling",
         "mean_recovery_deficit_percent",
         1.0,
-        False,
-        "Post-handover goodput deficit (%; lower is better)",
+        "Post-handover aggregate-goodput\ndeficit (%)",
+    ),
+)
+PAPER_TUNING_GOODPUT_PANELS = (
+    (
+        "flow_count",
+        "Flow-count sketch",
+        "jain_fairness",
+        100.0,
+        "Jain fairness difference\n(percentage points)",
+    ),
+    (
+        "utilization",
+        "Utilization encoding",
+        "normalized_goodput",
+        100.0,
+        "Normalized aggregate-goodput difference\n(percentage points)",
+    ),
+    (
+        "sampling",
+        "Feedback sampling",
+        "mean_post_handover_normalized_goodput",
+        100.0,
+        "Post-handover aggregate-goodput difference\n(percentage points)",
+    ),
+)
+PAPER_TUNING_GOODPUT_SIMPLE_PANELS = (
+    (
+        "flow_count",
+        "Flow-count sketch",
+        "jain_fairness",
+        1.0,
+        "Jain fairness",
+    ),
+    (
+        "utilization",
+        "Utilization encoding",
+        "normalized_goodput",
+        100.0,
+        "Normalized aggregate goodput\n(% of available capacity)",
+    ),
+    (
+        "sampling",
+        "Feedback sampling",
+        "mean_post_handover_normalized_goodput",
+        100.0,
+        "Post-handover aggregate goodput\n(% of available capacity)",
     ),
 )
 PAPER_VALIDATION_METRICS = (
@@ -286,11 +326,11 @@ def jain_fairness(values: np.ndarray) -> float:
     return float(np.square(np.sum(values)) / denominator)
 
 
-def mean_recovery_deficit_percent(
+def post_handover_normalized_goodput_samples(
     aggregate_goodput_bps: pd.Series,
     trace: dict,
-) -> float:
-    deficits = []
+) -> np.ndarray:
+    normalized_goodput = []
     for state in trace["states"][1:]:
         # Skip the partial one-second interval containing the disconnection.
         first_full_second = int(np.ceil(float(state["reconnect_time_s"])))
@@ -315,12 +355,41 @@ def mean_recovery_deficit_percent(
                 f"recovery window at state {state['state_index']}"
             )
         capacity_mbps = float(state["bandwidth_mbps"])
-        deficits.extend(
-            np.clip(1.0 - goodput_mbps / capacity_mbps, 0.0, 1.0) * 100.0
-        )
-    if not deficits:
+        if capacity_mbps <= 0:
+            raise RuntimeError(
+                "Non-positive bottleneck capacity in the post-handover "
+                f"recovery window at state {state['state_index']}"
+            )
+        normalized_goodput.extend(goodput_mbps / capacity_mbps)
+    if not normalized_goodput:
         raise RuntimeError("Dynamic trace contains no handovers to evaluate")
+    return np.asarray(normalized_goodput, dtype=float)
+
+
+def mean_recovery_deficit_percent(
+    aggregate_goodput_bps: pd.Series,
+    trace: dict,
+) -> float:
+    normalized_goodput = post_handover_normalized_goodput_samples(
+        aggregate_goodput_bps,
+        trace,
+    )
+    deficits = np.clip(1.0 - normalized_goodput, 0.0, 1.0) * 100.0
     return float(np.mean(deficits))
+
+
+def mean_post_handover_normalized_goodput(
+    aggregate_goodput_bps: pd.Series,
+    trace: dict,
+) -> float:
+    return float(
+        np.mean(
+            post_handover_normalized_goodput_samples(
+                aggregate_goodput_bps,
+                trace,
+            )
+        )
+    )
 
 
 def path_and_queue_means(queue_frame: pd.DataFrame, trace: dict) -> tuple[float, float]:
@@ -487,6 +556,12 @@ def collect_run_metrics(
         "mean_recovery_deficit_percent": mean_recovery_deficit_percent(
             aggregate_goodput_bps,
             trace,
+        ),
+        "mean_post_handover_normalized_goodput": (
+            mean_post_handover_normalized_goodput(
+                aggregate_goodput_bps,
+                trace,
+            )
         ),
         "aggregate_retransmission_mbps": aggregate_retransmission_mbps,
         "retransmission_overhead_percent": (
@@ -1348,7 +1423,6 @@ def tuning_panel_rows(
     family: str,
     metric: str,
     scale: float,
-    higher_is_better: bool,
 ) -> pd.DataFrame:
     variants = next(
         variants
@@ -1367,17 +1441,6 @@ def tuning_panel_rows(
             .to_numpy(dtype=float)
         )
         summary = confidence_summary(trace_values)
-        workload_means = (
-            paired.groupby(["flow_count", "condition"], sort=False)["delta"]
-            .mean()
-            .reset_index()
-        )
-        worst_index = (
-            workload_means["delta"].idxmin()
-            if higher_is_better
-            else workload_means["delta"].idxmax()
-        )
-        worst = workload_means.loc[worst_index]
         rows.append(
             {
                 "family": family,
@@ -1386,11 +1449,7 @@ def tuning_panel_rows(
                 "variant_label": parameter_heatmap_label(family, variant),
                 "x_index": x_index,
                 "selected": variant == selected_variant,
-                "higher_is_better": higher_is_better,
                 **summary,
-                "worst_workload_mean": float(worst["delta"]),
-                "worst_flow_count": int(worst["flow_count"]),
-                "worst_condition": str(worst["condition"]),
                 "trace_values": trace_values.tolist(),
             }
         )
@@ -1402,7 +1461,6 @@ def direct_tuning_panel_rows(
     family: str,
     metric: str,
     scale: float,
-    higher_is_better: bool,
 ) -> pd.DataFrame:
     variants = next(
         variants
@@ -1430,19 +1488,6 @@ def direct_tuning_panel_rows(
             .to_numpy(dtype=float)
         )
         summary = confidence_summary(trace_values)
-        workload_means = (
-            values.groupby(["flow_count", "condition"], sort=False)[
-                "plot_value"
-            ]
-            .mean()
-            .reset_index()
-        )
-        worst_index = (
-            workload_means["plot_value"].idxmin()
-            if higher_is_better
-            else workload_means["plot_value"].idxmax()
-        )
-        worst = workload_means.loc[worst_index]
         rows.append(
             {
                 "family": family,
@@ -1451,11 +1496,7 @@ def direct_tuning_panel_rows(
                 "variant_label": parameter_heatmap_label(family, variant),
                 "x_index": x_index,
                 "selected": variant == selected_variant,
-                "higher_is_better": higher_is_better,
                 **summary,
-                "worst_workload_mean": float(worst["plot_value"]),
-                "worst_flow_count": int(worst["flow_count"]),
-                "worst_condition": str(worst["condition"]),
                 "trace_values": trace_values.tolist(),
             }
         )
@@ -1469,11 +1510,10 @@ def plot_tuning_decision_figure(
     output_stem: str,
     figure_title: str,
     mean_legend_label: str,
-    footer: str,
     description: str,
     draw_zero_reference: bool,
 ) -> None:
-    figure, axes = plt.subplots(1, len(panels), figsize=(12, 4.3))
+    figure, axes = plt.subplots(1, len(panels), figsize=(12, 4.1))
     export_rows = []
     primary_color = PROTOCOL_COLORS["orbtcp"]
 
@@ -1482,7 +1522,6 @@ def plot_tuning_decision_figure(
         title,
         metric,
         scale,
-        higher_is_better,
         y_label,
     ) in zip(axes, panels, strict=True):
         panel_rows = panel_rows_function(
@@ -1490,7 +1529,6 @@ def plot_tuning_decision_figure(
             family,
             metric,
             scale,
-            higher_is_better,
         )
         export_rows.append(panel_rows)
         x_values = panel_rows["x_index"].to_numpy(dtype=float)
@@ -1517,15 +1555,6 @@ def plot_tuning_decision_figure(
             linewidth=1.6,
             capsize=3,
             zorder=3,
-        )
-        axis.scatter(
-            x_values,
-            panel_rows["worst_workload_mean"],
-            color="#B21F35",
-            marker="x",
-            s=34,
-            linewidths=1.3,
-            zorder=4,
         )
         selected_mean = float(
             panel_rows.loc[panel_rows["selected"], "mean"].iloc[0]
@@ -1563,14 +1592,6 @@ def plot_tuning_decision_figure(
         Line2D(
             [0],
             [0],
-            color="#B21F35",
-            marker="x",
-            linestyle="none",
-            label="Worst workload mean",
-        ),
-        Line2D(
-            [0],
-            [0],
             color=PROTOCOL_COLORS["orbtcp"],
             marker="*",
             markeredgecolor="black",
@@ -1582,20 +1603,12 @@ def plot_tuning_decision_figure(
     figure.legend(
         handles=legend_handles,
         loc="upper center",
-        ncol=3,
+        ncol=2,
         frameon=False,
         bbox_to_anchor=(0.5, 0.995),
     )
     figure.suptitle(figure_title, y=1.07)
-    figure.text(
-        0.5,
-        0.01,
-        footer,
-        ha="center",
-        fontsize=8,
-        color="#555555",
-    )
-    figure.tight_layout(rect=(0, 0.055, 1, 0.90))
+    figure.tight_layout(rect=(0, 0, 1, 0.90))
     PAPER_PLOT_ROOT.mkdir(parents=True, exist_ok=True)
     figure.savefig(
         PAPER_PLOT_ROOT / f"{output_stem}.pdf",
@@ -1628,13 +1641,7 @@ def plot_paper_tuning_decisions(run_metrics: pd.DataFrame) -> None:
         panel_rows_function=tuning_panel_rows,
         output_stem="tuning_decisions",
         figure_title="OrbCC-PINT parameter selection under dynamic paths",
-        mean_legend_label="Mean paired difference (95% CI)",
-        footer=(
-            "Paired against Exact PINT. Confidence intervals use ten trace-level "
-            "averages; the red x is the worst of six flow/loss workloads. "
-            f"Recovery uses the first {RECOVERY_WINDOW_S} complete seconds "
-            "after reconnect."
-        ),
+        mean_legend_label="Mean difference from Exact PINT (95% CI)",
         description=(
             "Final paired differences for the three-panel parameter-selection "
             "figure. Each confidence interval treats a matched dynamic trace as "
@@ -1652,16 +1659,46 @@ def plot_paper_tuning_decisions_simple(run_metrics: pd.DataFrame) -> None:
         output_stem="tuning_decisions_simple",
         figure_title="OrbCC-PINT parameter selection: direct metrics",
         mean_legend_label="Mean value (95% CI)",
-        footer=(
-            "Direct metric values, without an Exact-PINT subtraction. Confidence "
-            "intervals use ten trace-level averages; the red x is the worst of "
-            f"six flow/loss workloads. Recovery uses the first {RECOVERY_WINDOW_S} "
-            "complete seconds after reconnect."
-        ),
         description=(
             "Final direct values for the simpler three-panel parameter-selection "
             "figure. Each confidence interval treats a matched dynamic trace as "
             "the independent unit after averaging its six workloads."
+        ),
+        draw_zero_reference=False,
+    )
+
+
+def plot_paper_tuning_decisions_goodput(run_metrics: pd.DataFrame) -> None:
+    plot_tuning_decision_figure(
+        run_metrics=run_metrics,
+        panels=PAPER_TUNING_GOODPUT_PANELS,
+        panel_rows_function=tuning_panel_rows,
+        output_stem="tuning_decisions_goodput",
+        figure_title="OrbCC-PINT parameter selection: goodput view",
+        mean_legend_label="Mean difference from Exact PINT (95% CI)",
+        description=(
+            "Final paired differences for the goodput-focused parameter-selection "
+            "figure. Aggregate goodput is normalized by contemporaneous "
+            "bottleneck capacity before workloads are combined."
+        ),
+        draw_zero_reference=True,
+    )
+
+
+def plot_paper_tuning_decisions_goodput_simple(
+    run_metrics: pd.DataFrame,
+) -> None:
+    plot_tuning_decision_figure(
+        run_metrics=run_metrics,
+        panels=PAPER_TUNING_GOODPUT_SIMPLE_PANELS,
+        panel_rows_function=direct_tuning_panel_rows,
+        output_stem="tuning_decisions_goodput_simple",
+        figure_title="OrbCC-PINT parameter selection: direct goodput metrics",
+        mean_legend_label="Mean value (95% CI)",
+        description=(
+            "Final direct values for the goodput-focused parameter-selection "
+            "figure. Aggregate goodput is normalized by contemporaneous "
+            "bottleneck capacity before workloads are combined."
         ),
         draw_zero_reference=False,
     )
@@ -1816,6 +1853,8 @@ def plot_paper_combined_validation(run_metrics: pd.DataFrame) -> None:
 def plot_paper_figures(run_metrics: pd.DataFrame) -> None:
     plot_paper_tuning_decisions(run_metrics)
     plot_paper_tuning_decisions_simple(run_metrics)
+    plot_paper_tuning_decisions_goodput(run_metrics)
+    plot_paper_tuning_decisions_goodput_simple(run_metrics)
     plot_paper_combined_validation(run_metrics)
 
 
