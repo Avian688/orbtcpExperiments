@@ -138,7 +138,11 @@ export_plot_dataframe(
 # Plot each protocol's curve
 for protocol, marker in zip(PROTOCOLS, ['x', '.']):
     dfp   = summary[summary['protocol'] == protocol].set_index('delay')
-    label = "LeoTCP" if protocol == "orbtcp" else "LeoTCP No AvgRTT"
+    label = (
+        "Full INT reference"
+        if protocol == "orbtcp"
+        else "Full INT without AvgRTT"
+    )
     color = protocol_colors[protocol]
     plot_points_rtt(
         ax, dfp,
@@ -161,7 +165,7 @@ for axis in (ax.xaxis, ax.yaxis):
 # Build legend with line+marker proxies (no variance)
 markers = ['x', '.']
 colors  = [protocol_colors[p] for p in PROTOCOLS]
-labels  = ["OrbCC", "OrbCC No AvgRTT"]
+labels  = ["Full INT reference", "Full INT without AvgRTT"]
 proxy_lines = [
     Line2D([0], [0],
            marker=mk,

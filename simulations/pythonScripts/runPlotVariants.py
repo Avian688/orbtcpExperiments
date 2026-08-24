@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run an aggregate plot script for final PINT and full-INT comparison views."""
+"""Run aggregate plots for the final OrbCC and a full-INT diagnostic view."""
 
 from __future__ import annotations
 
@@ -20,7 +20,9 @@ PLOT_SUFFIXES = {".csv", ".json", ".pdf", ".png", ".svg"}
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Generate PINT-only and PINT-plus-full-INT aggregate plot variants."
+        description=(
+            "Generate final OrbCC and optional full-INT diagnostic plot variants."
+        )
     )
     parser.add_argument("script", type=Path, help="Aggregate plot script to run")
     parser.add_argument("script_args", nargs=argparse.REMAINDER, help="Arguments passed to the plot script")

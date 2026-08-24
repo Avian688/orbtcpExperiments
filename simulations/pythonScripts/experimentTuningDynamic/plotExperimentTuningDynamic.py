@@ -48,7 +48,13 @@ from experimentTuningDynamicSupport import (  # noqa: E402
     trace_name,
 )
 from plotDataExport import export_plot_dataframe  # noqa: E402
-from plotProtocolSupport import PROTOCOL_COLORS  # noqa: E402
+from plotProtocolSupport import (  # noqa: E402
+    FINAL_ORBCC_LABEL,
+    FINAL_ORBCC_PROTOCOL,
+    FULL_INT_ORBCC_PROTOCOL,
+    FULL_INT_REFERENCE_LABEL,
+    PROTOCOL_COLORS,
+)
 
 
 SIMULATIONS_DIR = SCRIPT_DIR.parents[1]
@@ -96,6 +102,8 @@ SERIES_COLORS = ("#0C5DA5", "#00A087", "#D1495B", "#7E2F8E")
 AVAILABLE_CAPACITY_COLOR = "#777777"
 PINT_COLOR = "#0C5DA5"
 EXACT_COUNT_COLOR = "#00A087"
+FINAL_ORBCC_COLOR = PROTOCOL_COLORS[FINAL_ORBCC_PROTOCOL]
+FULL_INT_REFERENCE_COLOR = PROTOCOL_COLORS[FULL_INT_ORBCC_PROTOCOL]
 MATCHED_RUN_ALPHA = 0.12
 
 HIGHER_IS_BETTER_CMAP = LinearSegmentedColormap.from_list(
@@ -584,7 +592,7 @@ def collect_all_runs() -> pd.DataFrame:
 
 def variant_display_label(variant: Variant) -> str:
     if variant == FULL_ORBCC:
-        return "OrbCC (full INT)"
+        return FULL_INT_REFERENCE_LABEL
     if variant == EXACT_PINT:
         return "Exact PINT"
     if variant in FLOW_COUNT_SKETCH_VARIANTS:
@@ -597,7 +605,7 @@ def variant_display_label(variant: Variant) -> str:
 def variant_style(variant: Variant, family: str) -> dict[str, object]:
     if variant == FULL_ORBCC:
         return {
-            "color": PROTOCOL_COLORS["orbtcp"],
+            "color": FULL_INT_REFERENCE_COLOR,
             "linestyle": ":",
             "linewidth": 2.0,
         }
@@ -868,7 +876,7 @@ def plot_family_tradeoff(
                 condition,
                 flow_count,
                 metric,
-                "OrbCC full INT",
+                FULL_INT_REFERENCE_LABEL,
                 FULL_ORBCC,
                 None,
                 "Reference",
@@ -939,17 +947,17 @@ def plot_family_tradeoff(
             )
             axis.axhline(
                 reference_mean,
-                color=PROTOCOL_COLORS["orbtcp"],
+                color=FULL_INT_REFERENCE_COLOR,
                 linestyle="--",
                 linewidth=1.4,
-                label="OrbCC (full INT)",
+                label=FULL_INT_REFERENCE_LABEL,
                 zorder=2,
             )
             axis.fill_between(
                 [x_values[0], x_values[-1]],
                 reference_mean - reference_std,
                 reference_mean + reference_std,
-                color=PROTOCOL_COLORS["orbtcp"],
+                color=FULL_INT_REFERENCE_COLOR,
                 alpha=0.09,
                 zorder=0,
             )
@@ -978,10 +986,10 @@ def plot_family_tradeoff(
         Line2D(
             [0],
             [0],
-            color=PROTOCOL_COLORS["orbtcp"],
+            color=FULL_INT_REFERENCE_COLOR,
             linestyle="--",
             linewidth=1.4,
-            label="OrbCC (full INT)",
+            label=FULL_INT_REFERENCE_LABEL,
         )
     )
     figure.legend(
@@ -1515,7 +1523,7 @@ def plot_tuning_decision_figure(
 ) -> None:
     figure, axes = plt.subplots(1, len(panels), figsize=(12, 4.1))
     export_rows = []
-    primary_color = PROTOCOL_COLORS["orbtcp"]
+    primary_color = FINAL_ORBCC_COLOR
 
     for axis, (
         family,
@@ -1584,7 +1592,7 @@ def plot_tuning_decision_figure(
         Line2D(
             [0],
             [0],
-            color=PROTOCOL_COLORS["orbtcp"],
+            color=FINAL_ORBCC_COLOR,
             marker="o",
             linewidth=1.6,
             label=mean_legend_label,
@@ -1592,7 +1600,7 @@ def plot_tuning_decision_figure(
         Line2D(
             [0],
             [0],
-            color=PROTOCOL_COLORS["orbtcp"],
+            color=FINAL_ORBCC_COLOR,
             marker="*",
             markeredgecolor="black",
             linestyle="none",
@@ -1640,7 +1648,7 @@ def plot_paper_tuning_decisions(run_metrics: pd.DataFrame) -> None:
         panels=PAPER_TUNING_PANELS,
         panel_rows_function=tuning_panel_rows,
         output_stem="tuning_decisions",
-        figure_title="OrbCC-PINT parameter selection under dynamic paths",
+        figure_title="OrbCC parameter selection under dynamic paths",
         mean_legend_label="Mean difference from Exact PINT (95% CI)",
         description=(
             "Final paired differences for the three-panel parameter-selection "
@@ -1657,7 +1665,7 @@ def plot_paper_tuning_decisions_simple(run_metrics: pd.DataFrame) -> None:
         panels=PAPER_TUNING_SIMPLE_PANELS,
         panel_rows_function=direct_tuning_panel_rows,
         output_stem="tuning_decisions_simple",
-        figure_title="OrbCC-PINT parameter selection: direct metrics",
+        figure_title="OrbCC parameter selection: direct metrics",
         mean_legend_label="Mean value (95% CI)",
         description=(
             "Final direct values for the simpler three-panel parameter-selection "
@@ -1674,7 +1682,7 @@ def plot_paper_tuning_decisions_goodput(run_metrics: pd.DataFrame) -> None:
         panels=PAPER_TUNING_GOODPUT_PANELS,
         panel_rows_function=tuning_panel_rows,
         output_stem="tuning_decisions_goodput",
-        figure_title="OrbCC-PINT parameter selection: goodput view",
+        figure_title="OrbCC parameter selection: goodput view",
         mean_legend_label="Mean difference from Exact PINT (95% CI)",
         description=(
             "Final paired differences for the goodput-focused parameter-selection "
@@ -1693,7 +1701,7 @@ def plot_paper_tuning_decisions_goodput_simple(
         panels=PAPER_TUNING_GOODPUT_SIMPLE_PANELS,
         panel_rows_function=direct_tuning_panel_rows,
         output_stem="tuning_decisions_goodput_simple",
-        figure_title="OrbCC-PINT parameter selection: direct goodput metrics",
+        figure_title="OrbCC parameter selection: direct goodput metrics",
         mean_legend_label="Mean value (95% CI)",
         description=(
             "Final direct values for the goodput-focused parameter-selection "
@@ -1710,13 +1718,19 @@ def validation_variant_styles() -> tuple[
     return (
         (
             COMBINED_PINT,
-            "OrbCC-PINT (combined)",
-            PROTOCOL_COLORS["orbtcp"],
+            FINAL_ORBCC_LABEL,
+            FINAL_ORBCC_COLOR,
             "o",
             "-",
         ),
         (EXACT_PINT, "Exact PINT", "#303030", "s", "--"),
-        (FULL_ORBCC, "OrbCC (full INT)", "#888888", "^", ":"),
+        (
+            FULL_ORBCC,
+            FULL_INT_REFERENCE_LABEL,
+            FULL_INT_REFERENCE_COLOR,
+            "^",
+            ":",
+        ),
     )
 
 
@@ -1813,7 +1827,7 @@ def plot_paper_combined_validation(run_metrics: pd.DataFrame) -> None:
         frameon=False,
         bbox_to_anchor=(0.5, 0.995),
     )
-    figure.suptitle("Combined OrbCC-PINT validation", y=1.025)
+    figure.suptitle("Combined OrbCC validation", y=1.025)
     figure.text(
         0.5,
         0.01,
@@ -1839,7 +1853,7 @@ def plot_paper_combined_validation(run_metrics: pd.DataFrame) -> None:
             **bandwidth_metadata(),
             "experiment": EXPERIMENT,
             "description": (
-                "Final points for the combined OrbCC-PINT validation figure. "
+                "Final points for the combined OrbCC validation figure. "
                 "Confidence intervals are calculated across ten matched traces."
             ),
             "runs": list(RUNS),

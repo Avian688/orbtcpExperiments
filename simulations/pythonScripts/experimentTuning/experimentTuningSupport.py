@@ -61,7 +61,7 @@ class Variant:
 
 FULL_ORBCC = Variant(
     key="orbtcp",
-    label="OrbCC (full INT)",
+    label="Full INT reference",
     config_prefix="Orbtcp",
     family="reference",
 )
@@ -138,7 +138,7 @@ def family_variant_series(
             ("Sketch-derived count", (*FLOW_COUNT_SKETCH_VARIANTS, EXACT_PINT)),
             ("Exact count", (*FLOW_COUNT_EXACT_VARIANTS, EXACT_PINT)),
         )
-    return (("OrbCC-PINT tuning", family_variants(family)),)
+    return (("OrbCC", family_variants(family)),)
 
 
 def family_label(family: str) -> str:

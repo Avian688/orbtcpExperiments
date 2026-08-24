@@ -40,8 +40,8 @@ protocol_colors = {
 
 # Display names for legend
 display_names = {
-    "Orbtcp":            "OrbCC",
-    "OrbtcpNoInitFlows": "OrbCC No InitPhase",
+    "Orbtcp":            "Full INT reference",
+    "OrbtcpNoInitFlows": "Full INT without InitPhase",
 }
 
 plt.figure(figsize=(4.5, 1.2))

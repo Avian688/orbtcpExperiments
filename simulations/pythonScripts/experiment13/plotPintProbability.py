@@ -19,7 +19,11 @@ sys.path.insert(0, str(SCRIPT_DIR.parent))
 
 from experiment13Support import MSS_BYTES, PINT_VARIANTS, RUNS, VARIANTS, WORKLOADS, workload_label
 from plotDataExport import export_plot_dataframe
-from plotProtocolSupport import PROTOCOL_COLORS
+from plotProtocolSupport import (
+    FINAL_ORBCC_LABEL,
+    FULL_INT_REFERENCE_LABEL,
+    PROTOCOL_COLORS,
+)
 
 
 SIMULATIONS_DIR = SCRIPT_DIR.parents[1]
@@ -134,7 +138,11 @@ def plot_individual_response(workload: str, run: int) -> None:
     axes[-1].set_xlabel("Time (s)")
     handles, labels = axes[0].get_legend_handles_labels()
     figure.legend(handles, labels, loc="upper center", ncol=3, frameon=False, fontsize=8)
-    figure.suptitle(f"Experiment 13: {workload_label(workload)} / Run {run}", y=0.995)
+    figure.suptitle(
+        f"Experiment 13: OrbCC feedback probability / "
+        f"{workload_label(workload)} / Run {run}",
+        y=0.995,
+    )
     figure.tight_layout(rect=(0, 0, 1, 0.93))
     figure.savefig(run_dir / "pint_probability_response.pdf", dpi=600, bbox_inches="tight")
     plt.close(figure)
@@ -193,7 +201,12 @@ def plot_probability_summary(workload: str, summary: pd.DataFrame) -> None:
         metric_rows = summary[summary["metric"] == metric]
         reference = metric_rows[metric_rows["variant"] == "orbtcp"].iloc[0]
         pint_rows = metric_rows[metric_rows["variant"] != "orbtcp"].sort_values("pint_feedback_probability")
-        axis.axhline(reference["mean"], color=COLORS["orbtcp"], linewidth=1.5, label="OrbCC (full INT)")
+        axis.axhline(
+            reference["mean"],
+            color=COLORS["orbtcp"],
+            linewidth=1.5,
+            label=FULL_INT_REFERENCE_LABEL,
+        )
         axis.fill_between(
             [pint_rows["pint_feedback_probability"].min(), pint_rows["pint_feedback_probability"].max()],
             reference["mean"] - reference["std"],
@@ -210,7 +223,7 @@ def plot_probability_summary(workload: str, summary: pd.DataFrame) -> None:
             markersize=4,
             linewidth=1.3,
             capsize=2,
-            label="OrbCC-PINT",
+            label=FINAL_ORBCC_LABEL,
         )
         axis.set_xscale("log", base=2)
         axis.set_ylabel(METRIC_LABELS[metric])
@@ -218,9 +231,13 @@ def plot_probability_summary(workload: str, summary: pd.DataFrame) -> None:
         if metric == "cwnd":
             axis.legend(frameon=False, loc="best")
 
-    axes[-1].set_xlabel("PINT feedback probability")
+    axes[-1].set_xlabel("Feedback probability")
     axes[-1].xaxis.set_major_formatter(PercentFormatter(xmax=1))
-    figure.suptitle(f"Experiment 13: PINT feedback probability / {workload_label(workload)}", y=0.995)
+    figure.suptitle(
+        f"Experiment 13: OrbCC feedback probability / "
+        f"{workload_label(workload)}",
+        y=0.995,
+    )
     figure.tight_layout(rect=(0, 0, 1, 0.98))
     figure.savefig(out_dir / "pint_probability_summary.pdf", dpi=600, bbox_inches="tight")
     plt.close(figure)

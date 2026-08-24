@@ -442,7 +442,10 @@ def plot_cumulative(script_name: str) -> None:
             str(SCRIPT_DIR / script_name),
         ],
         cwd=cumulative_dir,
-        description=f"Running {script_name} (PINT main and full-INT comparison)",
+        description=(
+            f"Running {script_name} "
+            "(final OrbCC main and full-INT diagnostic)"
+        ),
         timeout=3600,
     )
 

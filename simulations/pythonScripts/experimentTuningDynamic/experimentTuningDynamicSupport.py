@@ -85,7 +85,7 @@ def queue_packets(flow_count: int) -> int:
 
 COMBINED_PINT = Variant(
     key="pint_combined_8_8_p1",
-    label="OrbCC-PINT (8-bit count, 8-bit utilization, p=1)",
+    label="OrbCC",
     config_prefix="OrbtcpPintCombined8_8P1",
     family="combined",
     flow_count_bits=8,

@@ -19,6 +19,7 @@ sys.path.insert(0, str(SCRIPT_DIR.parent))
 from experimentTuningSupport import (  # noqa: E402
     EXPERIMENT,
     FLOW_COUNTS,
+    FULL_ORBCC,
     MSS_BYTES,
     RTT_MS,
     RUNS,
@@ -26,7 +27,11 @@ from experimentTuningSupport import (  # noqa: E402
     VARIANTS,
     bottleneck_bandwidth_mbps,
 )
-from plotProtocolSupport import PROTOCOL_COLORS  # noqa: E402
+from plotProtocolSupport import (  # noqa: E402
+    FINAL_ORBCC_PROTOCOL,
+    FULL_INT_ORBCC_PROTOCOL,
+    PROTOCOL_COLORS,
+)
 
 
 SIMULATIONS_DIR = SCRIPT_DIR.parents[1]
@@ -37,7 +42,8 @@ SECONDS = pd.Index(range(SIMULATION_TIME_S), name="time")
 
 FLOW_COLOR = "#0C5DA5"
 REFERENCE_COLOR = "#777777"
-GOODPUT_COLOR = PROTOCOL_COLORS["orbtcp"]
+FINAL_ORBCC_COLOR = PROTOCOL_COLORS[FINAL_ORBCC_PROTOCOL]
+FULL_INT_REFERENCE_COLOR = PROTOCOL_COLORS[FULL_INT_ORBCC_PROTOCOL]
 
 
 def metric_path(
@@ -121,6 +127,11 @@ def plot_flow_metric(
 
 
 def plot_configuration(variant, flow_count: int) -> None:
+    goodput_color = (
+        FULL_INT_REFERENCE_COLOR
+        if variant == FULL_ORBCC
+        else FINAL_ORBCC_COLOR
+    )
     bandwidth_mbps = bottleneck_bandwidth_mbps(flow_count)
     goodputs = [
         load_goodput(variant.key, flow_count, flow_index)
@@ -156,7 +167,7 @@ def plot_configuration(variant, flow_count: int) -> None:
     goodput_axis.plot(
         aggregate_goodput_mbps.index,
         aggregate_goodput_mbps,
-        color=GOODPUT_COLOR,
+        color=goodput_color,
         linewidth=1.45,
         label="Aggregate goodput",
     )

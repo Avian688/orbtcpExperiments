@@ -8,6 +8,10 @@ RAYNET_PROTOCOLS = []
 PLOT_VARIANT_ENV = "ORBTCP_PLOT_VARIANT"
 PLOT_VARIANT_MAIN = "pint"
 PLOT_VARIANT_COMPARISON = "with_orbtcp"
+FINAL_ORBCC_PROTOCOL = "orbtcp_pint"
+FULL_INT_ORBCC_PROTOCOL = "orbtcp"
+FINAL_ORBCC_LABEL = "OrbCC"
+FULL_INT_REFERENCE_LABEL = "Full INT reference"
 
 CORE_PROTOCOLS_FINAL = ["cubic", "bbr", "bbr3", "orbtcp_pint", *RAYNET_PROTOCOLS]
 CORE_PROTOCOLS_WITH_ORBTCP = ["cubic", "bbr", "bbr3", "orbtcp_pint", "orbtcp", *RAYNET_PROTOCOLS]
@@ -31,8 +35,32 @@ def _select_protocols(final_protocols, comparison_protocols):
     return comparison_protocols if current_plot_variant() == PLOT_VARIANT_COMPARISON else final_protocols
 
 
-# Main figures represent the final PINT design. The comparison variant adds
-# full-INT OrbCC alongside it for direct protocol comparison.
+def _validate_protocol_sets(name, final_protocols, comparison_protocols):
+    if FULL_INT_ORBCC_PROTOCOL in final_protocols:
+        raise RuntimeError(f"{name} main plots must not include full-INT OrbCC")
+    if FINAL_ORBCC_PROTOCOL not in final_protocols:
+        raise RuntimeError(f"{name} main plots must include the final OrbCC implementation")
+    for protocol in (FINAL_ORBCC_PROTOCOL, FULL_INT_ORBCC_PROTOCOL):
+        if protocol not in comparison_protocols:
+            raise RuntimeError(
+                f"{name} comparison plots must include {protocol}"
+            )
+
+
+for _name, _final_protocols, _comparison_protocols in (
+    ("core", CORE_PROTOCOLS_FINAL, CORE_PROTOCOLS_WITH_ORBTCP),
+    ("LEO", LEO_PROTOCOLS_FINAL, LEO_PROTOCOLS_WITH_ORBTCP),
+    (
+        "experiment 1/2",
+        EXPERIMENT_1_PROTOCOLS_FINAL,
+        EXPERIMENT_1_PROTOCOLS_WITH_ORBTCP,
+    ),
+):
+    _validate_protocol_sets(_name, _final_protocols, _comparison_protocols)
+
+
+# Main figures use the final OrbCC implementation (the internal orbtcp_pint
+# result key). The comparison variant adds the legacy full-INT reference.
 CORE_PROTOCOLS = _select_protocols(CORE_PROTOCOLS_FINAL, CORE_PROTOCOLS_WITH_ORBTCP)
 LEO_PROTOCOLS = _select_protocols(LEO_PROTOCOLS_FINAL, LEO_PROTOCOLS_WITH_ORBTCP)
 EXPERIMENT_1_PROTOCOLS = _select_protocols(
@@ -45,8 +73,8 @@ PROTOCOL_LABELS = {
     "bbr": "BBRv1",
     "bbr3": "BBRv3",
     "satcp": "SaTCP",
-    "orbtcp": "OrbCC",
-    "orbtcp_pint": "OrbCC-PINT",
+    "orbtcp": FULL_INT_REFERENCE_LABEL,
+    "orbtcp_pint": FINAL_ORBCC_LABEL,
     "leocc": "LeoCC",
     "orca": "Orca",
     "cleanslate": "CleanSlate",
@@ -58,7 +86,7 @@ PROTOCOL_COLORS = {
     "bbr": "#00B945",
     "bbr3": "#EB0909",
     "satcp": "#7E2F8E",
-    "orbtcp": "#FF9500",
+    "orbtcp": "#777777",
     "orbtcp_pint": "#FF9500",
     "leocc": "#17BECF",
     "orca": "#8C564B",
@@ -71,7 +99,7 @@ PROTOCOL_REJOIN_COLORS = {
     "bbr": "#76D98A",
     "bbr3": "#F27A7A",
     "satcp": "#B77CC4",
-    "orbtcp": "#FFC46B",
+    "orbtcp": "#B5B5B5",
     "orbtcp_pint": "#FFC46B",
     "leocc": "#77DCE6",
     "orca": "#C49A8F",

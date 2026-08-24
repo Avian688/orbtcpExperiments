@@ -29,21 +29,21 @@ class Variant:
 
 FULL_ORBCC = Variant(
     key="orbtcp",
-    label="OrbCC (full INT)",
+    label="Full INT reference",
     config_prefix="Orbtcp",
     protocol="orbtcp",
     probability=None,
 )
 
 PINT_VARIANTS = (
-    Variant("orbtcp_pint_p100", "PINT 100%", "OrbtcpPintP100", "orbtcp_pint", 1.0),
-    Variant("orbtcp_pint_p50", "PINT 50%", "OrbtcpPintP50", "orbtcp_pint", 0.5),
-    Variant("orbtcp_pint_p25", "PINT 25%", "OrbtcpPintP25", "orbtcp_pint", 0.25),
-    Variant("orbtcp_pint_p12_5", "PINT 12.5%", "OrbtcpPintP12_5", "orbtcp_pint", 0.125),
-    Variant("orbtcp_pint_p6_25", "PINT 6.25%", "OrbtcpPintP6_25", "orbtcp_pint", 0.0625),
-    Variant("orbtcp_pint_p3_125", "PINT 3.125%", "OrbtcpPintP3_125", "orbtcp_pint", 0.03125),
-    Variant("orbtcp_pint_p1_5625", "PINT 1.5625%", "OrbtcpPintP1_5625", "orbtcp_pint", 0.015625),
-    Variant("orbtcp_pint_p0_78125", "PINT 0.78125%", "OrbtcpPintP0_78125", "orbtcp_pint", 0.0078125),
+    Variant("orbtcp_pint_p100", "p=100%", "OrbtcpPintP100", "orbtcp_pint", 1.0),
+    Variant("orbtcp_pint_p50", "p=50%", "OrbtcpPintP50", "orbtcp_pint", 0.5),
+    Variant("orbtcp_pint_p25", "p=25%", "OrbtcpPintP25", "orbtcp_pint", 0.25),
+    Variant("orbtcp_pint_p12_5", "p=12.5%", "OrbtcpPintP12_5", "orbtcp_pint", 0.125),
+    Variant("orbtcp_pint_p6_25", "p=6.25%", "OrbtcpPintP6_25", "orbtcp_pint", 0.0625),
+    Variant("orbtcp_pint_p3_125", "p=3.125%", "OrbtcpPintP3_125", "orbtcp_pint", 0.03125),
+    Variant("orbtcp_pint_p1_5625", "p=1.5625%", "OrbtcpPintP1_5625", "orbtcp_pint", 0.015625),
+    Variant("orbtcp_pint_p0_78125", "p=0.78125%", "OrbtcpPintP0_78125", "orbtcp_pint", 0.0078125),
 )
 VARIANTS = (FULL_ORBCC, *PINT_VARIANTS)
 

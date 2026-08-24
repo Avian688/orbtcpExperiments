@@ -39,7 +39,11 @@ from experimentTuningSupport import (
     family_x_label,
 )
 from plotDataExport import export_plot_dataframe
-from plotProtocolSupport import PROTOCOL_COLORS
+from plotProtocolSupport import (
+    FULL_INT_ORBCC_PROTOCOL,
+    FULL_INT_REFERENCE_LABEL,
+    PROTOCOL_COLORS,
+)
 
 
 SIMULATIONS_DIR = SCRIPT_DIR.parents[1]
@@ -51,7 +55,7 @@ SECONDS = pd.Index(
 
 PINT_COLOR = "#0C5DA5"
 EXACT_COUNT_COLOR = "#00A087"
-ORBIT_COLOR = PROTOCOL_COLORS["orbtcp"]
+FULL_INT_REFERENCE_COLOR = PROTOCOL_COLORS[FULL_INT_ORBCC_PROTOCOL]
 METRICS = (
     ("normalized_goodput", "Normalized goodput"),
     ("mean_queue_delay_ms", "Queueing delay (ms)"),
@@ -309,16 +313,16 @@ def plot_family(family: str, aggregate: pd.DataFrame) -> None:
             )
             axis.axhline(
                 reference_mean,
-                color=ORBIT_COLOR,
+                color=FULL_INT_REFERENCE_COLOR,
                 linestyle="--",
                 linewidth=1.35,
-                label="OrbCC (full INT)",
+                label=FULL_INT_REFERENCE_LABEL,
             )
             axis.fill_between(
                 [x_values[0], x_values[-1]],
                 reference_mean - reference_std,
                 reference_mean + reference_std,
-                color=ORBIT_COLOR,
+                color=FULL_INT_REFERENCE_COLOR,
                 alpha=0.10,
             )
             axis.grid(True, alpha=0.22, linewidth=0.6)
@@ -349,10 +353,10 @@ def plot_family(family: str, aggregate: pd.DataFrame) -> None:
         Line2D(
             [0],
             [0],
-            color=ORBIT_COLOR,
+            color=FULL_INT_REFERENCE_COLOR,
             linestyle="--",
             linewidth=1.35,
-            label="OrbCC (full INT)",
+            label=FULL_INT_REFERENCE_LABEL,
         )
     )
     figure.legend(
@@ -385,7 +389,7 @@ def plot_family(family: str, aggregate: pd.DataFrame) -> None:
                 "Means, population standard deviations, and matched-run values "
                 "used by the aggregate tuning plot. The flow-count plot separates "
                 "sketch-derived and exact counts at every field width. Exact PINT "
-                "is shared by all feature sweeps; OrbCC full INT is the dashed "
+                "is shared by all feature sweeps; full INT is the dashed "
                 "reference."
             ),
             "flow_counts": FLOW_COUNTS,
