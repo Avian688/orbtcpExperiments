@@ -252,6 +252,35 @@ PAPER_VALIDATION_METRICS = (
 )
 
 
+def save_standalone_legend(
+    handles,
+    output_path: Path,
+    columns: int,
+) -> None:
+    columns = min(columns, len(handles))
+    rows = int(np.ceil(len(handles) / columns))
+    figure = plt.figure(
+        figsize=(max(4.0, 2.6 * columns), max(0.55, 0.45 * rows))
+    )
+    figure.legend(
+        handles=handles,
+        loc="center",
+        ncol=columns,
+        frameon=False,
+        columnspacing=1.5,
+        handletextpad=0.6,
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(
+        output_path,
+        dpi=600,
+        bbox_inches="tight",
+        pad_inches=0.02,
+        transparent=True,
+    )
+    plt.close(figure)
+
+
 def bandwidth_metadata() -> dict[str, object]:
     return {
         "bandwidth_policy": "constant fair-share range per flow",
@@ -1516,7 +1545,6 @@ def plot_tuning_decision_figure(
     panels,
     panel_rows_function,
     output_stem: str,
-    figure_title: str,
     mean_legend_label: str,
     description: str,
     draw_zero_reference: bool,
@@ -1608,16 +1636,13 @@ def plot_tuning_decision_figure(
             label="Selected value",
         ),
     )
-    figure.legend(
-        handles=legend_handles,
-        loc="upper center",
-        ncol=2,
-        frameon=False,
-        bbox_to_anchor=(0.5, 0.995),
-    )
-    figure.suptitle(figure_title, y=1.07)
-    figure.tight_layout(rect=(0, 0, 1, 0.90))
     PAPER_PLOT_ROOT.mkdir(parents=True, exist_ok=True)
+    save_standalone_legend(
+        legend_handles,
+        PAPER_PLOT_ROOT / f"{output_stem}_legend.pdf",
+        2,
+    )
+    figure.tight_layout()
     figure.savefig(
         PAPER_PLOT_ROOT / f"{output_stem}.pdf",
         dpi=600,
@@ -1648,7 +1673,6 @@ def plot_paper_tuning_decisions(run_metrics: pd.DataFrame) -> None:
         panels=PAPER_TUNING_PANELS,
         panel_rows_function=tuning_panel_rows,
         output_stem="tuning_decisions",
-        figure_title="OrbCC parameter selection under dynamic paths",
         mean_legend_label="Mean difference from Exact PINT (95% CI)",
         description=(
             "Final paired differences for the three-panel parameter-selection "
@@ -1665,7 +1689,6 @@ def plot_paper_tuning_decisions_simple(run_metrics: pd.DataFrame) -> None:
         panels=PAPER_TUNING_SIMPLE_PANELS,
         panel_rows_function=direct_tuning_panel_rows,
         output_stem="tuning_decisions_simple",
-        figure_title="OrbCC parameter selection: direct metrics",
         mean_legend_label="Mean value (95% CI)",
         description=(
             "Final direct values for the simpler three-panel parameter-selection "
@@ -1682,7 +1705,6 @@ def plot_paper_tuning_decisions_goodput(run_metrics: pd.DataFrame) -> None:
         panels=PAPER_TUNING_GOODPUT_PANELS,
         panel_rows_function=tuning_panel_rows,
         output_stem="tuning_decisions_goodput",
-        figure_title="OrbCC parameter selection: goodput view",
         mean_legend_label="Mean difference from Exact PINT (95% CI)",
         description=(
             "Final paired differences for the goodput-focused parameter-selection "
@@ -1701,7 +1723,6 @@ def plot_paper_tuning_decisions_goodput_simple(
         panels=PAPER_TUNING_GOODPUT_SIMPLE_PANELS,
         panel_rows_function=direct_tuning_panel_rows,
         output_stem="tuning_decisions_goodput_simple",
-        figure_title="OrbCC parameter selection: direct goodput metrics",
         mean_legend_label="Mean value (95% CI)",
         description=(
             "Final direct values for the goodput-focused parameter-selection "
@@ -1818,16 +1839,13 @@ def plot_paper_combined_validation(run_metrics: pd.DataFrame) -> None:
 
     axes[-1].set_xticks(range(len(columns)), column_labels)
     axes[-1].set_xlabel("Dynamic condition and concurrent flows")
-    legend_handles, legend_labels = axes[0].get_legend_handles_labels()
-    figure.legend(
-        handles=legend_handles,
-        labels=legend_labels,
-        loc="upper center",
-        ncol=3,
-        frameon=False,
-        bbox_to_anchor=(0.5, 0.995),
+    legend_handles, _ = axes[0].get_legend_handles_labels()
+    PAPER_PLOT_ROOT.mkdir(parents=True, exist_ok=True)
+    save_standalone_legend(
+        legend_handles,
+        PAPER_PLOT_ROOT / "combined_validation_legend.pdf",
+        3,
     )
-    figure.suptitle("Combined OrbCC validation", y=1.025)
     figure.text(
         0.5,
         0.01,
@@ -1836,8 +1854,7 @@ def plot_paper_combined_validation(run_metrics: pd.DataFrame) -> None:
         fontsize=8,
         color="#555555",
     )
-    figure.tight_layout(rect=(0, 0.035, 1, 0.94))
-    PAPER_PLOT_ROOT.mkdir(parents=True, exist_ok=True)
+    figure.tight_layout(rect=(0, 0.035, 1, 1))
     figure.savefig(
         PAPER_PLOT_ROOT / "combined_validation.pdf",
         dpi=600,
