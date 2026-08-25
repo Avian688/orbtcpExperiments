@@ -76,10 +76,9 @@ if __name__ == "__main__":
     runs = 5
     runList = list(range(1,runs+1))
 
-    subprocess.Popen("python3 generateExperimentAvgRTTScenarios.py", shell=True).communicate(timeout=30)
-    subprocess.Popen("python3 generateExperimentAvgRTTIniFile.py", shell=True).communicate(timeout=30)
-
     if(currStep <= endStep and currStep >= startStep): #STEP 1
+        subprocess.Popen("python3 generateExperimentAvgRTTScenarios.py", shell=True).communicate(timeout=30)
+        subprocess.Popen("python3 generateExperimentAvgRTTIniFile.py", shell=True).communicate(timeout=30)
         subprocess.Popen("rm experimentAvgRTTrunTimes.txt", shell=True).communicate(timeout=30)
         
         with open('experimentAvgRTTrunTimes.txt', 'w') as f1:

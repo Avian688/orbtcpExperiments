@@ -74,10 +74,9 @@ if __name__ == "__main__":
     runs = 5
     runList = list(range(1,runs+1))
 
-    subprocess.Popen("python3 generateExperiment5Scenarios.py", shell=True).communicate(timeout=30)
-    subprocess.Popen("python3 generateExperiment5IniFile.py", shell=True).communicate(timeout=30)
-
     if(currStep <= endStep and currStep >= startStep): #STEP 1
+        subprocess.Popen("python3 generateExperiment5Scenarios.py", shell=True).communicate(timeout=30)
+        subprocess.Popen("python3 generateExperiment5IniFile.py", shell=True).communicate(timeout=30)
         Path("experiment5runTimes.txt").unlink(missing_ok=True)
         
         with open('experiment5runTimes.txt', 'w') as f1:
