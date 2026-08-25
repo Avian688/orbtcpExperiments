@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run aggregate plots for the final OrbCC and a full-INT diagnostic view."""
+"""Generate main plot variants with optional BBRv1 and full-INT views."""
 
 from __future__ import annotations
 
@@ -15,13 +15,17 @@ import tempfile
 PLOT_VARIANT_ENV = "ORBTCP_PLOT_VARIANT"
 MAIN_VARIANT = "pint"
 COMPARISON_VARIANT = "with_orbtcp"
+PLOT_BBRV1_ENV = "ORBTCP_PLOT_BBRV1"
+WITH_BBRV1 = "with_bbrv1"
+WITHOUT_BBRV1 = "without_bbrv1"
 PLOT_SUFFIXES = {".csv", ".json", ".pdf", ".png", ".svg"}
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Generate final OrbCC and optional full-INT diagnostic plot variants."
+            "Generate final OrbCC plots with and without BBRv1, plus the "
+            "full-INT diagnostic variant."
         )
     )
     parser.add_argument("script", type=Path, help="Aggregate plot script to run")
@@ -41,19 +45,55 @@ def changed_files(before: dict[Path, tuple[int, int]], after: dict[Path, tuple[i
     return {path for path, stat in after.items() if before.get(path) != stat}
 
 
-def comparison_path(path: Path) -> Path:
+def suffixed_path(path: Path, suffix: str) -> Path:
     if path.name.endswith(".csv.metadata.json"):
         stem = path.name[: -len(".csv.metadata.json")]
-        return path.with_name(stem + "_with_orbtcp.csv.metadata.json")
-    return path.with_name(path.stem + "_with_orbtcp" + path.suffix)
+        return path.with_name(stem + suffix + ".csv.metadata.json")
+    return path.with_name(path.stem + suffix + path.suffix)
 
 
-def run_plot(script: Path, script_args: list[str], cwd: Path, variant: str) -> None:
+def run_plot(
+    script: Path,
+    script_args: list[str],
+    cwd: Path,
+    orbcc_variant: str,
+    bbrv1_variant: str,
+) -> None:
     env = os.environ.copy()
-    env[PLOT_VARIANT_ENV] = variant
+    env[PLOT_VARIANT_ENV] = orbcc_variant
+    env[PLOT_BBRV1_ENV] = bbrv1_variant
     result = subprocess.run([sys.executable, str(script), *script_args], cwd=cwd, env=env)
     if result.returncode != 0:
-        raise RuntimeError(f"{script.name} ({variant}) failed with exit code {result.returncode}")
+        raise RuntimeError(
+            f"{script.name} ({orbcc_variant}, {bbrv1_variant}) failed "
+            f"with exit code {result.returncode}"
+        )
+
+
+def save_derived_variant(
+    script: Path,
+    script_args: list[str],
+    cwd: Path,
+    orbcc_variant: str,
+    bbrv1_variant: str,
+    suffix: str,
+    description: str,
+    main_outputs: set[Path],
+    backup_root: Path,
+) -> None:
+    before = snapshot_files(cwd)
+    run_plot(script, script_args, cwd, orbcc_variant, bbrv1_variant)
+    outputs = changed_files(before, snapshot_files(cwd))
+
+    for relative_path in sorted(outputs):
+        source = cwd / relative_path
+        derived = suffixed_path(source, suffix)
+        shutil.copy2(source, derived)
+        if relative_path in main_outputs:
+            shutil.copy2(backup_root / relative_path, source)
+        else:
+            source.unlink()
+        print(f"Saved {description}: {derived.relative_to(cwd)}")
 
 
 def main() -> int:
@@ -64,10 +104,10 @@ def main() -> int:
         raise FileNotFoundError(f"Plot script not found: {script}")
 
     before_main = snapshot_files(cwd)
-    run_plot(script, args.script_args, cwd, MAIN_VARIANT)
+    run_plot(script, args.script_args, cwd, MAIN_VARIANT, WITH_BBRV1)
     main_outputs = changed_files(before_main, snapshot_files(cwd))
     if not main_outputs:
-        print(f"{script.name}: no plot outputs changed; skipping full-INT comparison copy")
+        print(f"{script.name}: no plot outputs changed; skipping derived variants")
         return 0
 
     with tempfile.TemporaryDirectory(prefix="orbtcp-plot-main-") as temporary_dir:
@@ -78,19 +118,28 @@ def main() -> int:
             backup.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, backup)
 
-        before_comparison = snapshot_files(cwd)
-        run_plot(script, args.script_args, cwd, COMPARISON_VARIANT)
-        comparison_outputs = changed_files(before_comparison, snapshot_files(cwd))
-
-        for relative_path in sorted(comparison_outputs):
-            source = cwd / relative_path
-            comparison = comparison_path(source)
-            shutil.copy2(source, comparison)
-            if relative_path in main_outputs:
-                shutil.copy2(backup_root / relative_path, source)
-            else:
-                source.unlink()
-            print(f"Saved full-INT comparison: {comparison.relative_to(cwd)}")
+        save_derived_variant(
+            script,
+            args.script_args,
+            cwd,
+            MAIN_VARIANT,
+            WITHOUT_BBRV1,
+            "_without_bbrv1",
+            "main plot without BBRv1",
+            main_outputs,
+            backup_root,
+        )
+        save_derived_variant(
+            script,
+            args.script_args,
+            cwd,
+            COMPARISON_VARIANT,
+            WITH_BBRV1,
+            "_with_orbtcp",
+            "full-INT comparison",
+            main_outputs,
+            backup_root,
+        )
 
     return 0
 

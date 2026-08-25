@@ -11,7 +11,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_plot_dataframe
-from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS, PROTOCOL_MARKERS
+from plotProtocolSupport import (
+    LEO_PROTOCOLS,
+    PROTOCOL_COLORS,
+    PROTOCOL_LABELS,
+    PROTOCOL_MARKERS,
+    compact_protocol_legend_kwargs,
+)
 
 plt.rcParams['text.usetex'] = False
 
@@ -20,7 +26,7 @@ DELAY = 50
 INTERRUPTS = [20, 40 , 60, 80, 100, 120, 140, 160, 180, 200]
 QMULTS = [0.2,1,4]
 QMULTDICT = {0.2 : "smallbuffer", 1 : "mediumbuffer", 4 : "largebuffer" }
-PROTOCOLS = CORE_PROTOCOLS
+PROTOCOLS = LEO_PROTOCOLS
 RUNS = [1, 2, 3, 4, 5]
 
 PROTOCOLS_MARKERS_LEO = PROTOCOL_MARKERS
@@ -137,15 +143,9 @@ for mult in QMULTS:
     ax.legend(
         handles=proxy_lines,
         labels=legend_labels,
-        ncol=min(5, len(PROTOCOLS)),
         loc='upper center',
         bbox_to_anchor=(0.5, 1.2),
-        frameon=False,
-        columnspacing=1,
-        handletextpad=0.5,
-        labelspacing=0.1,
-        borderaxespad=0.0,
-        fontsize='x-small'
+        **compact_protocol_legend_kwargs(PROTOCOLS),
     )
     
     # after all your plotting calls…
@@ -153,5 +153,10 @@ for mult in QMULTS:
     # and save with bbox_inches='tight' just to be sure
     fig.tight_layout()
     plt.subplots_adjust(top=1.3)
-    plt.savefig(f"Avg_goodput_{mult}.pdf", dpi=1080)
+    plt.savefig(
+        f"Avg_goodput_{mult}.pdf",
+        dpi=1080,
+        bbox_inches="tight",
+        pad_inches=0.02,
+    )
     plt.close()

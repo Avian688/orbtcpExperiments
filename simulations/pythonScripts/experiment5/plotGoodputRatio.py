@@ -10,7 +10,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_plot_dataframe
-from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS, PROTOCOL_MARKERS
+from plotProtocolSupport import (
+    LEO_PROTOCOLS,
+    PROTOCOL_COLORS,
+    PROTOCOL_LABELS,
+    PROTOCOL_MARKERS,
+    compact_protocol_legend_kwargs,
+)
 
 plt.rcParams['text.usetex'] = True
 plt.rcParams['axes.labelsize'] = "medium"
@@ -29,7 +35,7 @@ ELINEWIDTH = 0.75
 CAPTHICK = ELINEWIDTH
 CAPSIZE = 2
 
-def plot_points_rtt(ax, df, data, error, marker, label):
+def plot_points_rtt(ax, df, data, error, marker, color, label):
     if not df.empty:
         xvals = df.index
         yvals = df[data]
@@ -38,6 +44,7 @@ def plot_points_rtt(ax, df, data, error, marker, label):
             xvals, yvals,
             yerr=yerr,
             marker=marker,
+            color=color,
             linewidth=LINEWIDTH,
             elinewidth=ELINEWIDTH,
             capsize=CAPSIZE,
@@ -147,7 +154,7 @@ for mult in QMULTS:
             ax, df,
             'goodput_ratio_total_mean',
             'goodput_ratio_total_std',
-            PROTOCOL_MARKERS[proto], proto
+            PROTOCOL_MARKERS[proto], PROTOCOL_COLORS[proto], proto
         )
 
     ax.set(yscale='linear', xlabel='RTT (ms)', ylabel='Goodput Ratio')
@@ -162,15 +169,15 @@ for mult in QMULTS:
     labels_top = [PROTOCOL_LABELS[p] for p in PROTOCOLS if p in legend_map]
     legend_top = plt.legend(
         handles_top, labels_top,
-        ncol=max(1, min(5, len(labels_top))),
         loc='upper center',
         bbox_to_anchor=(0.5, 1.2),
-        columnspacing=1.0,
-        handletextpad=0.5,
-        labelspacing=0.1,
-        borderaxespad=0.0,
-        fontsize='small'
+        **compact_protocol_legend_kwargs(labels_top),
     )
     plt.gca().add_artist(legend_top)
 
-    plt.savefig(f"goodput_ratio_inter_rtt_{mult}.pdf", dpi=1080)
+    plt.savefig(
+        f"goodput_ratio_inter_rtt_{mult}.pdf",
+        dpi=1080,
+        bbox_inches="tight",
+        pad_inches=0.02,
+    )

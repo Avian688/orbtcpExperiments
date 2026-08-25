@@ -450,6 +450,21 @@ def plot_cumulative(script_name: str) -> None:
     )
 
 
+def plot_protocol_legends() -> None:
+    cumulative_dir = PLOTS_ROOT / "experiment1and2Cumulative"
+    cumulative_dir.mkdir(parents=True, exist_ok=True)
+    run_checked(
+        [
+            sys.executable,
+            str(SCRIPT_DIR.parent / "runPlotVariants.py"),
+            str(SCRIPT_DIR.parent / "plotHeaderLines.py"),
+        ],
+        cwd=cumulative_dir,
+        description="Generating Experiment 1/2 standalone protocol legends",
+        timeout=3600,
+    )
+
+
 def generate_inputs() -> None:
     run_checked([sys.executable, "generateExperiment1Scenarios.py"], SCRIPT_DIR, "Generating experiment 1 scenarios")
     run_checked([sys.executable, "generateExperiment1IniFile.py"], SCRIPT_DIR, "Generating experiment 1 ini files")
@@ -528,6 +543,7 @@ def main() -> int:
     curr_step += 1
 
     if step_enabled(curr_step, args):
+        plot_protocol_legends()
         plot_cumulative("plotGoodputCumulativeDistribution.py")
     curr_step += 1
 

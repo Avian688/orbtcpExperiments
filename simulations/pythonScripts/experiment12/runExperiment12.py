@@ -20,6 +20,7 @@ PROTOCOLS = ("cubic", "bbr")
 RUNS = range(1, 6)
 SCRIPT_DIR = Path(__file__).resolve().parent
 EXPERIMENT_DIR = (SCRIPT_DIR / "../../paperExperiments" / EXPERIMENT).resolve()
+PLOT_DIR = (SCRIPT_DIR / "../../plots" / EXPERIMENT / "cumulative").resolve()
 
 
 def run_checked(command, cwd: Path) -> None:
@@ -123,7 +124,15 @@ def extract_csvs(cores: int) -> None:
 
 
 def plot() -> None:
-    run_checked([sys.executable, "plotScatterEfficiency.py"], SCRIPT_DIR)
+    PLOT_DIR.mkdir(parents=True, exist_ok=True)
+    run_checked(
+        [
+            sys.executable,
+            str(SCRIPT_DIR.parent / "runPlotVariants.py"),
+            str(SCRIPT_DIR / "plotScatterEfficiency.py"),
+        ],
+        PLOT_DIR,
+    )
 
 
 def main() -> int:

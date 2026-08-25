@@ -8,6 +8,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_plot_dataframe
+from plotProtocolSupport import PROTOCOL_COLORS
 
 
 MSS_BYTES = 1448
@@ -78,7 +79,13 @@ def plot_cwnd_run(run: int, protocol: str, protocol_label: str, out_dir: Path) -
         if csv_path.is_file():
             data = pd.read_csv(csv_path)
             cwnd_mss = data["cwnd"] / MSS_BYTES
-            ax.plot(data["time"], cwnd_mss, drawstyle="steps-post", linewidth=1.1)
+            ax.plot(
+                data["time"],
+                cwnd_mss,
+                drawstyle="steps-post",
+                linewidth=1.1,
+                color=PROTOCOL_COLORS[protocol],
+            )
             plotted_dataframes.append(pd.DataFrame({
                 "run": run,
                 "protocol": protocol,
@@ -116,7 +123,12 @@ def plot_goodput_run(run: int, protocol: str, protocol_label: str, out_dir: Path
         if csv_path.is_file():
             data = pd.read_csv(csv_path)
             goodput_mbps = data["goodput"] / 1_000_000.0
-            ax.plot(data["time"], goodput_mbps, linewidth=1.1)
+            ax.plot(
+                data["time"],
+                goodput_mbps,
+                linewidth=1.1,
+                color=PROTOCOL_COLORS[protocol],
+            )
             plotted_dataframes.append(pd.DataFrame({
                 "run": run,
                 "protocol": protocol,

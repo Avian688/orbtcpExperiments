@@ -15,10 +15,15 @@ plt.style.use("science")
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_plot_dataframe
-from plotProtocolSupport import PROTOCOL_COLORS, PROTOCOL_LABELS
+from plotProtocolSupport import (
+    PROTOCOL_COLORS,
+    PROTOCOL_LABELS,
+    compact_protocol_legend_kwargs,
+    filter_bbrv1_plot_protocols,
+)
 
 
-PROTOCOLS = ("cubic", "bbr")
+PROTOCOLS = tuple(filter_bbrv1_plot_protocols(("cubic", "bbr")))
 RUNS = range(1, 6)
 FLOW_COUNT = 5
 BANDWIDTH_MBPS = 100
@@ -164,8 +169,8 @@ def plot(points: pd.DataFrame) -> None:
             Line2D([0], [0], color=PROTOCOL_COLORS[protocol], lw=1.5, label=PROTOCOL_LABELS[protocol])
             for protocol in PROTOCOLS
         ],
-        frameon=False,
         loc="best",
+        **compact_protocol_legend_kwargs(PROTOCOLS),
     )
     axis.set_xlabel("Normalised Delay")
     axis.set_ylabel("Normalised Goodput")

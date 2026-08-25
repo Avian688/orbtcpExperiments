@@ -10,7 +10,7 @@ from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_plot_dataframe
-from plotProtocolSupport import PROTOCOL_COLORS
+from plotProtocolSupport import PROTOCOL_COLORS, compact_protocol_legend_kwargs
 
 # Use science-style plots
 plt.style.use("science")
@@ -161,15 +161,9 @@ proxy_labels = [display_names[p] for p in protocols]
 # Legend at top center, two columns, using proxies
 plt.legend(handles=proxy_lines,
            labels=proxy_labels,
-           frameon=False,
-           ncol=2,
            loc='upper center',
            bbox_to_anchor=(0.5, 1.2),
-           columnspacing=1.0,
-           handletextpad=0.5,
-           labelspacing=0.1,
-           borderaxespad=0.0,
-           fontsize='small')
+           **compact_protocol_legend_kwargs(proxy_labels))
 
 # Save only; no tight_layout or show
 if plot_exports:
@@ -182,4 +176,9 @@ if plot_exports:
             "description": "Final time-series points plotted for the aggregate first-50-flow curve and late-joining per-flow curves.",
         },
     )
-plt.savefig("all_protocols_grouped_perflow_toplegend_scalar.pdf", dpi=1080)
+plt.savefig(
+    "all_protocols_grouped_perflow_toplegend_scalar.pdf",
+    dpi=1080,
+    bbox_inches="tight",
+    pad_inches=0.02,
+)

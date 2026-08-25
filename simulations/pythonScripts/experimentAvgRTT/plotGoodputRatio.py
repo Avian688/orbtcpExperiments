@@ -10,7 +10,7 @@ from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_plot_dataframe
-from plotProtocolSupport import PROTOCOL_COLORS
+from plotProtocolSupport import PROTOCOL_COLORS, compact_protocol_legend_kwargs
 
 # Use science‐style plots
 plt.style.use("science")
@@ -178,16 +178,15 @@ proxy_lines = [
 ax.legend(
     handles=proxy_lines,
     labels=labels,
-    ncol=2,
     loc='upper center',
     bbox_to_anchor=(0.5, 1.2),
-    frameon=False,
-    columnspacing=1,
-    handletextpad=0.5,
-    labelspacing=0.1,
-    borderaxespad=0.0,
-    fontsize='small'
+    **compact_protocol_legend_kwargs(labels),
 )
 
 # Save the figure
-plt.savefig("avgrtt_goodput_ratio_combined.pdf", dpi=1080)
+plt.savefig(
+    "avgrtt_goodput_ratio_combined.pdf",
+    dpi=1080,
+    bbox_inches="tight",
+    pad_inches=0.02,
+)

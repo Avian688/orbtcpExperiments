@@ -6,7 +6,13 @@ import os, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS, PROTOCOL_MARKERS
+from plotProtocolSupport import (
+    LEO_PROTOCOLS,
+    PROTOCOL_COLORS,
+    PROTOCOL_LABELS,
+    PROTOCOL_MARKERS,
+    compact_protocol_legend_kwargs,
+)
 
 # Optional style imports
 import scienceplots
@@ -29,7 +35,7 @@ RTTVALS = [500]#[100,200,300,400,500,600,700,800,900,1000]
 AQM = "fifo"
 QMULTS = [0.2, 1, 4]
 QMULTDICT = {0.2 : "smallbuffer", 1 : "mediumbuffer", 4 : "largebuffer" }
-PROTOCOLS = CORE_PROTOCOLS
+PROTOCOLS = LEO_PROTOCOLS
 
 # 2 flows per dumbbell => total 4 flows
 FLOWS = 2
@@ -246,15 +252,37 @@ if __name__ == "__main__":
 
             return_handles = [h[0] for h in return_handles]
 
-            fig_cross.legend(cross_handles, cross_labels, ncol=4, loc='upper center', bbox_to_anchor=(0.5, 1.28), columnspacing=0.8, handletextpad=0.9)
-            fig_return.legend(return_handles, return_labels, ncol=4, loc='upper center', bbox_to_anchor=(0.5, 1.28), columnspacing=0.8, handletextpad=0.9)
+            fig_cross.legend(
+                cross_handles,
+                cross_labels,
+                loc='upper center',
+                bbox_to_anchor=(0.5, 1.28),
+                **compact_protocol_legend_kwargs(cross_labels),
+            )
+            fig_return.legend(
+                return_handles,
+                return_labels,
+                loc='upper center',
+                bbox_to_anchor=(0.5, 1.28),
+                **compact_protocol_legend_kwargs(return_labels),
+            )
             # Save or show figures
             fig_cross.tight_layout()
-            fig_cross.savefig(f"jains_cross_qmult_{mult}_{rttval}rtts.pdf", dpi=1080)
+            fig_cross.savefig(
+                f"jains_cross_qmult_{mult}_{rttval}rtts.pdf",
+                dpi=1080,
+                bbox_inches="tight",
+                pad_inches=0.02,
+            )
             plt.close(fig_cross)
 
             fig_return.tight_layout()
-            fig_return.savefig(f"jains_return_qmult_{mult}_{rttval}rtts.pdf", dpi=1080)
+            fig_return.savefig(
+                f"jains_return_qmult_{mult}_{rttval}rtts.pdf",
+                dpi=1080,
+                bbox_inches="tight",
+                pad_inches=0.02,
+            )
             plt.close(fig_return)
 
             # Optionally store in a global list

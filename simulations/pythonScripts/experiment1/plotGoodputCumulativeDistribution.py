@@ -88,7 +88,7 @@ if __name__ == "__main__":
     cdf_exports = []
 
     # "Optimal" curve: use optimal_goodput distribution (kept as original behaviour)
-    optimals = bw_rtt_data[bw_rtt_data["protocol"] == "bbr"]["optimal_goodput"]
+    optimals = bw_rtt_data.drop_duplicates("run_number")["optimal_goodput"]
     optimal_cdf = build_cdf_points(optimals, BINS, denominator=50)
     ax.plot(optimal_cdf["x"], optimal_cdf["y_percent_trials"], c="black")
     cdf_exports.append(optimal_cdf.assign(series="Optimal", protocol="optimal", scenario="bw-rtt"))

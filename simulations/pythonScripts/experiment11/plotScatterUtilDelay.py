@@ -19,7 +19,12 @@ import matplotlib.transforms as transforms
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_plot_dataframe
-from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS
+from plotProtocolSupport import (
+    LEO_PROTOCOLS,
+    PROTOCOL_COLORS,
+    PROTOCOL_LABELS,
+    compact_protocol_legend_kwargs,
+)
 
 ROOT_PATH = "../../.."
 EXPERIMENT = "experiment11"
@@ -264,13 +269,9 @@ def plot_exp11_scatter_norm_util_vs_norm_delay(df):
 
     fig.legend(
         proxy_lines, proto_labels,
-        ncol=min(5, len(proto_order)),
         loc='upper center',
         bbox_to_anchor=(0.56, 0.92),
-        fontsize='small',
-        columnspacing=1.0,
-        handletextpad=0.5,
-        frameon=False
+        **compact_protocol_legend_kwargs(proto_order),
     )
 
     # Flow-batch legend (BOTTOM RIGHT, no frame)

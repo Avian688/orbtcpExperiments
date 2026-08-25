@@ -14,7 +14,13 @@ from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS, PROTOCOL_REJOIN_COLORS
+from plotProtocolSupport import (
+    LEO_PROTOCOLS,
+    PROTOCOL_COLORS,
+    PROTOCOL_LABELS,
+    PROTOCOL_REJOIN_COLORS,
+    compact_protocol_legend_kwargs,
+)
 
 ROOT_PATH = "../../.."
 AQM = "fifo"
@@ -23,7 +29,7 @@ BANDWIDTH = 100
 DELAYS = [20]     # base delays in ms; final stored as [20,40] in DF
 QMULTS = [0.2,1,4]
 QMULTDICT = {0.2 : "smallbuffer", 1 : "mediumbuffer", 4 : "largebuffer" }
-PROTOCOLS = CORE_PROTOCOLS
+PROTOCOLS = LEO_PROTOCOLS
 FLOWS = 2
 RUNS = [1,2,3,4,5]
 CHANGE1 = 100     # cross interval start time
@@ -436,14 +442,14 @@ def plot_dd_scatter_jains_vs_util(df, delays=[10,20], qmults=[0.2,1,4]):
                 edgecolors=COLOR_MAP[prot],
             )
             protocol_handles.append(handle)
-            protocol_labels.append(prot)
+            protocol_labels.append(PROTOCOL_LABELS[prot])
 
         top_legend = ax.legend(
             protocol_handles, protocol_labels,
             loc='center',
             bbox_to_anchor=(0.5, 0.92),  # well above axes
             bbox_transform=fig.transFigure,  # <--- key!
-            ncol=4
+            **compact_protocol_legend_kwargs(protocol_labels),
         )
         # We add this legend to the figure (it’s already in figure coords)
         ax.add_artist(top_legend)
@@ -480,7 +486,12 @@ def plot_dd_scatter_jains_vs_util(df, delays=[10,20], qmults=[0.2,1,4]):
         # Then move the top margin down a bit so legend is visible
         plt.subplots_adjust(top=0.85)
 
-        plt.savefig(f"jains_vs_util_qmult_{q}.pdf", dpi=720)
+        plt.savefig(
+            f"jains_vs_util_qmult_{q}.pdf",
+            dpi=720,
+            bbox_inches="tight",
+            pad_inches=0.02,
+        )
         plt.close(fig)
 
 

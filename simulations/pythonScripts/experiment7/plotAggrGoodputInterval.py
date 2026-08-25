@@ -9,7 +9,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_plot_dataframe
-from plotProtocolSupport import CORE_PROTOCOLS, PROTOCOL_COLORS, PROTOCOL_LABELS, PROTOCOL_MARKERS
+from plotProtocolSupport import (
+    LEO_PROTOCOLS,
+    PROTOCOL_COLORS,
+    PROTOCOL_LABELS,
+    PROTOCOL_MARKERS,
+    compact_protocol_legend_kwargs,
+)
 
 # existing style & constants
 import scienceplots
@@ -24,7 +30,7 @@ DELAY = 50
 INTERRUPTS = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
 QMULTS = [0.2, 1, 4]
 QMULTDICT = {0.2: "smallbuffer", 1: "mediumbuffer", 4: "largebuffer"}
-PROTOCOLS = CORE_PROTOCOLS
+PROTOCOLS = LEO_PROTOCOLS
 PROT_MARK = PROTOCOL_MARKERS
 COLORS = PROTOCOL_COLORS
 NAMES = PROTOCOL_LABELS
@@ -153,8 +159,9 @@ for qmult in QMULTS:
     ax.legend(
         legend_items,
         [NAMES[p] for p in PROTOCOLS],
-        ncol=min(5, len(PROTOCOLS)), loc='upper center', bbox_to_anchor=(0.5, 1.25),
-        frameon=False, fontsize='small'
+        loc='upper center',
+        bbox_to_anchor=(0.5, 1.25),
+        **compact_protocol_legend_kwargs(PROTOCOLS),
     )
 
     fig.tight_layout()

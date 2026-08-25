@@ -8,6 +8,9 @@ RAYNET_PROTOCOLS = []
 PLOT_VARIANT_ENV = "ORBTCP_PLOT_VARIANT"
 PLOT_VARIANT_MAIN = "pint"
 PLOT_VARIANT_COMPARISON = "with_orbtcp"
+PLOT_BBRV1_ENV = "ORBTCP_PLOT_BBRV1"
+PLOT_BBRV1_WITH = "with_bbrv1"
+PLOT_BBRV1_WITHOUT = "without_bbrv1"
 FINAL_ORBCC_PROTOCOL = "orbtcp_pint"
 FULL_INT_ORBCC_PROTOCOL = "orbtcp"
 FINAL_ORBCC_LABEL = "OrbCC"
@@ -31,8 +34,30 @@ def current_plot_variant():
     return variant
 
 
+def current_bbrv1_plot_variant():
+    variant = os.environ.get(PLOT_BBRV1_ENV, PLOT_BBRV1_WITH).strip().lower()
+    if variant not in {PLOT_BBRV1_WITH, PLOT_BBRV1_WITHOUT}:
+        raise ValueError(
+            f"Unsupported {PLOT_BBRV1_ENV}={variant!r}; expected "
+            f"{PLOT_BBRV1_WITH!r} or {PLOT_BBRV1_WITHOUT!r}"
+        )
+    return variant
+
+
+def filter_bbrv1_plot_protocols(protocols):
+    protocols = list(protocols)
+    if current_bbrv1_plot_variant() == PLOT_BBRV1_WITHOUT:
+        return [protocol for protocol in protocols if protocol != "bbr"]
+    return protocols
+
+
 def _select_protocols(final_protocols, comparison_protocols):
-    return comparison_protocols if current_plot_variant() == PLOT_VARIANT_COMPARISON else final_protocols
+    protocols = (
+        comparison_protocols
+        if current_plot_variant() == PLOT_VARIANT_COMPARISON
+        else final_protocols
+    )
+    return filter_bbrv1_plot_protocols(protocols)
 
 
 def _validate_protocol_sets(name, final_protocols, comparison_protocols):
@@ -81,6 +106,8 @@ PROTOCOL_LABELS = {
     "astrea": "Astrea",
 }
 
+# Canonical Experiment 1/2 palette. All protocol-comparison plots should use
+# these values rather than Matplotlib's positional colour cycle.
 PROTOCOL_COLORS = {
     "cubic": "#0C5DA5",
     "bbr": "#00B945",
@@ -93,6 +120,21 @@ PROTOCOL_COLORS = {
     "cleanslate": "#E377C2",
     "astrea": "#BCBD22",
 }
+
+COMPACT_PROTOCOL_LEGEND_FONTSIZE = 6
+
+
+def compact_protocol_legend_kwargs(protocols):
+    return {
+        "ncol": max(1, len(protocols)),
+        "frameon": False,
+        "fontsize": COMPACT_PROTOCOL_LEGEND_FONTSIZE,
+        "columnspacing": 0.65,
+        "handlelength": 1.0,
+        "handletextpad": 0.3,
+        "labelspacing": 0.1,
+        "borderaxespad": 0.0,
+    }
 
 PROTOCOL_REJOIN_COLORS = {
     "cubic": "#6AA4D9",
