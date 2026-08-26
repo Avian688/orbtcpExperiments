@@ -337,7 +337,7 @@ if __name__ == "__main__":
                         clientStart = random.uniform(0,rtt*500)
                         f.write('\n' + '*.spineClient.app[0].connectAddress =  "spineServer"')
                         f.write('\n' + '*.spineClient.app[0].tOpen = '+ str(clientStart) +'s')
-                        f.write('\n' + '*.spineClient.app[0].app[0].tSend = '+ str(clientStart) +'s\n')
+                        f.write('\n' + '*.spineClient.app[0].tSend = '+ str(clientStart) +'s\n')
 
                         for ribClientNumb in range(numOfRibClients):
                             f.write('\n' + '*.ribClient[' + str(ribClientNumb) + '].app[0].connectAddress =  "ribServer[" + string(parentIndex()) +"]"')

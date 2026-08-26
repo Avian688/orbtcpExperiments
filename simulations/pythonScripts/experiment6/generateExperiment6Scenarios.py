@@ -68,7 +68,10 @@ if __name__ == "__main__":
                 f.write('\n        <set-channel-param src-module="router[' + str(ribClientNum) + ']" src-gate="pppg$o[1]" par="delay" value="'+ str(channelDelay) +'ms"/>')
                 f.write('\n')
                 f.write('\n        <set-channel-param src-module="ribServer['+ str(ribClientNum) + ']" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
-                f.write('\n        <set-channel-param src-module="router[' + str(ribClientNum+1) + ']" src-gate="pppg$o[0]" par="delay" value="'+ str(channelDelay) +'ms"/>')
+                # The final router allocates gate 0 to spineServer and gate 1
+                # to the final rib server; intermediate routers use gate 0.
+                ribServerRouterGate = 1 if ribClientNum == numOfRibFlows - 1 else 0
+                f.write('\n        <set-channel-param src-module="router[' + str(ribClientNum+1) + ']" src-gate="pppg$o[' + str(ribServerRouterGate) + ']" par="delay" value="'+ str(channelDelay) +'ms"/>')
                 f.write('\n')
           
             f.write('\n    </at>')
