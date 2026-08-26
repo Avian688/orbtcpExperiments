@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_heatmap
-from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
+from plotProtocolSupport import HEATMAP_PROTOCOL_TICK_STYLE, LEO_PROTOCOLS, PROTOCOL_LABELS
 from raynetExperimentSupport import protocol_config_prefix
 
 # Plot styling (same as previous script)
@@ -151,9 +151,7 @@ im = ax.imshow(
 ax.set_xticks(np.arange(len(protocols)))
 ax.set_xticklabels(
     [PROTOCOLS_FRIENDLY_NAME_LEO[p] for p in protocols],
-    rotation=0,
-    ha='center',
-    fontsize=18
+    **HEATMAP_PROTOCOL_TICK_STYLE,
 )
 
 # Hide Y-axis labels

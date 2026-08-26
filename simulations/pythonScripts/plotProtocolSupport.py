@@ -127,6 +127,15 @@ PROTOCOL_COLORS = {
 
 COMPACT_PROTOCOL_LEGEND_FONTSIZE = 8
 
+# Keep protocol labels consistent across the LEO heatmaps. In particular, the
+# fairness plots should not rotate labels to compensate for a smaller font.
+HEATMAP_PROTOCOL_TICK_STYLE = {
+    "rotation": 0,
+    "ha": "center",
+    "fontsize": 22,
+    "fontstyle": "normal",
+}
+
 
 def compact_protocol_legend_kwargs(protocols):
     return {

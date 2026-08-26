@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_heatmap
-from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
+from plotProtocolSupport import HEATMAP_PROTOCOL_TICK_STYLE, LEO_PROTOCOLS, PROTOCOL_LABELS
 from raynetExperimentSupport import protocol_config_prefix
 
 plt.rcParams['font.family'] = 'serif'
@@ -126,9 +126,7 @@ for idx, m in enumerate(QMULTS):
 
     ax.set_xticklabels(
         [rf"\textbf{{{PROTOCOLS_FRIENDLY_NAME_LEO[p]}}}" for p in protocols],
-        rotation=0,
-        ha="center",
-        fontsize=16
+        **HEATMAP_PROTOCOL_TICK_STYLE,
     )
 
     # Y‐axis: show path labels only on the leftmost subplot

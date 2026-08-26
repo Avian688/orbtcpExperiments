@@ -87,7 +87,7 @@ def merge_pdfs_in_folders(root_folder):
 if __name__ == "__main__":
     
     startStep = int(os.environ.get("START_STEP", "1"))
-    endStep = int(os.environ.get("END_STEP", "6"))
+    endStep = int(os.environ.get("END_STEP", "7"))
     currStep = 1
     cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
     simulationCores = max(1, int(os.environ.get("LEO_SIMULATION_CORES", str(DEFAULT_LEO_SIMULATION_CORES))))
@@ -240,15 +240,24 @@ if __name__ == "__main__":
     currStep += 1
 
     if(currStep <= endStep and currStep >= startStep): #STEP 6
-        print("Plotting Heatmap!\n")
+        print("Plotting Delay Heatmap!\n")
         subprocess.Popen("mkdir cumulative", shell=True, cwd='../../plots/experiment9/').communicate(timeout=10)
         time.sleep(3)
         p = subprocess.Popen("python3 ../../../pythonScripts/runPlotVariants.py ../../../pythonScripts/experiment9/plotHeatmapDelay.py", shell=True, cwd='../../plots/experiment9/cumulative')
         p.wait(timeout=3600)
         time.sleep(1)
     currStep += 1
+
+    if(currStep <= endStep and currStep >= startStep): #STEP 7
+        print("Plotting Retransmission Rate Heatmap!\n")
+        subprocess.Popen("mkdir cumulative", shell=True, cwd='../../plots/experiment9/').communicate(timeout=10)
+        time.sleep(3)
+        p = subprocess.Popen("python3 ../../../pythonScripts/runPlotVariants.py ../../../pythonScripts/experiment9/plotHeatmapRetransmissionRate.py", shell=True, cwd='../../plots/experiment9/cumulative')
+        p.wait(timeout=3600)
+        time.sleep(1)
+    currStep += 1
     
-    #if(currStep <= endStep and currStep >= startStep): #STEP 7
+    #if(currStep <= endStep and currStep >= startStep): #STEP 8
     #     print("\nPlotting!")
     #     processListStr = []
     #     for protocol in congControlList:
@@ -364,7 +373,7 @@ if __name__ == "__main__":
     #             processList.clear()
     # currStep += 1
 
-    # if(currStep <= endStep and currStep >= startStep): #STEP 8
+    # if(currStep <= endStep and currStep >= startStep): #STEP 9
     #     print("\n Attempting to merge PDFs!\n")
     #     merge_pdfs_in_folders("../../plots/experiment9")
 

@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_heatmap, export_plot_dataframe
-from plotProtocolSupport import LEO_PROTOCOLS, PROTOCOL_LABELS
+from plotProtocolSupport import HEATMAP_PROTOCOL_TICK_STYLE, LEO_PROTOCOLS, PROTOCOL_LABELS
 from raynetExperimentSupport import protocol_config_prefix
 
 # ─── Matplotlib Styling ───────────────────────────────────────────────────────
@@ -91,7 +91,10 @@ im = ax.imshow(df_mean.values, origin='upper', aspect='auto',
                cmap=cmap, norm=norm)
 
 ax.set_xticks(range(len(protocols)))
-ax.set_xticklabels([FRIENDLY[q] for q in protocols], fontsize=18, rotation=30, ha='right')
+ax.set_xticklabels(
+    [FRIENDLY[q] for q in protocols],
+    **HEATMAP_PROTOCOL_TICK_STYLE,
+)
 ax.set_yticks(range(len(pairs2)))
 ax.set_yticklabels([pair_labels[p] for p in pairs2], fontsize=24)
 
