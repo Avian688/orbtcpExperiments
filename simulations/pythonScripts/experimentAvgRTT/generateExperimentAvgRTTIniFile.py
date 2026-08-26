@@ -5,12 +5,13 @@
 # 
 
 import sys
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import random
 from pathlib import Path
 import os
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from orbtcpPintExperimentSupport import PINT_PARAMETER_LINES
+from raynetExperimentSupport import protocol_config_prefix
 
 def int_to_word(num):
     d = { 0 : 'zero', 1 : 'one', 2 : 'two', 3 : 'three', 4 : 'four', 5 : 'five',
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     queueSizes = [0.2, 1, 4]
     numOfRuns = 5
     numOfClients = 2
-    algorithms = ["orbtcp", "orbtcpNoAvgRTT", "orbtcpNoEstRTT"]
+    algorithms = ["orbtcp_pint", "orbtcp_pint_no_avg_rtt"]
     for alg in algorithms:
         for qs in queueSizes:
             
@@ -54,14 +55,7 @@ if __name__ == "__main__":
             fileName =  '../../paperExperiments/experimentAvgRTT/experimentAvgRTT' + '_' + alg + '_' + queueIniTitle + '.ini'
             print('\nGenerating ini files for ' + alg + '...')
             
-            if(alg == "orbtcp"):
-                algFlavour = "OrbtcpFlavour"
-            elif(alg == "orbtcpNoAvgRTT"):
-                algFlavour = "OrbtcpNoAvgRTTFlavour"
-            elif(alg == "orbtcpNoEstRTT"):
-                algFlavour = "OrbtcpNoEstRTTFlavour"    
-            else:
-                algFlavour = "OrbtcpFlavour"
+            algFlavour = "OrbtcpPintFlavour"
                 
             with open(fileName, 'w') as f:
                 f.write('[General]' + '\n')
@@ -105,6 +99,8 @@ if __name__ == "__main__":
                 
                 f.write('\n' + '**.tcp.typename = "Orbtcp"')
                 f.write('\n' + '**.tcp.tcpAlgorithmClass = "' + algFlavour +  '"')
+                f.write('\n' + '\n'.join(PINT_PARAMETER_LINES))
+                f.write('\n' + '**.tcp.pintUseInitialPhaseFlowCount = true')
                 f.write('\n' + '**.tcp.advertisedWindow = 200000000')
                 f.write('\n' + '**.tcp.windowScalingSupport = true')
                 f.write('\n' + '**.tcp.windowScalingFactor = -1')
@@ -127,12 +123,13 @@ if __name__ == "__main__":
                 f.write('\n' + '**.server[*].app[*].typename  = "TcpSinkApp"')
                 f.write('\n' + '**.server[*].app[*].serverThreadModuleType = "tcpgoodputapplications.applications.tcpapp.TcpGoodputSinkAppThread"\n')
                 
-                f.write('\n' + '**.router1.ppp[2].queue.typename = "IntQueue"\n')
+                f.write('\n' + '**.router1.ppp[2].queue.typename = "PintQueue"\n')
                 f.write('\n' + '**.**.queue.typename = "DropTailQueue"\n')
+                f.write('\n' + '**.**.queue.pintUseAverageRttForUtilization = ' + str(alg == "orbtcp_pint").lower())
                 f.write('\n' + '**.additiveIncreasePercent = 0.05')
                 f.write('\n' + '**.eta = 0.95\n')
                 f.write('\n' + '**.alpha = ' + str(0.01))
-                f.write('\n' + '**.fixedAvgRTTVal = '+ str(0) + '\n')
+                f.write('\n' + '**.fixedAvgRTTVal = 0s\n')
                 f.write('\n' + '**.tcp.initialSsthresh = ' + str(4000*1448) + '\n')
                     
                 dir = [f for f in os.listdir('../../paperExperiments/scenarios/experimentAvgRTT/.')]
@@ -141,7 +138,7 @@ if __name__ == "__main__":
                     scenarioName = os.path.basename(xmlFile)[:-4]
                     for i in range(numOfRuns):
                         random.seed(simSeed + i)
-                        configName = alg.title() + str(scenarioName) + queueIniTitle + "Run" + str(i+1)
+                        configName = protocol_config_prefix(alg) + str(scenarioName) + queueIniTitle + "Run" + str(i+1)
                         print(configName)
                         f.write('\n' + '[Config ' + configName + ']')
                         f.write('\n' + 'extends = General \n')

@@ -20,7 +20,7 @@ plt.rcParams['xtick.labelsize'] = "medium"
 plt.rcParams['ytick.labelsize'] = "medium"
 
 # Constants
-PROTOCOLS = ["orbtcp", "orbtcpNoAvgRTT"]
+PROTOCOLS = ["orbtcp_pint_no_avg_rtt", "orbtcp_pint"]
 BWS       = [100]
 DELAYS    = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
 RUNS      = [1, 2, 3, 4, 5]
@@ -32,8 +32,13 @@ CAPSIZE     = 2
 
 # assign each protocol a color
 protocol_colors = {
-    "orbtcp":          PROTOCOL_COLORS["orbtcp"],
-    "orbtcpNoAvgRTT":  "tab:blue",
+    "orbtcp_pint":             PROTOCOL_COLORS["orbtcp_pint"],
+    "orbtcp_pint_no_avg_rtt":  "tab:blue",
+}
+
+protocol_labels = {
+    "orbtcp_pint":             "OrbCC",
+    "orbtcp_pint_no_avg_rtt":  "OrbCC without AvgRTT",
 }
 
 def plot_points_rtt(ax, df, data_col, err_col, marker, label, color):
@@ -138,11 +143,7 @@ export_plot_dataframe(
 # Plot each protocol's curve
 for protocol, marker in zip(PROTOCOLS, ['x', '.']):
     dfp   = summary[summary['protocol'] == protocol].set_index('delay')
-    label = (
-        "Full INT reference"
-        if protocol == "orbtcp"
-        else "Full INT without AvgRTT"
-    )
+    label = protocol_labels[protocol]
     color = protocol_colors[protocol]
     plot_points_rtt(
         ax, dfp,
@@ -165,7 +166,7 @@ for axis in (ax.xaxis, ax.yaxis):
 # Build legend with line+marker proxies (no variance)
 markers = ['x', '.']
 colors  = [protocol_colors[p] for p in PROTOCOLS]
-labels  = ["Full INT reference", "Full INT without AvgRTT"]
+labels  = [protocol_labels[p] for p in PROTOCOLS]
 proxy_lines = [
     Line2D([0], [0],
            marker=mk,

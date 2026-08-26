@@ -17,7 +17,7 @@ _UNITLESS_FIXED_RTT = re.compile(
     r"(?m)^(\*\*\.fixedAvgRTTVal\s*=\s*)([+-]?(?:\d+(?:\.\d*)?|\.\d+))(\s*)$"
 )
 
-_PINT_PARAMETER_LINES = (
+PINT_PARAMETER_LINES = (
     "",
     "# OrbCC-PINT approximation settings",
     "# Full feedback isolates quantization and sketch effects from feedback sampling.",
@@ -88,7 +88,7 @@ def _transform_ini(source: Path) -> str:
     )
     text = text.replace(
         _ORBTCP_FLAVOUR,
-        _PINT_FLAVOUR + "\n" + "\n".join(_PINT_PARAMETER_LINES),
+        _PINT_FLAVOUR + "\n" + "\n".join(PINT_PARAMETER_LINES),
         1,
     )
     text = text.replace("IntQueue", "PintQueue")

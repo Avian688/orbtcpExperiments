@@ -16,12 +16,12 @@ FULL_INT_ORBCC_PROTOCOL = "orbtcp"
 FINAL_ORBCC_LABEL = "OrbCC"
 FULL_INT_REFERENCE_LABEL = "Full INT reference"
 
-CORE_PROTOCOLS_FINAL = ["cubic", "bbr", "bbr3", "orbtcp_pint", *RAYNET_PROTOCOLS]
-CORE_PROTOCOLS_WITH_ORBTCP = ["cubic", "bbr", "bbr3", "orbtcp_pint", "orbtcp", *RAYNET_PROTOCOLS]
-LEO_PROTOCOLS_FINAL = ["cubic", "bbr", "bbr3", "satcp", "orbtcp_pint", "leocc", *RAYNET_PROTOCOLS]
-LEO_PROTOCOLS_WITH_ORBTCP = ["cubic", "bbr", "bbr3", "satcp", "orbtcp_pint", "orbtcp", "leocc", *RAYNET_PROTOCOLS]
-EXPERIMENT_1_PROTOCOLS_FINAL = ["orbtcp_pint", "bbr", "cubic", "bbr3", "satcp", "leocc", *RAYNET_PROTOCOLS]
-EXPERIMENT_1_PROTOCOLS_WITH_ORBTCP = ["orbtcp_pint", "orbtcp", "bbr", "cubic", "bbr3", "satcp", "leocc", *RAYNET_PROTOCOLS]
+CORE_PROTOCOLS_FINAL = ["cubic", "bbr", "bbr3", *RAYNET_PROTOCOLS, "orbtcp_pint"]
+CORE_PROTOCOLS_WITH_ORBTCP = ["cubic", "bbr", "bbr3", *RAYNET_PROTOCOLS, "orbtcp", "orbtcp_pint"]
+LEO_PROTOCOLS_FINAL = ["cubic", "bbr", "bbr3", "satcp", "leocc", *RAYNET_PROTOCOLS, "orbtcp_pint"]
+LEO_PROTOCOLS_WITH_ORBTCP = ["cubic", "bbr", "bbr3", "satcp", "leocc", *RAYNET_PROTOCOLS, "orbtcp", "orbtcp_pint"]
+EXPERIMENT_1_PROTOCOLS_FINAL = ["bbr", "cubic", "bbr3", "satcp", "leocc", *RAYNET_PROTOCOLS, "orbtcp_pint"]
+EXPERIMENT_1_PROTOCOLS_WITH_ORBTCP = ["bbr", "cubic", "bbr3", "satcp", "leocc", *RAYNET_PROTOCOLS, "orbtcp", "orbtcp_pint"]
 
 
 def current_plot_variant():
@@ -65,6 +65,10 @@ def _validate_protocol_sets(name, final_protocols, comparison_protocols):
         raise RuntimeError(f"{name} main plots must not include full-INT OrbCC")
     if FINAL_ORBCC_PROTOCOL not in final_protocols:
         raise RuntimeError(f"{name} main plots must include the final OrbCC implementation")
+    if final_protocols[-1] != FINAL_ORBCC_PROTOCOL:
+        raise RuntimeError(f"{name} main plots must place OrbCC last")
+    if comparison_protocols[-1] != FINAL_ORBCC_PROTOCOL:
+        raise RuntimeError(f"{name} comparison plots must place OrbCC last")
     for protocol in (FINAL_ORBCC_PROTOCOL, FULL_INT_ORBCC_PROTOCOL):
         if protocol not in comparison_protocols:
             raise RuntimeError(
@@ -110,18 +114,18 @@ PROTOCOL_LABELS = {
 # these values rather than Matplotlib's positional colour cycle.
 PROTOCOL_COLORS = {
     "cubic": "#0C5DA5",
-    "bbr": "#00B945",
+    "bbr": "#17BECF",
     "bbr3": "#EB0909",
-    "satcp": "#7E2F8E",
+    "satcp": "#00B945",
     "orbtcp": "#777777",
     "orbtcp_pint": "#FF9500",
-    "leocc": "#17BECF",
+    "leocc": "#7E2F8E",
     "orca": "#8C564B",
     "cleanslate": "#E377C2",
     "astrea": "#BCBD22",
 }
 
-COMPACT_PROTOCOL_LEGEND_FONTSIZE = 6
+COMPACT_PROTOCOL_LEGEND_FONTSIZE = 8
 
 
 def compact_protocol_legend_kwargs(protocols):
@@ -138,12 +142,12 @@ def compact_protocol_legend_kwargs(protocols):
 
 PROTOCOL_REJOIN_COLORS = {
     "cubic": "#6AA4D9",
-    "bbr": "#76D98A",
+    "bbr": "#77DCE6",
     "bbr3": "#F27A7A",
-    "satcp": "#B77CC4",
+    "satcp": "#76D98A",
     "orbtcp": "#B5B5B5",
     "orbtcp_pint": "#FFC46B",
-    "leocc": "#77DCE6",
+    "leocc": "#B77CC4",
     "orca": "#C49A8F",
     "cleanslate": "#F0A8D7",
     "astrea": "#D9DA74",

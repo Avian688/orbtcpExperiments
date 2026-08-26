@@ -17,6 +17,9 @@ import time
 import re
 from PyPDF2 import PdfMerger
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from raynetExperimentSupport import protocol_config_prefix
+
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
         protocol_path = os.path.join(root_folder, protocol)
@@ -66,7 +69,7 @@ if __name__ == "__main__":
     endStep = int(os.environ.get("END_STEP", "7"))
     currStep = 1
     cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
-    congControlList = ["orbtcp", "orbtcpNoInitFlows"]
+    congControlList = ["orbtcp_pint", "orbtcp_pint_no_init_flows"]
     experiment = "experimentInitNumFlows"
     buffersizes = ["mediumbuffer"]
     clientsRtts = [100] #OF AVERAGE BDP
@@ -161,7 +164,7 @@ if __name__ == "__main__":
             for buf in buffersizes:
                 for rtt in clientsRtts:
                     for run in runList:
-                        protocolUpper = protocol[0].upper() + protocol[1:]
+                        protocolUpper = protocol_config_prefix(protocol)
                         filePath = '../../paperExperiments/experimentInitNumFlows/results/'+ protocolUpper + "_" + str(rtt) + 'ms' + "_" + buf + "_" + 'Run' + str(run) + '.csv'
                         print(filePath)
                         if os.path.exists(filePath):
@@ -237,7 +240,7 @@ if __name__ == "__main__":
                         dirPath = '../../plots/experimentInitNumFlows/' + protocol + '/' + buf + '/' + str(rtt) + 'ms' + '/run' + str(run) + '/'
                         
                         runTitle = "run"
-                        fileBeg = 'paperExperiments/'+ experiment + '/csvs/'+ protocol + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run)
+                        fileBeg = 'paperExperiments/'+ experiment + '/csvs/'+ protocol_config_prefix(protocol) + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run)
                         fileStart = "../../../../../../../" + fileBeg
                         cwndFileList = []
                         rttFileList = []

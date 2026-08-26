@@ -14,14 +14,14 @@ plt.rcParams['text.usetex'] = False
 
 # Constants
 base_dir    = "../../../paperExperiments/experimentInitNumFlows/csvs"
-protocols   = ["Orbtcp", "OrbtcpNoInitFlows", "OrbtcpNoSharedFlows"]
+protocols   = ["OrbtcpPintNoInitFlows", "OrbtcpPint"]
 buffer      = "mediumbuffer"
 delay       = "100ms"
 num_servers = 50   # only first 50 flows
 num_runs    = 5
 
 LINEWIDTH   = 0.30
-COLOR       = PROTOCOL_COLORS["orbtcp"]
+COLOR       = PROTOCOL_COLORS["orbtcp_pint"]
 
 # time grid: 0–10 seconds, integer
 times = np.arange(0, 11)
