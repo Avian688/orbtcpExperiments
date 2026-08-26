@@ -105,6 +105,8 @@ EXACT_COUNT_COLOR = "#00A087"
 FINAL_ORBCC_COLOR = PROTOCOL_COLORS[FINAL_ORBCC_PROTOCOL]
 FULL_INT_REFERENCE_COLOR = PROTOCOL_COLORS[FULL_INT_ORBCC_PROTOCOL]
 MATCHED_RUN_ALPHA = 0.12
+PAPER_TUNING_FIGSIZE = (4.5, 2.0)
+PAPER_TUNING_FONT_SIZE = 10
 
 HIGHER_IS_BETTER_CMAP = LinearSegmentedColormap.from_list(
     "r_y_g", ["red", "yellow", "green"], N=256
@@ -243,6 +245,15 @@ PAPER_TUNING_GOODPUT_SIMPLE_PANELS = (
         "mean_post_handover_normalized_goodput",
         100.0,
         "Post-handover aggregate goodput\n(% of available capacity)",
+    ),
+)
+PAPER_UTILIZATION_GOODPUT_DEGRADATION_PANEL = (
+    (
+        "utilization",
+        "Utilization encoding",
+        "normalized_goodput",
+        100.0,
+        "Normalized aggregate-goodput\ndegradation (percentage points)",
     ),
 )
 PAPER_VALIDATION_METRICS = (
@@ -1455,11 +1466,14 @@ def selected_parameter_variant(family: str) -> Variant:
     return matches[0]
 
 
-def tuning_panel_rows(
+def paired_tuning_panel_rows(
     run_metrics: pd.DataFrame,
     family: str,
     metric: str,
     scale: float,
+    difference_sign: float,
+    output_metric: str,
+    comparison: str,
 ) -> pd.DataFrame:
     variants = next(
         variants
@@ -1476,12 +1490,14 @@ def tuning_panel_rows(
             .mean()
             .reindex(RUNS)
             .to_numpy(dtype=float)
-        )
+        ) * difference_sign
         summary = confidence_summary(trace_values)
         rows.append(
             {
                 "family": family,
-                "metric": metric,
+                "metric": output_metric,
+                "source_metric": metric,
+                "comparison": comparison,
                 "variant": variant.key,
                 "variant_label": parameter_heatmap_label(family, variant),
                 "x_index": x_index,
@@ -1491,6 +1507,40 @@ def tuning_panel_rows(
             }
         )
     return pd.DataFrame(rows)
+
+
+def tuning_panel_rows(
+    run_metrics: pd.DataFrame,
+    family: str,
+    metric: str,
+    scale: float,
+) -> pd.DataFrame:
+    return paired_tuning_panel_rows(
+        run_metrics,
+        family,
+        metric,
+        scale,
+        difference_sign=1.0,
+        output_metric=metric,
+        comparison="candidate_minus_exact_pint",
+    )
+
+
+def goodput_degradation_panel_rows(
+    run_metrics: pd.DataFrame,
+    family: str,
+    metric: str,
+    scale: float,
+) -> pd.DataFrame:
+    return paired_tuning_panel_rows(
+        run_metrics,
+        family,
+        metric,
+        scale,
+        difference_sign=-1.0,
+        output_metric=f"{metric}_degradation",
+        comparison="exact_pint_minus_candidate",
+    )
 
 
 def direct_tuning_panel_rows(
@@ -1529,6 +1579,8 @@ def direct_tuning_panel_rows(
             {
                 "family": family,
                 "metric": metric,
+                "source_metric": metric,
+                "comparison": "direct_value",
                 "variant": variant.key,
                 "variant_label": parameter_heatmap_label(family, variant),
                 "x_index": x_index,
@@ -1540,7 +1592,7 @@ def direct_tuning_panel_rows(
     return pd.DataFrame(rows)
 
 
-def plot_tuning_decision_figure(
+def plot_tuning_decision_figures(
     run_metrics: pd.DataFrame,
     panels,
     panel_rows_function,
@@ -1549,24 +1601,23 @@ def plot_tuning_decision_figure(
     description: str,
     draw_zero_reference: bool,
 ) -> None:
-    figure, axes = plt.subplots(1, len(panels), figsize=(12, 4.1))
-    export_rows = []
     primary_color = FINAL_ORBCC_COLOR
+    PAPER_PLOT_ROOT.mkdir(parents=True, exist_ok=True)
 
-    for axis, (
+    for (
         family,
         title,
         metric,
         scale,
         y_label,
-    ) in zip(axes, panels, strict=True):
+    ) in panels:
+        figure, axis = plt.subplots(figsize=PAPER_TUNING_FIGSIZE)
         panel_rows = panel_rows_function(
             run_metrics,
             family,
             metric,
             scale,
         )
-        export_rows.append(panel_rows)
         x_values = panel_rows["x_index"].to_numpy(dtype=float)
         means = panel_rows["mean"].to_numpy(dtype=float)
         margins = panel_rows["ci95_margin"].to_numpy(dtype=float)
@@ -1611,10 +1662,45 @@ def plot_tuning_decision_figure(
             x_values,
             panel_rows["variant_label"].str.replace(" ", "\n", n=1),
         )
-        axis.set_title(title)
-        axis.set_ylabel(y_label)
-        axis.set_xlabel(family_x_label(family))
+        axis.set_ylabel(y_label, fontsize=PAPER_TUNING_FONT_SIZE)
+        axis.set_xlabel(
+            family_x_label(family),
+            fontsize=PAPER_TUNING_FONT_SIZE,
+        )
+        axis.tick_params(axis="both", labelsize=PAPER_TUNING_FONT_SIZE)
         axis.grid(True, axis="y", alpha=0.25, linewidth=0.6)
+
+        panel_output_stem = f"{output_stem}_{family}"
+        figure.tight_layout()
+        figure.savefig(
+            PAPER_PLOT_ROOT / f"{panel_output_stem}.pdf",
+            dpi=600,
+            bbox_inches="tight",
+            pad_inches=0.02,
+        )
+        plt.close(figure)
+
+        export_plot_dataframe(
+            f"{panel_output_stem}_points.csv",
+            panel_rows,
+            base_dir=PAPER_PLOT_ROOT / "plot_data",
+            metadata={
+                **bandwidth_metadata(),
+                "experiment": EXPERIMENT,
+                "description": description,
+                "family": family,
+                "family_label": title,
+                "metric": str(panel_rows["metric"].iloc[0]),
+                "source_metric": metric,
+                "comparison": str(panel_rows["comparison"].iloc[0]),
+                "y_axis_label": y_label,
+                "runs": list(RUNS),
+                "flow_counts": FLOW_COUNTS,
+                "conditions": [condition.key for condition in CONDITIONS],
+                "recovery_window_seconds": RECOVERY_WINDOW_S,
+                "combined_configuration": COMBINED_PINT.label,
+            },
+        )
 
     legend_handles = (
         Line2D(
@@ -1636,47 +1722,34 @@ def plot_tuning_decision_figure(
             label="Selected value",
         ),
     )
-    PAPER_PLOT_ROOT.mkdir(parents=True, exist_ok=True)
     save_standalone_legend(
         legend_handles,
         PAPER_PLOT_ROOT / f"{output_stem}_legend.pdf",
         2,
     )
-    figure.tight_layout()
-    figure.savefig(
-        PAPER_PLOT_ROOT / f"{output_stem}.pdf",
-        dpi=600,
-        bbox_inches="tight",
-    )
-    plt.close(figure)
 
-    export_plot_dataframe(
-        f"{output_stem}_points.csv",
-        pd.concat(export_rows, ignore_index=True),
-        base_dir=PAPER_PLOT_ROOT / "plot_data",
-        metadata={
-            **bandwidth_metadata(),
-            "experiment": EXPERIMENT,
-            "description": description,
-            "runs": list(RUNS),
-            "flow_counts": FLOW_COUNTS,
-            "conditions": [condition.key for condition in CONDITIONS],
-            "recovery_window_seconds": RECOVERY_WINDOW_S,
-            "combined_configuration": COMBINED_PINT.label,
-        },
+    # Avoid leaving obsolete three-panel artifacts beside the standalone plots.
+    legacy_outputs = (
+        PAPER_PLOT_ROOT / f"{output_stem}.pdf",
+        PAPER_PLOT_ROOT / "plot_data" / f"{output_stem}_points.csv",
+        PAPER_PLOT_ROOT
+        / "plot_data"
+        / f"{output_stem}_points.csv.metadata.json",
     )
+    for legacy_output in legacy_outputs:
+        legacy_output.unlink(missing_ok=True)
 
 
 def plot_paper_tuning_decisions(run_metrics: pd.DataFrame) -> None:
-    plot_tuning_decision_figure(
+    plot_tuning_decision_figures(
         run_metrics=run_metrics,
         panels=PAPER_TUNING_PANELS,
         panel_rows_function=tuning_panel_rows,
         output_stem="tuning_decisions",
         mean_legend_label="Mean difference from Exact PINT (95% CI)",
         description=(
-            "Final paired differences for the three-panel parameter-selection "
-            "figure. Each confidence interval treats a matched dynamic trace as "
+            "Final paired differences for the parameter-selection plots. Each "
+            "confidence interval treats a matched dynamic trace as "
             "the independent unit after averaging its six workloads."
         ),
         draw_zero_reference=True,
@@ -1684,15 +1757,15 @@ def plot_paper_tuning_decisions(run_metrics: pd.DataFrame) -> None:
 
 
 def plot_paper_tuning_decisions_simple(run_metrics: pd.DataFrame) -> None:
-    plot_tuning_decision_figure(
+    plot_tuning_decision_figures(
         run_metrics=run_metrics,
         panels=PAPER_TUNING_SIMPLE_PANELS,
         panel_rows_function=direct_tuning_panel_rows,
         output_stem="tuning_decisions_simple",
         mean_legend_label="Mean value (95% CI)",
         description=(
-            "Final direct values for the simpler three-panel parameter-selection "
-            "figure. Each confidence interval treats a matched dynamic trace as "
+            "Final direct values for the simpler parameter-selection plots. Each "
+            "confidence interval treats a matched dynamic trace as "
             "the independent unit after averaging its six workloads."
         ),
         draw_zero_reference=False,
@@ -1700,7 +1773,7 @@ def plot_paper_tuning_decisions_simple(run_metrics: pd.DataFrame) -> None:
 
 
 def plot_paper_tuning_decisions_goodput(run_metrics: pd.DataFrame) -> None:
-    plot_tuning_decision_figure(
+    plot_tuning_decision_figures(
         run_metrics=run_metrics,
         panels=PAPER_TUNING_GOODPUT_PANELS,
         panel_rows_function=tuning_panel_rows,
@@ -1708,7 +1781,7 @@ def plot_paper_tuning_decisions_goodput(run_metrics: pd.DataFrame) -> None:
         mean_legend_label="Mean difference from Exact PINT (95% CI)",
         description=(
             "Final paired differences for the goodput-focused parameter-selection "
-            "figure. Aggregate goodput is normalized by contemporaneous "
+            "plots. Aggregate goodput is normalized by contemporaneous "
             "bottleneck capacity before workloads are combined."
         ),
         draw_zero_reference=True,
@@ -1718,7 +1791,7 @@ def plot_paper_tuning_decisions_goodput(run_metrics: pd.DataFrame) -> None:
 def plot_paper_tuning_decisions_goodput_simple(
     run_metrics: pd.DataFrame,
 ) -> None:
-    plot_tuning_decision_figure(
+    plot_tuning_decision_figures(
         run_metrics=run_metrics,
         panels=PAPER_TUNING_GOODPUT_SIMPLE_PANELS,
         panel_rows_function=direct_tuning_panel_rows,
@@ -1726,10 +1799,28 @@ def plot_paper_tuning_decisions_goodput_simple(
         mean_legend_label="Mean value (95% CI)",
         description=(
             "Final direct values for the goodput-focused parameter-selection "
-            "figure. Aggregate goodput is normalized by contemporaneous "
+            "plots. Aggregate goodput is normalized by contemporaneous "
             "bottleneck capacity before workloads are combined."
         ),
         draw_zero_reference=False,
+    )
+
+
+def plot_paper_utilization_goodput_degradation(
+    run_metrics: pd.DataFrame,
+) -> None:
+    plot_tuning_decision_figures(
+        run_metrics=run_metrics,
+        panels=PAPER_UTILIZATION_GOODPUT_DEGRADATION_PANEL,
+        panel_rows_function=goodput_degradation_panel_rows,
+        output_stem="tuning_decisions_goodput_degradation",
+        mean_legend_label="Mean degradation from Exact PINT (95% CI)",
+        description=(
+            "Paired normalized aggregate-goodput degradation relative to Exact "
+            "PINT for the utilization-encoding decision. Positive values denote "
+            "lower goodput than Exact PINT."
+        ),
+        draw_zero_reference=True,
     )
 
 
@@ -1886,6 +1977,7 @@ def plot_paper_figures(run_metrics: pd.DataFrame) -> None:
     plot_paper_tuning_decisions_simple(run_metrics)
     plot_paper_tuning_decisions_goodput(run_metrics)
     plot_paper_tuning_decisions_goodput_simple(run_metrics)
+    plot_paper_utilization_goodput_degradation(run_metrics)
     plot_paper_combined_validation(run_metrics)
 
 
