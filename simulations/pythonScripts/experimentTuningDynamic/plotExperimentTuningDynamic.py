@@ -256,6 +256,33 @@ PAPER_UTILIZATION_GOODPUT_DEGRADATION_PANEL = (
         "Normalized aggregate-goodput\ndegradation (percentage points)",
     ),
 )
+PAPER_FLOW_COUNT_GOODPUT_DEGRADATION_PANEL = (
+    (
+        "flow_count",
+        "Flow-count encoding",
+        "normalized_goodput",
+        100.0,
+        "Normalized aggregate-goodput\ndegradation (percentage points)",
+    ),
+)
+PAPER_FLOW_COUNT_RECOVERY_DEGRADATION_PANEL = (
+    (
+        "flow_count",
+        "Flow-count encoding",
+        "mean_post_handover_normalized_goodput",
+        100.0,
+        "Post-handover aggregate-goodput\ndegradation (percentage points)",
+    ),
+)
+PAPER_FLOW_COUNT_QUEUE_DELAY_PANEL = (
+    (
+        "flow_count",
+        "Flow-count encoding",
+        "mean_queue_delay_ms",
+        1.0,
+        "Mean queueing-delay change\nfrom Exact PINT (ms)",
+    ),
+)
 PAPER_VALIDATION_METRICS = (
     ("normalized_goodput", "Normalized goodput"),
     ("mean_queue_delay_ms", "Queueing delay (ms)"),
@@ -1824,6 +1851,50 @@ def plot_paper_utilization_goodput_degradation(
     )
 
 
+def plot_paper_flow_count_encoding_penalties(
+    run_metrics: pd.DataFrame,
+) -> None:
+    plot_tuning_decision_figures(
+        run_metrics=run_metrics,
+        panels=PAPER_FLOW_COUNT_GOODPUT_DEGRADATION_PANEL,
+        panel_rows_function=goodput_degradation_panel_rows,
+        output_stem="flow_count_encoding_goodput_degradation",
+        mean_legend_label="Mean degradation from Exact PINT (95% CI)",
+        description=(
+            "Paired whole-run normalized aggregate-goodput degradation relative "
+            "to Exact PINT for the flow-count encoding decision. Positive values "
+            "denote lower goodput than Exact PINT."
+        ),
+        draw_zero_reference=True,
+    )
+    plot_tuning_decision_figures(
+        run_metrics=run_metrics,
+        panels=PAPER_FLOW_COUNT_RECOVERY_DEGRADATION_PANEL,
+        panel_rows_function=goodput_degradation_panel_rows,
+        output_stem="flow_count_encoding_recovery_degradation",
+        mean_legend_label="Mean degradation from Exact PINT (95% CI)",
+        description=(
+            "Paired post-handover normalized aggregate-goodput degradation "
+            "relative to Exact PINT for the flow-count encoding decision. "
+            "Positive values denote lower post-handover goodput."
+        ),
+        draw_zero_reference=True,
+    )
+    plot_tuning_decision_figures(
+        run_metrics=run_metrics,
+        panels=PAPER_FLOW_COUNT_QUEUE_DELAY_PANEL,
+        panel_rows_function=tuning_panel_rows,
+        output_stem="flow_count_encoding_queue_delay_change",
+        mean_legend_label="Mean difference from Exact PINT (95% CI)",
+        description=(
+            "Paired whole-run mean queueing-delay difference from Exact PINT "
+            "for the flow-count encoding decision. Positive values denote "
+            "higher queueing delay than Exact PINT."
+        ),
+        draw_zero_reference=True,
+    )
+
+
 def validation_variant_styles() -> tuple[
     tuple[Variant, str, str, str, str], ...
 ]:
@@ -1978,6 +2049,7 @@ def plot_paper_figures(run_metrics: pd.DataFrame) -> None:
     plot_paper_tuning_decisions_goodput(run_metrics)
     plot_paper_tuning_decisions_goodput_simple(run_metrics)
     plot_paper_utilization_goodput_degradation(run_metrics)
+    plot_paper_flow_count_encoding_penalties(run_metrics)
     plot_paper_combined_validation(run_metrics)
 
 
