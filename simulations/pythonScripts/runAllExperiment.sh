@@ -21,7 +21,7 @@ Notes:
   experiment2 is covered by experiment1/runExperiment1and2.py.
   --plots runs only the plot-directory, plotting, and PDF-merge steps using existing extracted data.
   --plots all also includes experimentAvgRTT, experimentInitNumFlows, experimentTuning,
-  and experimentTuningDynamic.
+  experimentTuningDynamic, and experimentSensitivityAnalysis.
   LEO_SIMULATION_CORES controls only Experiment 8-10 simulation workers and defaults to 15.
   EXPERIMENT_CORES still controls their CSV export, extraction, and plotting workers.
   Experiment 3+ simulation attempts time out after 9000 seconds and retry three times by default.
@@ -234,6 +234,9 @@ if [[ "$plot_only" -eq 1 && "$all_selected" -eq 1 ]]; then
   fi
   if ! run_named_plot_experiment "experimentTuningDynamic" "runExperimentTuningDynamic.py" 5 5; then
     failures+=("experimentTuningDynamic")
+  fi
+  if ! run_named_plot_experiment "experimentSensitivityAnalysis" "runExperimentSensitivityAnalysis.py" 5 5; then
+    failures+=("experimentSensitivityAnalysis")
   fi
 fi
 
