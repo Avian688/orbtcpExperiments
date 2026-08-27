@@ -10,6 +10,9 @@ import scienceplots
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_heatmap
 from plotProtocolSupport import (
+    HEATMAP_CELL_FONT_SIZE,
+    HEATMAP_COLORBAR_TICK_FONT_SIZE,
+    HEATMAP_FONT_SIZE,
     HEATMAP_PROTOCOL_TICK_STYLE,
     LEO_PROTOCOLS,
     PROTOCOL_LABELS,
@@ -17,7 +20,7 @@ from plotProtocolSupport import (
 from raynetExperimentSupport import protocol_config_prefix
 
 plt.style.use("science")
-plt.rcParams["font.size"] = 40
+plt.rcParams["font.size"] = HEATMAP_FONT_SIZE
 plt.rcParams["text.usetex"] = True
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -202,18 +205,12 @@ for row in range(mean_df.shape[0]):
             ha="center",
             va="center",
             color="black",
-            fontsize=23,
+            fontsize=HEATMAP_CELL_FONT_SIZE,
         )
 
 colorbar_axis = fig.add_axes([0.90, 0.15, 0.025, 0.83])
 colorbar = fig.colorbar(image, cax=colorbar_axis)
-colorbar.set_label(
-    "Average Retransmission Rate (Mbps)",
-    rotation=90,
-    fontsize=24,
-    labelpad=18,
-)
-colorbar.ax.tick_params(labelsize=27)
+colorbar.ax.tick_params(labelsize=HEATMAP_COLORBAR_TICK_FONT_SIZE)
 colorbar.ax.yaxis.set_label_position("right")
 colorbar.ax.yaxis.tick_right()
 

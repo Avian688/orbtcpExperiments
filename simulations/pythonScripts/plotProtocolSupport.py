@@ -126,6 +126,10 @@ PROTOCOL_COLORS = {
 }
 
 COMPACT_PROTOCOL_LEGEND_FONTSIZE = 8
+HEATMAP_FONT_SIZE = 40
+HEATMAP_CELL_FONT_SIZE = 25
+HEATMAP_COLORBAR_TICK_FONT_SIZE = 27
+HEATMAP_PATH_LABEL_FONT_SIZE = 28
 
 # Keep protocol labels consistent across the LEO heatmaps. In particular, the
 # fairness plots should not rotate labels to compensate for a smaller font.

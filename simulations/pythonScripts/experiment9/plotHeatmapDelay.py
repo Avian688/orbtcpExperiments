@@ -8,14 +8,22 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_heatmap
-from plotProtocolSupport import HEATMAP_PROTOCOL_TICK_STYLE, LEO_PROTOCOLS, PROTOCOL_LABELS
+from plotProtocolSupport import (
+    HEATMAP_CELL_FONT_SIZE,
+    HEATMAP_COLORBAR_TICK_FONT_SIZE,
+    HEATMAP_FONT_SIZE,
+    HEATMAP_PATH_LABEL_FONT_SIZE,
+    HEATMAP_PROTOCOL_TICK_STYLE,
+    LEO_PROTOCOLS,
+    PROTOCOL_LABELS,
+)
 from raynetExperimentSupport import protocol_config_prefix
 
 # Plot styling (same as previous script)
 import scienceplots
 plt.style.use('science')
 
-plt.rcParams['font.size'] = 40
+plt.rcParams['font.size'] = HEATMAP_FONT_SIZE
 plt.rcParams['text.usetex'] = True
 
 # Directory roots
@@ -169,18 +177,21 @@ for i in range(df.shape[0]):
             f"{mu:.2f}±{sigma:.2f}",
             ha='center',
             va='center',
-            fontsize=23
+            fontsize=HEATMAP_CELL_FONT_SIZE
         )
 
 # Colorbar
-cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+cbar_ax = fig.add_axes([0.90, 0.15, 0.025, 0.83])
+cbar = fig.colorbar(im, cax=cbar_ax)
 #cbar.set_label(
 #    "Mean Norm. Delay",
 #    rotation=90,
 #    fontsize=34,
 #    labelpad=20
 #)
-cbar.ax.tick_params(labelsize=27)
+cbar.ax.tick_params(labelsize=HEATMAP_COLORBAR_TICK_FONT_SIZE)
+cbar.ax.yaxis.set_label_position('right')
+cbar.ax.yaxis.tick_right()
 
 plt.subplots_adjust(left=0.1, right=0.84, top=0.98, bottom=0.15)
 plt.savefig('heatmap_no_legend.pdf', dpi=1080, bbox_inches='tight')
@@ -192,7 +203,7 @@ fig2, ax2 = plt.subplots(figsize=(10, 7))
 ax2.set_yticks(np.arange(len(row_labels)))
 ax2.set_yticklabels(
     row_labels,
-    fontsize=28
+    fontsize=HEATMAP_PATH_LABEL_FONT_SIZE
 )
 
 # Hide x-axis ticks/labels and y-tick lines

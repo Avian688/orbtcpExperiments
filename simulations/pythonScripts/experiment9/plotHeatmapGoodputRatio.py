@@ -8,14 +8,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from plotDataExport import export_heatmap
-from plotProtocolSupport import HEATMAP_PROTOCOL_TICK_STYLE, LEO_PROTOCOLS, PROTOCOL_LABELS
+from plotProtocolSupport import (
+    HEATMAP_CELL_FONT_SIZE,
+    HEATMAP_COLORBAR_TICK_FONT_SIZE,
+    HEATMAP_FONT_SIZE,
+    HEATMAP_PROTOCOL_TICK_STYLE,
+    LEO_PROTOCOLS,
+    PROTOCOL_LABELS,
+)
 from raynetExperimentSupport import protocol_config_prefix
 
 # Set up LaTeX fonts and style
 import scienceplots
 plt.style.use('science')
 
-plt.rcParams['font.size'] = 40
+plt.rcParams['font.size'] = HEATMAP_FONT_SIZE
 plt.rcParams['text.usetex'] = True
 
 # Protocols and runs
@@ -123,7 +130,7 @@ for i in range(mdf.shape[0]):
         ax.text(
             j, i, f"{mu:.2f}±{sigma:.2f}",
             ha="center", va="center",
-            color="black", fontsize=25
+            color="black", fontsize=HEATMAP_CELL_FONT_SIZE
         )
 
 # Colorbar from 0.5 to 1.0 with custom ticks
@@ -131,7 +138,7 @@ cbar_ax = fig.add_axes([0.90, 0.15, 0.025, 0.83])
 cb = fig.colorbar(im, cax=cbar_ax)
 #cb.set_label("Mean Goodput Ratio", labelpad=20, rotation=90, fontsize=34)
 cb.set_ticks([0.5, 0.75, 1.0])
-cb.ax.tick_params(labelsize=27)
+cb.ax.tick_params(labelsize=HEATMAP_COLORBAR_TICK_FONT_SIZE)
 cb.ax.yaxis.set_label_position('right')
 cb.ax.yaxis.tick_right()
 
