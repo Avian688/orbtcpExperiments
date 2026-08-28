@@ -1,0 +1,24 @@
+{
+  "experiment": "experimentSensitivityAnalysis",
+  "linear_counting_implementation": "Python vectorized port of PintQueue::mixHash, markFlow, and estimateFlowCount; bitmap bits are never set directly to a target occupancy",
+  "flow_id_patterns": [
+    "sequential",
+    "random64"
+  ],
+  "hash_seed_count": 200,
+  "max_flow_count": 65536,
+  "bitmap_bits": [
+    256,
+    512,
+    1024,
+    2048,
+    4096,
+    8192
+  ],
+  "encoding_bits": [
+    4,
+    6,
+    8,
+    10
+  ]
+}

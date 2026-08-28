@@ -305,7 +305,8 @@ def append_connect_path(
 def append_queue_capacity(lines: list[str], state: dict, path: str) -> None:
     lines.append(
         f'        <set-param module="{transit_module(path)}.ppp[1].queue" '
-        f'par="packetCapacity" value="{int(state["queue_packets"])}"/>'
+        f'par="runtimePacketCapacity" '
+        f'value="{int(state["queue_packets"])}"/>'
     )
 
 
