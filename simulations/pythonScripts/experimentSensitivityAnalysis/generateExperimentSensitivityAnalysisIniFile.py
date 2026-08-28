@@ -205,10 +205,15 @@ def write_recording_settings(output, case: SimulationCase, trace: dict) -> None:
 
 def write_queue_settings(output, case: SimulationCase, trace: dict) -> None:
     initial_capacity = int(trace["states"][0]["queue_packets"])
-    # Specific bottleneck assignments must precede broad queue fallbacks.
+    # Fix the interface type so the runtime-mutable queue cannot fall back to
+    # INET's non-mutable DropTailQueue through a wildcard type assignment.
     for transit in ("transitA", "transitB"):
-        w(output, f"*.{transit}.ppp[1].queue.typename = \"PintQueue\"")
-    w(output, "**.ppp[*].queue.typename = \"DropTailQueue\"")
+        w(
+            output,
+            f"*.{transit}.ppp[1].typename = "
+            '"orbtcp.linklayer.ppp.PintInterface"',
+        )
+    # Specific bottleneck capacities must precede the broad queue fallback.
     for transit in ("transitA", "transitB"):
         w(
             output,
