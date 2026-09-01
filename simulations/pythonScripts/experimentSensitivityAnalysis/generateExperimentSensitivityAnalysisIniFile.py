@@ -183,8 +183,12 @@ def write_recording_settings(output, case: SimulationCase, trace: dict) -> None:
     enable_vector(output, "goodput")
     enable_vector(output, "persistentQueueingDelay")
     if case.workload.experiment_key == "flow_isolation":
-        enable_vector(output, "numberOfFlows")
-        enable_vector(output, "numOfFlowsInInitialPhase")
+        # These epoch metrics may stay constant throughout a narrow recording
+        # interval. Recording every emission preserves the control workload.
+        enable_vector(output, "numberOfFlows", remove_repeats=False)
+        enable_vector(
+            output, "numOfFlowsInInitialPhase", remove_repeats=False
+        )
     elif case.workload.experiment_key == "handover":
         enable_vector(output, "numberOfFlows")
         enable_vector(output, "numOfFlowsInInitialPhase")

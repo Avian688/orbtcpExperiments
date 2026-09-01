@@ -384,6 +384,100 @@ def transient_state(trace: dict) -> dict:
     )
 
 
+def windowed_queue_metric(case, metric, start, end) -> pd.DataFrame:
+    frame = load_queue_metric(case, metric)
+    return frame[frame.time.between(start, end, inclusive="both")]
+
+
+def matching_flow_isolation_case(case, transient_flows):
+    return next(
+        candidate
+        for candidate in flow_isolation_cases()
+        if candidate.variant == case.variant
+        and candidate.condition == case.condition
+        and candidate.run == case.run
+        and candidate.workload.transient_flows == transient_flows
+    )
+
+
+def recover_legacy_control_counts(case, reconnect, count_end):
+    """Recover a measured persistent-flow baseline from a matched burst run."""
+    # Runs with the same variant and seed share the persistent endpoints and
+    # path trace. After a one-packet burst clears, its final queue epoch is the
+    # zero-transient baseline that legacy removeRepeats vectors omitted.
+    errors = []
+    for transient_flows in (32, 128):
+        reference = matching_flow_isolation_case(case, transient_flows)
+        try:
+            total = windowed_queue_metric(
+                reference, "numberOfFlows", reconnect, count_end
+            )
+            initial = windowed_queue_metric(
+                reference,
+                "numOfFlowsInInitialPhase",
+                reconnect,
+                count_end,
+            )
+        except (FileNotFoundError, RuntimeError) as error:
+            errors.append(str(error))
+            continue
+
+        if total.empty or initial.empty:
+            errors.append(
+                f"Incomplete reference window for {reference.config_name}"
+            )
+            continue
+
+        total_tail = total.sort_values("time").groupby("module").tail(1)
+        initial_tail = initial.sort_values("time").groupby("module").tail(1)
+        if not (initial_tail.numOfFlowsInInitialPhase == 0).all():
+            errors.append(
+                f"Transient flows still active at the end of "
+                f"{reference.config_name}"
+            )
+            continue
+
+        return (
+            float(total_tail.numberOfFlows.max()),
+            float(initial_tail.numOfFlowsInInitialPhase.max()),
+            f"matched_transient_{transient_flows}_tail",
+        )
+
+    details = "; ".join(errors)
+    raise RuntimeError(
+        f"Cannot recover legacy zero-transient counters for "
+        f"{case.config_name}. Regenerate the INI and rerun this config. "
+        f"Reference errors: {details}"
+    )
+
+
+def flow_count_peaks(case, reconnect, count_end):
+    try:
+        total = windowed_queue_metric(
+            case, "numberOfFlows", reconnect, count_end
+        )
+        initial = windowed_queue_metric(
+            case, "numOfFlowsInInitialPhase", reconnect, count_end
+        )
+    except (FileNotFoundError, RuntimeError):
+        if case.workload.transient_flows != 0:
+            raise
+        return recover_legacy_control_counts(case, reconnect, count_end)
+
+    if total.empty or initial.empty:
+        if case.workload.transient_flows == 0:
+            return recover_legacy_control_counts(case, reconnect, count_end)
+        raise RuntimeError(
+            f"Incomplete flow-count window for {case.config_name}"
+        )
+
+    return (
+        float(total.numberOfFlows.max()),
+        float(initial.numOfFlowsInInitialPhase.max()),
+        "recorded",
+    )
+
+
 def collect_flow_isolation_metrics() -> pd.DataFrame:
     rows = []
     for case in flow_isolation_cases():
@@ -391,17 +485,12 @@ def collect_flow_isolation_metrics() -> pd.DataFrame:
         state = transient_state(trace)
         reconnect = float(state["reconnect_time_s"])
         rtt_s = float(state["rtt_ms"]) / 1000
-        count_end = reconnect + 3 * rtt_s
+        count_end = reconnect + 10 * rtt_s
         goodput_end = reconnect + 5 * rtt_s
 
-        total_count = load_queue_metric(case, "numberOfFlows")
-        initial_count = load_queue_metric(case, "numOfFlowsInInitialPhase")
-        count_window = total_count[
-            total_count.time.between(reconnect, count_end, inclusive="both")
-        ]
-        initial_window = initial_count[
-            initial_count.time.between(reconnect, count_end, inclusive="both")
-        ]
+        peak_total_count, peak_initial_count, count_source = flow_count_peaks(
+            case, reconnect, count_end
+        )
         goodput = load_per_flow_metric(case, "goodput")
         persistent_columns = [
             column
@@ -413,7 +502,7 @@ def collect_flow_isolation_metrics() -> pd.DataFrame:
             (persistent_goodput.index >= reconnect)
             & (persistent_goodput.index <= goodput_end)
         ]
-        if count_window.empty or initial_window.empty or goodput_window.empty:
+        if goodput_window.empty:
             raise RuntimeError(
                 f"Incomplete flow-isolation window for {case.config_name}"
             )
@@ -423,10 +512,9 @@ def collect_flow_isolation_metrics() -> pd.DataFrame:
                 "variant_label": case.variant.label,
                 "transient_flows": case.workload.transient_flows,
                 "run": case.run,
-                "peak_total_flow_count": float(count_window.numberOfFlows.max()),
-                "peak_initial_flow_count": float(
-                    initial_window.numOfFlowsInInitialPhase.max()
-                ),
+                "peak_total_flow_count": peak_total_count,
+                "peak_initial_flow_count": peak_initial_count,
+                "flow_count_source": count_source,
                 "post_event_normalized_persistent_goodput": float(
                     goodput_window.mean()
                     / (float(state["bandwidth_mbps"]) * 1_000_000)
@@ -502,7 +590,7 @@ def plot_flow_isolation() -> None:
         metadata={
             "persistent_flows": 32,
             "transient_payload": "one MSS per transient TCP connection",
-            "count_window": "first 3 RTTs after the 60-second reconnection",
+            "count_window": "first 10 RTTs after the 60-second reconnection",
             "goodput_window": "first 5 RTTs after reconnection",
         },
     )
