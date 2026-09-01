@@ -47,9 +47,14 @@ PLOT_ROOT = SIMULATIONS_DIR / "plots" / EXPERIMENT
 PAPER_PLOT_ROOT = PLOT_ROOT / "paperPlots"
 PLOT_DATA_ROOT = PAPER_PLOT_ROOT / "plot_data"
 
-FONT_SIZE = 11
-PANEL_FIGSIZE = (4.6, 3.1)
-COMBINED_FIGSIZE = (11.2, 3.15)
+FONT_SIZE = 10
+LEGEND_FONT_SIZE = 8
+# Experiment 4/5 aggregate plots use a 4.5 x 1.2 inch half-page canvas.
+# Three sensitivity panels therefore use one third of the page each while
+# retaining the same plot height.
+PANEL_FIGSIZE = (3.0, 1.2)
+COMBINED_FIGSIZE = (9.0, 1.2)
+TOP_LEGEND_Y = 1.2
 EVENT_BIN_RTTS = 0.5
 EVENT_WINDOW_RTTS = 10.0
 FLOW_ISOLATION_GOODPUT_INTERVAL_S = 0.02
@@ -70,6 +75,14 @@ VARIANT_MARKERS = {
     "lc_flow_encoding": "v",
     "orbcc": "o",
 }
+COMPACT_VARIANT_LABELS = {
+    "exact": "Exact PINT",
+    "lc_only": "Linear Counting",
+    "flow_encoding_only": "N/S encoding",
+    "utilization_encoding_only": "U encoding",
+    "lc_flow_encoding": "LC + N/S encoding",
+    "orbcc": "OrbCC",
+}
 
 
 plt.rcParams.update(
@@ -79,7 +92,7 @@ plt.rcParams.update(
         "axes.labelsize": FONT_SIZE,
         "xtick.labelsize": FONT_SIZE,
         "ytick.labelsize": FONT_SIZE,
-        "legend.fontsize": 9,
+        "legend.fontsize": LEGEND_FONT_SIZE,
         "pdf.fonttype": 42,
         "ps.fonttype": 42,
     }
@@ -278,18 +291,44 @@ def save_figure(figure, filename: str) -> None:
     print(f"Saved {path}")
 
 
-def save_legend(handles, labels, filename: str, columns: int) -> None:
-    figure = plt.figure(figsize=(max(4.5, 1.65 * columns), 0.55))
+def add_top_axis_legend(axis, handles=None, labels=None, *, columns: int) -> None:
+    if handles is None or labels is None:
+        handles, labels = axis.get_legend_handles_labels()
+    rows = math.ceil(len(labels) / columns)
+    anchor_y = TOP_LEGEND_Y + 0.14 * (rows - 1)
+    axis.legend(
+        handles,
+        labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, anchor_y),
+        ncol=columns,
+        frameon=False,
+        fontsize=LEGEND_FONT_SIZE,
+        columnspacing=0.65,
+        handlelength=1.0,
+        handletextpad=0.3,
+        labelspacing=0.1,
+        borderaxespad=0.0,
+    )
+
+
+def add_top_figure_legend(
+    figure, handles, labels, *, columns: int
+) -> None:
     figure.legend(
         handles,
         labels,
-        loc="center",
+        loc="upper center",
+        bbox_to_anchor=(0.5, TOP_LEGEND_Y),
         ncol=columns,
         frameon=False,
-        handlelength=2.2,
-        columnspacing=1.4,
+        fontsize=LEGEND_FONT_SIZE,
+        columnspacing=0.65,
+        handlelength=1.0,
+        handletextpad=0.3,
+        labelspacing=0.1,
+        borderaxespad=0.0,
     )
-    save_figure(figure, filename)
 
 
 def style_axis(axis) -> None:
@@ -316,7 +355,7 @@ def plot_synthetic_linear_counting(axis, summary: pd.DataFrame) -> None:
     axis.set_yscale("log")
     axis.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}"))
     axis.set_xlabel("Distinct flows in one epoch")
-    axis.set_ylabel("p95 absolute count error (%)")
+    axis.set_ylabel("p95 count error (%)")
     style_axis(axis)
 
 
@@ -332,7 +371,7 @@ def plot_synthetic_flow_encoding(axis, frame: pd.DataFrame) -> None:
     axis.axvspan(16, 128, color="#BBBBBB", alpha=0.16, linewidth=0)
     axis.set_xscale("log", base=2)
     axis.set_xlabel("Exact flow count")
-    axis.set_ylabel("Decoded count overestimate (%)")
+    axis.set_ylabel("Count overestimate (%)")
     style_axis(axis)
 
 
@@ -347,7 +386,7 @@ def plot_synthetic_utilization(axis, frame: pd.DataFrame) -> None:
         )
     axis.set_xscale("log")
     axis.set_xlabel("Exact utilization, U")
-    axis.set_ylabel("p95 absolute U error (%)")
+    axis.set_ylabel("p95 U error (%)")
     style_axis(axis)
 
 
@@ -401,18 +440,26 @@ def plot_representation_accuracy() -> None:
     for function, data, filename in plotting_functions:
         figure, axis = plt.subplots(figsize=PANEL_FIGSIZE)
         function(axis, data)
-        axis.legend(frameon=False, ncol=2)
+        _handles, labels = axis.get_legend_handles_labels()
+        columns = 3 if len(labels) > 4 else len(labels)
+        add_top_axis_legend(axis, columns=columns)
         save_figure(figure, filename)
 
     figure, axes = plt.subplots(1, 3, figsize=COMBINED_FIGSIZE)
+    legends = []
     for axis, (function, data, _filename) in zip(
         axes, plotting_functions, strict=True
     ):
         function(axis, data)
-    handles, labels = axes[-1].get_legend_handles_labels()
-    figure.tight_layout(w_pad=2.0)
+        handles, labels = axis.get_legend_handles_labels()
+        columns = 3 if len(labels) > 4 else len(labels)
+        legends.append((axis, handles, labels, columns))
+    figure.subplots_adjust(wspace=0.5)
+    for axis, handles, labels, columns in legends:
+        add_top_axis_legend(
+            axis, handles, labels, columns=columns
+        )
     save_figure(figure, "figure1_representation_accuracy.pdf")
-    save_legend(handles, labels, "figure1_representation_accuracy_legend.pdf", 4)
 
 
 def transient_state(trace: dict) -> dict:
@@ -614,19 +661,19 @@ def plot_flow_isolation() -> None:
     panel_specs = (
         (
             "peak_total_flow_count",
-            "Peak reported total flows",
+            "Total flow estimate",
             1.0,
             "figure2a_total_flow_count.pdf",
         ),
         (
             "peak_initial_flow_count",
-            "Peak reported initial-phase flows",
+            "Initial flow estimate",
             1.0,
             "figure2b_initial_flow_count.pdf",
         ),
         (
             "post_event_normalized_persistent_goodput",
-            "Persistent-flow goodput (% of capacity)",
+            "Goodput (% capacity)",
             100.0,
             "figure2c_persistent_goodput.pdf",
         ),
@@ -653,10 +700,28 @@ def plot_flow_isolation() -> None:
         base_dir=PLOT_DATA_ROOT,
     )
 
+    handles = [
+        Line2D(
+            [],
+            [],
+            color=VARIANT_COLORS[variant.key],
+            marker=VARIANT_MARKERS[variant.key],
+            label=COMPACT_VARIANT_LABELS[variant.key],
+        )
+        for variant in FLOW_ISOLATION_VARIANTS
+    ]
+    labels = [
+        COMPACT_VARIANT_LABELS[variant.key]
+        for variant in FLOW_ISOLATION_VARIANTS
+    ]
+
     for metric, ylabel, scale, filename in panel_specs:
         figure, axis = plt.subplots(figsize=PANEL_FIGSIZE)
         plot_flow_isolation_panel(
             axis, summaries[metric], metric, ylabel, scale
+        )
+        add_top_axis_legend(
+            axis, handles, labels, columns=2
         )
         save_figure(figure, filename)
 
@@ -667,24 +732,11 @@ def plot_flow_isolation() -> None:
         plot_flow_isolation_panel(
             axis, summaries[metric], metric, ylabel, scale
         )
-    figure.tight_layout(w_pad=2.0)
-    save_figure(figure, "figure2_flow_count_isolation.pdf")
-    handles = [
-        Line2D(
-            [],
-            [],
-            color=VARIANT_COLORS[variant.key],
-            marker=VARIANT_MARKERS[variant.key],
-            label=variant.label,
-        )
-        for variant in FLOW_ISOLATION_VARIANTS
-    ]
-    save_legend(
-        handles,
-        [variant.label for variant in FLOW_ISOLATION_VARIANTS],
-        "figure2_flow_count_isolation_legend.pdf",
-        len(handles),
+    figure.subplots_adjust(wspace=0.5)
+    add_top_figure_legend(
+        figure, handles, labels, columns=len(handles)
     )
+    save_figure(figure, "figure2_flow_count_isolation.pdf")
 
 
 def event_binned_values(
@@ -841,19 +893,27 @@ def plot_handover_response() -> None:
     panel_specs = (
         (
             "normalized_goodput_percent",
-            "Aggregate goodput (% of capacity)",
+            "Goodput (% capacity)",
             "figure3a_handover_goodput.pdf",
         ),
-        ("queue_delay_ms", "Queueing delay (ms)", "figure3b_handover_delay.pdf"),
+        ("queue_delay_ms", "Queue delay (ms)", "figure3b_handover_delay.pdf"),
         (
             "u_absolute_relative_error_percent",
             "Absolute U error (%)",
             "figure3c_handover_u_error.pdf",
         ),
     )
+    handles = [
+        Line2D([], [], color=VARIANT_COLORS[v.key], linewidth=1.8)
+        for v in HANDOVER_VARIANTS
+    ]
+    labels = [COMPACT_VARIANT_LABELS[v.key] for v in HANDOVER_VARIANTS]
     for metric, ylabel, filename in panel_specs:
         figure, axis = plt.subplots(figsize=PANEL_FIGSIZE)
         plot_handover_panel(axis, summary, metric, ylabel)
+        add_top_axis_legend(
+            axis, handles, labels, columns=2
+        )
         save_figure(figure, filename)
 
     figure, axes = plt.subplots(1, 3, figsize=COMBINED_FIGSIZE)
@@ -861,18 +921,11 @@ def plot_handover_response() -> None:
         axes, panel_specs, strict=True
     ):
         plot_handover_panel(axis, summary, metric, ylabel)
-    figure.tight_layout(w_pad=2.0)
-    save_figure(figure, "figure3_handover_response.pdf")
-    handles = [
-        Line2D([], [], color=VARIANT_COLORS[v.key], linewidth=1.8)
-        for v in HANDOVER_VARIANTS
-    ]
-    save_legend(
-        handles,
-        [v.label for v in HANDOVER_VARIANTS],
-        "figure3_handover_response_legend.pdf",
-        len(handles),
+    figure.subplots_adjust(wspace=0.5)
+    add_top_figure_legend(
+        figure, handles, labels, columns=len(handles)
     )
+    save_figure(figure, "figure3_handover_response.pdf")
 
 
 def stable_state_windows(trace: dict):
@@ -1049,13 +1102,13 @@ def plot_final_validation() -> None:
     panel_specs = (
         (
             "normalized_goodput",
-            "Normalized aggregate goodput (%)",
+            "Goodput (% capacity)",
             100.0,
             "figure4a_final_goodput.pdf",
         ),
         (
             "mean_epoch_p95_queue_delay_ms",
-            "Mean epoch p95 queueing delay (ms)",
+            "Epoch p95 delay (ms)",
             1.0,
             "figure4b_final_delay.pdf",
         ),
@@ -1066,9 +1119,34 @@ def plot_final_validation() -> None:
             "figure4c_final_fairness.pdf",
         ),
     )
+    handles = [
+        Line2D(
+            [],
+            [],
+            color=VARIANT_COLORS[variant.key],
+            marker=VARIANT_MARKERS[variant.key],
+            linestyle="-",
+        )
+        for variant in VALIDATION_VARIANTS
+    ]
+    labels = [
+        COMPACT_VARIANT_LABELS[variant.key]
+        for variant in VALIDATION_VARIANTS
+    ]
+    handles.extend(
+        (
+            Line2D([], [], color="#555555", linestyle="-"),
+            Line2D([], [], color="#555555", linestyle="--"),
+        )
+    )
+    labels.extend(("Distributed/no loss", "Bottleneck/loss"))
+
     for metric, ylabel, scale, filename in panel_specs:
         figure, axis = plt.subplots(figsize=PANEL_FIGSIZE)
         plot_validation_panel(axis, summaries[metric], metric, ylabel, scale)
+        add_top_axis_legend(
+            axis, handles, labels, columns=2
+        )
         save_figure(figure, filename)
 
     figure, axes = plt.subplots(1, 3, figsize=COMBINED_FIGSIZE)
@@ -1076,35 +1154,11 @@ def plot_final_validation() -> None:
         axes, panel_specs, strict=True
     ):
         plot_validation_panel(axis, summaries[metric], metric, ylabel, scale)
-    figure.tight_layout(w_pad=2.0)
-    save_figure(figure, "figure4_final_validation.pdf")
-
-    handles = []
-    labels = []
-    for condition in ("distributed_no_loss", "bottleneck_loss"):
-        condition_label = (
-            "Distributed RTT, no loss"
-            if condition == "distributed_no_loss"
-            else "Bottleneck RTT, loss"
-        )
-        for variant in VALIDATION_VARIANTS:
-            color, linestyle, marker = validation_style(variant, condition)
-            handles.append(
-                Line2D(
-                    [],
-                    [],
-                    color=color,
-                    linestyle=linestyle,
-                    marker=marker,
-                )
-            )
-            labels.append(f"{variant.label}, {condition_label}")
-    save_legend(
-        handles,
-        labels,
-        "figure4_final_validation_legend.pdf",
-        len(handles),
+    figure.subplots_adjust(wspace=0.5)
+    add_top_figure_legend(
+        figure, handles, labels, columns=len(handles)
     )
+    save_figure(figure, "figure4_final_validation.pdf")
 
 
 def write_manifest() -> None:
