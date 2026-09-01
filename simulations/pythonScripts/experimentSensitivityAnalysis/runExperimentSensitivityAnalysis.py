@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import fnmatch
 import os
 from pathlib import Path
 import subprocess
@@ -25,6 +26,7 @@ from raynetExperimentSupport import (  # noqa: E402
 
 
 EXPERIMENT_DIR = (SCRIPT_DIR / "../../paperExperiments" / EXPERIMENT).resolve()
+CONFIG_FILTER_ENV = "SENSITIVITY_CONFIG_FILTER"
 
 
 def run_checked(command: list[str], cwd: Path) -> None:
@@ -63,6 +65,24 @@ def generate_inputs() -> None:
         run_checked([sys.executable, script], SCRIPT_DIR)
 
 
+def selected_cases():
+    all_cases = list(cases())
+    pattern = os.environ.get(CONFIG_FILTER_ENV, "").strip()
+    if not pattern:
+        return all_cases
+
+    selected = [
+        case
+        for case in all_cases
+        if fnmatch.fnmatchcase(case.config_name, pattern)
+    ]
+    if not selected:
+        raise RuntimeError(
+            f"{CONFIG_FILTER_ENV}={pattern!r} matched no configurations"
+        )
+    return selected
+
+
 def simulation_configs():
     configs = collect_simulation_configs(
         "orbtcp_pint", INI_FILE, RUNS, EXPERIMENT_DIR
@@ -80,7 +100,8 @@ def simulation_configs():
         raise RuntimeError(
             f"Expected {expected_simulation_count()} configs, found {len(configs)}"
         )
-    return configs
+    selected_names = {case.config_name for case in selected_cases()}
+    return [config for config in configs if config.config_name in selected_names]
 
 
 def run_simulations(cores: int) -> None:
@@ -95,7 +116,7 @@ def run_simulations(cores: int) -> None:
 
 
 def expected_vec_files():
-    for case in cases():
+    for case in selected_cases():
         yield case, EXPERIMENT_DIR / "results" / f"{case.config_name}-#0.vec"
 
 
@@ -124,7 +145,7 @@ def export_csvs(cores: int) -> None:
 
 def extract_csvs(cores: int) -> None:
     commands = []
-    for case in cases():
+    for case in selected_cases():
         csv_file = EXPERIMENT_DIR / "results" / f"{case.config_name}.csv"
         if not csv_file.is_file() or csv_file.stat().st_size == 0:
             raise FileNotFoundError(f"Missing exported CSV: {csv_file}")
@@ -157,8 +178,10 @@ def main() -> int:
     )
     start_step = int(os.environ.get("START_STEP", "1"))
     end_step = int(os.environ.get("END_STEP", "5"))
+    selected_count = len(selected_cases())
     print(
-        f"{EXPERIMENT}: {expected_simulation_count()} matched simulations; "
+        f"{EXPERIMENT}: {selected_count}/{expected_simulation_count()} "
+        f"matched simulations; "
         f"up to {cores} concurrent workers"
     )
     steps = [
