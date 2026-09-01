@@ -35,6 +35,7 @@ BASE_RTT_MS = 50                 # ms
 FLOW_BATCHES = [5, 10, 20]
 PROTOCOLS = LEO_PROTOCOLS
 RUNS = [1,2,3,4,5]
+LEGEND_FONTSIZE = 10
 
 # Evaluate after all flows have joined (latest join ~= 100s), and before end
 EVAL_START = 105
@@ -266,12 +267,14 @@ def plot_exp11_scatter_norm_util_vs_norm_delay(df):
     proto_order = PROTOCOLS
     proto_labels = [PROTOCOL_LABELS[p] for p in proto_order]
     proxy_lines = [Line2D([0], [0], color=COLORS_LEO[p], lw=1.5) for p in proto_order]
+    protocol_legend_kwargs = compact_protocol_legend_kwargs(proto_order)
+    protocol_legend_kwargs["fontsize"] = LEGEND_FONTSIZE
 
     fig.legend(
         proxy_lines, proto_labels,
         loc='upper center',
         bbox_to_anchor=(0.56, 0.92),
-        **compact_protocol_legend_kwargs(proto_order),
+        **protocol_legend_kwargs,
     )
 
     # Flow-batch legend (BOTTOM RIGHT, no frame)
@@ -286,7 +289,7 @@ def plot_exp11_scatter_norm_util_vs_norm_delay(df):
     ax.legend(
         handles=batch_handles,
         loc='lower right',
-        fontsize='small',
+        fontsize=LEGEND_FONTSIZE,
         frameon=False,
         borderaxespad=0.3,
         handletextpad=0.4
