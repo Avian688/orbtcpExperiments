@@ -10,6 +10,7 @@ import sys
 
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib.ticker import FuncFormatter
 import numpy as np
 import pandas as pd
 
@@ -313,6 +314,7 @@ def plot_synthetic_linear_counting(axis, summary: pd.DataFrame) -> None:
     axis.axvspan(16, 128, color="#BBBBBB", alpha=0.16, linewidth=0)
     axis.set_xscale("log", base=2)
     axis.set_yscale("log")
+    axis.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}"))
     axis.set_xlabel("Distinct flows in one epoch")
     axis.set_ylabel("p95 absolute count error (%)")
     style_axis(axis)
