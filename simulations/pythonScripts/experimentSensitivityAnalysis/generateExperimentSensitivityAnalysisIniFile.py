@@ -180,7 +180,9 @@ def enable_vector(output, metric: str, *, remove_repeats: bool = True) -> None:
 
 
 def write_recording_settings(output, case: SimulationCase, trace: dict) -> None:
-    enable_vector(output, "goodput")
+    # Goodput is a periodic signal. Preserve zero/repeated samples so short
+    # post-handover windows cannot be mistaken for missing simulation data.
+    enable_vector(output, "goodput", remove_repeats=False)
     enable_vector(output, "persistentQueueingDelay")
     if case.workload.experiment_key == "flow_isolation":
         # These epoch metrics may stay constant throughout a narrow recording

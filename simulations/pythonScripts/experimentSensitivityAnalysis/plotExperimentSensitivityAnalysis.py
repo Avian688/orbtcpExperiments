@@ -51,6 +51,7 @@ PANEL_FIGSIZE = (4.6, 3.1)
 COMBINED_FIGSIZE = (11.2, 3.15)
 EVENT_BIN_RTTS = 0.5
 EVENT_WINDOW_RTTS = 10.0
+FLOW_ISOLATION_GOODPUT_INTERVAL_S = 0.02
 
 VARIANT_COLORS = {
     "exact": "#303030",
@@ -132,7 +133,43 @@ def load_per_flow_metric(case, metric: str) -> pd.DataFrame:
         raise RuntimeError(
             f"No {endpoint} {metric} vectors for {case.config_name}"
         )
-    return pd.concat(series, axis=1).sort_index().fillna(0.0)
+    # Keep gaps from vector(removeRepeats) distinct from genuine zero values.
+    # Callers can then restore the held value or resample the periodic signal.
+    return pd.concat(series, axis=1).sort_index()
+
+
+def restore_remove_repeats(frame: pd.DataFrame) -> pd.DataFrame:
+    return frame.ffill().fillna(0.0)
+
+
+def periodic_metric_window(
+    frame: pd.DataFrame,
+    start: float,
+    end: float,
+    interval_s: float,
+) -> pd.DataFrame:
+    """Restore a periodic signal saved with vector(removeRepeats)."""
+    if interval_s <= 0 or end < start:
+        raise ValueError("Invalid periodic metric window")
+
+    first_tick = math.ceil((start - 1e-9) / interval_s)
+    last_tick = math.floor((end + 1e-9) / interval_s)
+    if first_tick > last_tick:
+        return pd.DataFrame(columns=frame.columns, dtype=float)
+
+    sample_index = pd.Index(
+        np.round(
+            np.arange(first_tick, last_tick + 1, dtype=float) * interval_s,
+            9,
+        ),
+        name=frame.index.name,
+    )
+    sparse = frame.copy()
+    sparse.index = np.round(sparse.index.to_numpy(dtype=float), 9)
+    sparse = sparse.groupby(level=0, sort=True).mean()
+    history = sparse[sparse.index <= sample_index[-1]]
+    restored = history.reindex(history.index.union(sample_index)).sort_index()
+    return restored.ffill().reindex(sample_index).fillna(0.0)
 
 
 def is_bottleneck_queue(path: Path) -> bool:
@@ -497,11 +534,18 @@ def collect_flow_isolation_metrics() -> pd.DataFrame:
             for column in goodput.columns
             if int(column) < case.workload.persistent_flows
         ]
-        persistent_goodput = goodput[persistent_columns].sum(axis=1)
-        goodput_window = persistent_goodput[
-            (persistent_goodput.index >= reconnect)
-            & (persistent_goodput.index <= goodput_end)
-        ]
+        if len(persistent_columns) != case.workload.persistent_flows:
+            raise RuntimeError(
+                f"Missing persistent-flow goodput vectors for {case.config_name}: "
+                f"expected {case.workload.persistent_flows}, "
+                f"found {len(persistent_columns)}"
+            )
+        goodput_window = periodic_metric_window(
+            goodput[persistent_columns],
+            reconnect,
+            goodput_end,
+            FLOW_ISOLATION_GOODPUT_INTERVAL_S,
+        ).sum(axis=1)
         if goodput_window.empty:
             raise RuntimeError(
                 f"Incomplete flow-isolation window for {case.config_name}"
@@ -697,7 +741,9 @@ def collect_handover_series() -> pd.DataFrame:
     rows = []
     for case in handover_cases():
         trace = load_trace(case.run)
-        goodput = load_per_flow_metric(case, "goodput").sum(axis=1)
+        goodput = restore_remove_repeats(
+            load_per_flow_metric(case, "goodput")
+        ).sum(axis=1)
         queue_delay = load_queue_metric(case, "persistentQueueingDelay")
         utilization_error = load_utilization_error(case)
         frames = (
@@ -849,9 +895,13 @@ def collect_validation_metrics() -> pd.DataFrame:
     rows = []
     for case in validation_cases():
         trace = load_trace(case.run)
-        goodput = load_per_flow_metric(case, "goodput")
+        goodput = restore_remove_repeats(
+            load_per_flow_metric(case, "goodput")
+        )
         try:
-            retransmission = load_per_flow_metric(case, "retransmissionRate")
+            retransmission = restore_remove_repeats(
+                load_per_flow_metric(case, "retransmissionRate")
+            )
         except (FileNotFoundError, RuntimeError):
             retransmission = None
         queue_delay = load_queue_metric(case, "persistentQueueingDelay")
