@@ -529,19 +529,21 @@ def collect_flow_isolation_metrics() -> pd.DataFrame:
             case, reconnect, count_end
         )
         goodput = load_per_flow_metric(case, "goodput")
-        persistent_columns = [
-            column
-            for column in goodput.columns
-            if int(column) < case.workload.persistent_flows
-        ]
-        if len(persistent_columns) != case.workload.persistent_flows:
-            raise RuntimeError(
-                f"Missing persistent-flow goodput vectors for {case.config_name}: "
-                f"expected {case.workload.persistent_flows}, "
-                f"found {len(persistent_columns)}"
+        persistent_columns = list(range(case.workload.persistent_flows))
+        missing_columns = sorted(
+            set(persistent_columns) - set(goodput.columns)
+        )
+        if missing_columns:
+            # CSV-R omits a declared vector when removeRepeats suppresses every
+            # zero sample. These configured persistent endpoints therefore
+            # contribute zero throughout the recorded recovery window.
+            print(
+                f"Treating empty goodput vectors as zero for "
+                f"{case.config_name}: {missing_columns}"
             )
+        persistent_goodput = goodput.reindex(columns=persistent_columns)
         goodput_window = periodic_metric_window(
-            goodput[persistent_columns],
+            persistent_goodput,
             reconnect,
             goodput_end,
             FLOW_ISOLATION_GOODPUT_INTERVAL_S,
