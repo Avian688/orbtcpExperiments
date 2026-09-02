@@ -10,7 +10,7 @@ import sys
 
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from matplotlib.ticker import FuncFormatter
+from matplotlib.ticker import FuncFormatter, NullLocator
 import numpy as np
 import pandas as pd
 
@@ -354,6 +354,7 @@ def plot_synthetic_utilization(axis, frame: pd.DataFrame) -> None:
         )
     axis.set_xscale("log")
     axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}"))
+    axis.xaxis.set_minor_locator(NullLocator())
     axis.set_xlabel("Exact utilization, U")
     axis.set_ylabel("p95 U error (%)")
     style_axis(axis)
