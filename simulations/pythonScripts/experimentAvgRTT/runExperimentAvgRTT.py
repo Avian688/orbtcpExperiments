@@ -69,7 +69,7 @@ if __name__ == "__main__":
     endStep = int(os.environ.get("END_STEP", "7"))
     currStep = 1
     cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
-    congControlList = ["orbtcp_pint_per_flow_rtt", "orbtcp_pint"]
+    congControlList = ["orbtcp_pint_without_avg_rtt", "orbtcp_pint"]
     experiment = "experimentAvgRTT"
     buffersizes = ["mediumbuffer"]
     clientsRtts = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP

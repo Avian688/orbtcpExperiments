@@ -40,7 +40,7 @@ if __name__ == "__main__":
     queueSizes = [0.2, 1, 4]
     numOfRuns = 5
     numOfClients = 2
-    algorithms = ["orbtcp_pint_per_flow_rtt", "orbtcp_pint"]
+    algorithms = ["orbtcp_pint_without_avg_rtt", "orbtcp_pint"]
     for alg in algorithms:
         for qs in queueSizes:
             
@@ -126,7 +126,10 @@ if __name__ == "__main__":
                 
                 f.write('\n' + '**.router1.ppp[2].queue.typename = "PintQueue"\n')
                 f.write('\n' + '**.**.queue.typename = "DropTailQueue"\n')
-                f.write('\n' + '**.**.queue.pintUseAverageRttForUtilization = ' + str(alg == "orbtcp_pint").lower())
+                useAverageRtt = str(alg == "orbtcp_pint").lower()
+                f.write('\n' + '**.tcp.pintUseAverageRtt = ' + useAverageRtt)
+                f.write('\n' + '**.**.queue.pintUseAverageRtt = ' + useAverageRtt)
+                f.write('\n' + '**.**.queue.pintNoAverageRttInterval = 20ms')
                 f.write('\n' + '**.additiveIncreasePercent = 0.05')
                 f.write('\n' + '**.eta = 0.95\n')
                 f.write('\n' + '**.alpha = ' + str(0.01))

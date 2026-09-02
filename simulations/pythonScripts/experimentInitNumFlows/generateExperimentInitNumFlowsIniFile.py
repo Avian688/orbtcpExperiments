@@ -127,7 +127,8 @@ if __name__ == "__main__":
                 
                 f.write('\n' + 'singledumbbell.router1.ppp[65].queue.typename = "PintQueue"\n')
                 f.write('\n' + '**.**.queue.typename = "DropTailQueue"\n')
-                f.write('\n' + '**.**.queue.pintUseAverageRttForUtilization = true')
+                f.write('\n' + '**.tcp.pintUseAverageRtt = true')
+                f.write('\n' + '**.**.queue.pintUseAverageRtt = true')
                 f.write('\n' + '**.additiveIncreasePercent = 0.05')
                 f.write('\n' + '**.eta = 0.95\n')
                 f.write('\n' + '**.alpha = ' + str(0.01))

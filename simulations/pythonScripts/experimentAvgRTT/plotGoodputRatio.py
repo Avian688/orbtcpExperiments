@@ -20,7 +20,7 @@ plt.rcParams['xtick.labelsize'] = "medium"
 plt.rcParams['ytick.labelsize'] = "medium"
 
 # Constants
-PROTOCOLS = ["orbtcp_pint_per_flow_rtt", "orbtcp_pint"]
+PROTOCOLS = ["orbtcp_pint_without_avg_rtt", "orbtcp_pint"]
 BWS       = [100]
 DELAYS    = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
 RUNS      = [1, 2, 3, 4, 5]
@@ -32,13 +32,13 @@ CAPSIZE     = 2
 
 # assign each protocol a color
 protocol_colors = {
-    "orbtcp_pint":               PROTOCOL_COLORS["orbtcp_pint"],
-    "orbtcp_pint_per_flow_rtt":  "tab:blue",
+    "orbtcp_pint":                  PROTOCOL_COLORS["orbtcp_pint"],
+    "orbtcp_pint_without_avg_rtt":  "tab:blue",
 }
 
 protocol_labels = {
-    "orbtcp_pint":               "OrbCC",
-    "orbtcp_pint_per_flow_rtt":  "OrbCC with per-flow RTT",
+    "orbtcp_pint":                  "OrbCC",
+    "orbtcp_pint_without_avg_rtt":  "OrbCC without AvgRTT",
 }
 
 def plot_points_rtt(ax, df, data_col, err_col, marker, label, color):
