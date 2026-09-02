@@ -353,6 +353,7 @@ def plot_synthetic_utilization(axis, frame: pd.DataFrame) -> None:
             label=f"{bits} bits",
         )
     axis.set_xscale("log")
+    axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}"))
     axis.set_xlabel("Exact utilization, U")
     axis.set_ylabel("p95 U error (%)")
     style_axis(axis)
