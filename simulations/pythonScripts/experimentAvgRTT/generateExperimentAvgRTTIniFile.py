@@ -40,7 +40,7 @@ if __name__ == "__main__":
     queueSizes = [0.2, 1, 4]
     numOfRuns = 5
     numOfClients = 2
-    algorithms = ["orbtcp_pint", "orbtcp_pint_no_avg_rtt"]
+    algorithms = ["orbtcp_pint_per_flow_rtt", "orbtcp_pint"]
     for alg in algorithms:
         for qs in queueSizes:
             
@@ -100,6 +100,7 @@ if __name__ == "__main__":
                 f.write('\n' + '**.tcp.typename = "Orbtcp"')
                 f.write('\n' + '**.tcp.tcpAlgorithmClass = "' + algFlavour +  '"')
                 f.write('\n' + '\n'.join(PINT_PARAMETER_LINES))
+                f.write('\n' + '**.tcp.pintUseInitialPhase = true')
                 f.write('\n' + '**.tcp.pintUseInitialPhaseFlowCount = true')
                 f.write('\n' + '**.tcp.advertisedWindow = 200000000')
                 f.write('\n' + '**.tcp.windowScalingSupport = true')

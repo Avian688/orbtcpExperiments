@@ -4,7 +4,7 @@ import pandas as pd
 
 # Constants
 base_dir = "../../../paperExperiments/experimentInitNumFlows/csvs"
-protocols = ["OrbtcpPintNoInitFlows", "OrbtcpPint"]
+protocols = ["OrbtcpPintNoInitialPhase", "OrbtcpPint"]
 buffer = "mediumbuffer"
 delay = "100ms"
 num_clients = 65  # number of client connections

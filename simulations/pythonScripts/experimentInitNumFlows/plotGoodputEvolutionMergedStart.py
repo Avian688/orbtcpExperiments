@@ -14,14 +14,17 @@ plt.rcParams['text.usetex'] = False
 
 # Constants
 base_dir    = "../../../paperExperiments/experimentInitNumFlows/csvs"
-protocols   = ["OrbtcpPintNoInitFlows", "OrbtcpPint"]
+protocols   = ["OrbtcpPintNoInitialPhase", "OrbtcpPint"]
 buffer      = "mediumbuffer"
 delay       = "100ms"
 num_servers = 50   # only first 50 flows
 num_runs    = 5
 
 LINEWIDTH   = 0.30
-COLOR       = PROTOCOL_COLORS["orbtcp_pint"]
+colors = {
+    "OrbtcpPint":               PROTOCOL_COLORS["orbtcp_pint"],
+    "OrbtcpPintNoInitialPhase": "tab:blue",
+}
 
 # time grid: 0–10 seconds, integer
 times = np.arange(0, 11)
@@ -69,11 +72,11 @@ for protocol in protocols:
     for i in range(num_servers):
         plt.plot(times, flow_mean[i],
                  linewidth=LINEWIDTH,
-                 color=COLOR,
+                 color=colors[protocol],
                  alpha=0.8)
     # merged variance shading
     plt.fill_between(times, min_vals, max_vals,
-                     color=COLOR,
+                     color=colors[protocol],
                      alpha=0.2)
 
     # axes

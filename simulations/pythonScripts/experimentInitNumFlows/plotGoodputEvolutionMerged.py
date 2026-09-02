@@ -21,7 +21,7 @@ plt.rcParams['ytick.labelsize'] = "medium"
 
 # Constants
 base_dir    = "../../../paperExperiments/experimentInitNumFlows/csvs"
-protocols   = ["OrbtcpPintNoInitFlows", "OrbtcpPint"]
+protocols   = ["OrbtcpPintNoInitialPhase", "OrbtcpPint"]
 buffer      = "mediumbuffer"
 delay       = "100ms"
 num_servers = 65
@@ -34,14 +34,14 @@ late_starts = [10] + [20]*2 + [30]*4 + [40]*8
 
 # Assign each protocol its own color
 protocol_colors = {
-    "OrbtcpPint":            PROTOCOL_COLORS["orbtcp_pint"],
-    "OrbtcpPintNoInitFlows": "tab:blue",
+    "OrbtcpPint":               PROTOCOL_COLORS["orbtcp_pint"],
+    "OrbtcpPintNoInitialPhase": "tab:blue",
 }
 
 # Display names for legend
 display_names = {
-    "OrbtcpPint":            "OrbCC",
-    "OrbtcpPintNoInitFlows": "OrbCC without initial-flow count",
+    "OrbtcpPint":               "OrbCC",
+    "OrbtcpPintNoInitialPhase": "OrbCC without initial phase",
 }
 
 plt.figure(figsize=(4.5, 1.2))

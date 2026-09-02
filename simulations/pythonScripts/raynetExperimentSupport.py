@@ -27,6 +27,9 @@ _RAYNET_CONFIG_ALIAS = {
 
 _PROTOCOL_CONFIG_PREFIX = {
     "orbtcp_pint": "OrbtcpPint",
+    "orbtcp_pint_per_flow_rtt": "OrbtcpPintPerFlowRTT",
+    "orbtcp_pint_no_initial_phase": "OrbtcpPintNoInitialPhase",
+    # Retain the former names for compatibility with already-generated data.
     "orbtcp_pint_no_avg_rtt": "OrbtcpPintNoAvgRTT",
     "orbtcp_pint_no_init_flows": "OrbtcpPintNoInitFlows",
 }

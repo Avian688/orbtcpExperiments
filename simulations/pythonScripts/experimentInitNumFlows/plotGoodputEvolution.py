@@ -13,7 +13,7 @@ plt.rcParams['text.usetex'] = False
 
 # Constants
 base_dir    = "../../../paperExperiments/experimentInitNumFlows/csvs"
-protocols   = ["OrbtcpPintNoInitFlows", "OrbtcpPint"]
+protocols   = ["OrbtcpPintNoInitialPhase", "OrbtcpPint"]
 buffer      = "mediumbuffer"
 delay       = "100ms"
 num_servers = 65
@@ -22,8 +22,8 @@ num_runs    = 5
 LINEWIDTH   = 0.30
 
 colors = {
-    "OrbtcpPint":            PROTOCOL_COLORS["orbtcp_pint"],
-    "OrbtcpPintNoInitFlows": "tab:blue",
+    "OrbtcpPint":               PROTOCOL_COLORS["orbtcp_pint"],
+    "OrbtcpPintNoInitialPhase": "tab:blue",
 }
 
 # forced start times for flows 50..64: 1×10s, 2×20s, 4×30s, 8×40s
