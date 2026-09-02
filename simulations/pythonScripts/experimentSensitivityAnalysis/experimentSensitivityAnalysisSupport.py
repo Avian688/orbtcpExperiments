@@ -54,6 +54,7 @@ class Variant:
     flow_count_sketch: bool
     flow_count_bits: int
     utilization_bits: int
+    feedback_probability: float = PINT_FEEDBACK_PROBABILITY
 
 
 EXACT_PINT = Variant("exact", "Exact PINT", "Exact", False, 0, 0)
@@ -91,6 +92,46 @@ FINAL_ORBCC = Variant(
     SELECTED_UTILIZATION_BITS,
 )
 
+FEEDBACK_REDUCED_VARIANTS = (
+    Variant(
+        "feedback_p_1_256",
+        "p=1/256",
+        "P1_256",
+        True,
+        SELECTED_FLOW_COUNT_BITS,
+        SELECTED_UTILIZATION_BITS,
+        1 / 256,
+    ),
+    Variant(
+        "feedback_p_1_64",
+        "p=1/64",
+        "P1_64",
+        True,
+        SELECTED_FLOW_COUNT_BITS,
+        SELECTED_UTILIZATION_BITS,
+        1 / 64,
+    ),
+    Variant(
+        "feedback_p_1_16",
+        "p=1/16",
+        "P1_16",
+        True,
+        SELECTED_FLOW_COUNT_BITS,
+        SELECTED_UTILIZATION_BITS,
+        1 / 16,
+    ),
+    Variant(
+        "feedback_p_1_4",
+        "p=1/4",
+        "P1_4",
+        True,
+        SELECTED_FLOW_COUNT_BITS,
+        SELECTED_UTILIZATION_BITS,
+        1 / 4,
+    ),
+)
+FEEDBACK_VARIANTS = (*FEEDBACK_REDUCED_VARIANTS, FINAL_ORBCC)
+
 FLOW_ISOLATION_VARIANTS = (
     EXACT_PINT,
     LC_ONLY,
@@ -110,6 +151,7 @@ ALL_VARIANTS = (
     FLOW_ENCODING_ONLY,
     UTILIZATION_ENCODING_ONLY,
     LC_FLOW_ENCODING,
+    *FEEDBACK_REDUCED_VARIANTS,
     FINAL_ORBCC,
 )
 
@@ -176,6 +218,14 @@ HANDOVER_WORKLOAD = Workload(
     persistent_flows=64,
 )
 
+FEEDBACK_WORKLOAD = Workload(
+    "feedback",
+    "64flows",
+    "64 persistent flows",
+    "64Flows",
+    persistent_flows=64,
+)
+
 VALIDATION_WORKLOADS = tuple(
     Workload(
         "validation",
@@ -199,6 +249,7 @@ class SimulationCase:
     def config_name(self) -> str:
         experiment_label = {
             "flow_isolation": "FlowIsolation",
+            "feedback": "Feedback",
             "handover": "Handover",
             "validation": "Validation",
         }[self.workload.experiment_key]
@@ -233,6 +284,23 @@ def handover_cases():
             )
 
 
+def feedback_cases():
+    for variant in FEEDBACK_REDUCED_VARIANTS:
+        for run in RUNS:
+            yield SimulationCase(
+                variant, FEEDBACK_WORKLOAD, DISTRIBUTED_NO_LOSS, run
+            )
+
+
+def feedback_analysis_cases():
+    yield from feedback_cases()
+    for run in RUNS:
+        # The existing Figure 3 OrbCC case is the exactly matched p=1 control.
+        yield SimulationCase(
+            FINAL_ORBCC, HANDOVER_WORKLOAD, DISTRIBUTED_NO_LOSS, run
+        )
+
+
 def validation_cases():
     for variant in VALIDATION_VARIANTS:
         for workload in VALIDATION_WORKLOADS:
@@ -242,7 +310,7 @@ def validation_cases():
 
 
 def cases():
-    yield from flow_isolation_cases()
+    yield from feedback_cases()
     yield from handover_cases()
     yield from validation_cases()
 
@@ -278,6 +346,9 @@ __all__ = (
     "EXACT_PINT",
     "EXPERIMENT",
     "FINAL_ORBCC",
+    "FEEDBACK_REDUCED_VARIANTS",
+    "FEEDBACK_VARIANTS",
+    "FEEDBACK_WORKLOAD",
     "FLOW_ENCODING_ONLY",
     "FLOW_ISOLATION_VARIANTS",
     "FLOW_ISOLATION_WORKLOADS",
@@ -324,6 +395,8 @@ __all__ = (
     "Workload",
     "cases",
     "expected_simulation_count",
+    "feedback_analysis_cases",
+    "feedback_cases",
     "flow_isolation_cases",
     "handover_cases",
     "queue_packets",

@@ -21,15 +21,14 @@ from experimentSensitivityAnalysisSupport import (  # noqa: E402
     DISTRIBUTED_NO_LOSS,
     EXACT_PINT,
     EXPERIMENT,
+    FEEDBACK_VARIANTS,
     FINAL_ORBCC,
-    FLOW_ISOLATION_VARIANTS,
     HANDOVER_VARIANTS,
     RUNS,
     SIMULATION_TIME_S,
-    TRANSIENT_HANDOVER_TIME_S,
     VALIDATION_VARIANTS,
     cases,
-    flow_isolation_cases,
+    feedback_analysis_cases,
     handover_cases,
     trace_name,
     validation_cases,
@@ -57,7 +56,6 @@ COMBINED_FIGSIZE = (9.0, 1.2)
 TOP_LEGEND_Y = 1.2
 EVENT_BIN_RTTS = 0.5
 EVENT_WINDOW_RTTS = 10.0
-FLOW_ISOLATION_GOODPUT_INTERVAL_S = 0.02
 
 VARIANT_COLORS = {
     "exact": "#303030",
@@ -154,36 +152,6 @@ def load_per_flow_metric(case, metric: str) -> pd.DataFrame:
 
 def restore_remove_repeats(frame: pd.DataFrame) -> pd.DataFrame:
     return frame.ffill().fillna(0.0)
-
-
-def periodic_metric_window(
-    frame: pd.DataFrame,
-    start: float,
-    end: float,
-    interval_s: float,
-) -> pd.DataFrame:
-    """Restore a periodic signal saved with vector(removeRepeats)."""
-    if interval_s <= 0 or end < start:
-        raise ValueError("Invalid periodic metric window")
-
-    first_tick = math.ceil((start - 1e-9) / interval_s)
-    last_tick = math.floor((end + 1e-9) / interval_s)
-    if first_tick > last_tick:
-        return pd.DataFrame(columns=frame.columns, dtype=float)
-
-    sample_index = pd.Index(
-        np.round(
-            np.arange(first_tick, last_tick + 1, dtype=float) * interval_s,
-            9,
-        ),
-        name=frame.index.name,
-    )
-    sparse = frame.copy()
-    sparse.index = np.round(sparse.index.to_numpy(dtype=float), 9)
-    sparse = sparse.groupby(level=0, sort=True).mean()
-    history = sparse[sparse.index <= sample_index[-1]]
-    restored = history.reindex(history.index.union(sample_index)).sort_index()
-    return restored.ffill().reindex(sample_index).fillna(0.0)
 
 
 def is_bottleneck_queue(path: Path) -> bool:
@@ -462,283 +430,6 @@ def plot_representation_accuracy() -> None:
     save_figure(figure, "figure1_representation_accuracy.pdf")
 
 
-def transient_state(trace: dict) -> dict:
-    return next(
-        state
-        for state in trace["states"]
-        if state["handover_time_s"] == TRANSIENT_HANDOVER_TIME_S
-    )
-
-
-def windowed_queue_metric(case, metric, start, end) -> pd.DataFrame:
-    frame = load_queue_metric(case, metric)
-    return frame[frame.time.between(start, end, inclusive="both")]
-
-
-def matching_flow_isolation_case(case, transient_flows):
-    return next(
-        candidate
-        for candidate in flow_isolation_cases()
-        if candidate.variant == case.variant
-        and candidate.condition == case.condition
-        and candidate.run == case.run
-        and candidate.workload.transient_flows == transient_flows
-    )
-
-
-def recover_legacy_control_counts(case, reconnect, count_end):
-    """Recover a measured persistent-flow baseline from a matched burst run."""
-    # Runs with the same variant and seed share the persistent endpoints and
-    # path trace. After a one-packet burst clears, its final queue epoch is the
-    # zero-transient baseline that legacy removeRepeats vectors omitted.
-    errors = []
-    for transient_flows in (32, 128):
-        reference = matching_flow_isolation_case(case, transient_flows)
-        try:
-            total = windowed_queue_metric(
-                reference, "numberOfFlows", reconnect, count_end
-            )
-            initial = windowed_queue_metric(
-                reference,
-                "numOfFlowsInInitialPhase",
-                reconnect,
-                count_end,
-            )
-        except (FileNotFoundError, RuntimeError) as error:
-            errors.append(str(error))
-            continue
-
-        if total.empty or initial.empty:
-            errors.append(
-                f"Incomplete reference window for {reference.config_name}"
-            )
-            continue
-
-        total_tail = total.sort_values("time").groupby("module").tail(1)
-        initial_tail = initial.sort_values("time").groupby("module").tail(1)
-        if not (initial_tail.numOfFlowsInInitialPhase == 0).all():
-            errors.append(
-                f"Transient flows still active at the end of "
-                f"{reference.config_name}"
-            )
-            continue
-
-        return (
-            float(total_tail.numberOfFlows.max()),
-            float(initial_tail.numOfFlowsInInitialPhase.max()),
-            f"matched_transient_{transient_flows}_tail",
-        )
-
-    details = "; ".join(errors)
-    raise RuntimeError(
-        f"Cannot recover legacy zero-transient counters for "
-        f"{case.config_name}. Regenerate the INI and rerun this config. "
-        f"Reference errors: {details}"
-    )
-
-
-def flow_count_peaks(case, reconnect, count_end):
-    try:
-        total = windowed_queue_metric(
-            case, "numberOfFlows", reconnect, count_end
-        )
-        initial = windowed_queue_metric(
-            case, "numOfFlowsInInitialPhase", reconnect, count_end
-        )
-    except (FileNotFoundError, RuntimeError):
-        if case.workload.transient_flows != 0:
-            raise
-        return recover_legacy_control_counts(case, reconnect, count_end)
-
-    if total.empty or initial.empty:
-        if case.workload.transient_flows == 0:
-            return recover_legacy_control_counts(case, reconnect, count_end)
-        raise RuntimeError(
-            f"Incomplete flow-count window for {case.config_name}"
-        )
-
-    return (
-        float(total.numberOfFlows.max()),
-        float(initial.numOfFlowsInInitialPhase.max()),
-        "recorded",
-    )
-
-
-def collect_flow_isolation_metrics() -> pd.DataFrame:
-    rows = []
-    for case in flow_isolation_cases():
-        trace = load_trace(case.run)
-        state = transient_state(trace)
-        reconnect = float(state["reconnect_time_s"])
-        rtt_s = float(state["rtt_ms"]) / 1000
-        count_end = reconnect + 10 * rtt_s
-        goodput_end = reconnect + 5 * rtt_s
-
-        peak_total_count, peak_initial_count, count_source = flow_count_peaks(
-            case, reconnect, count_end
-        )
-        goodput = load_per_flow_metric(case, "goodput")
-        persistent_columns = list(range(case.workload.persistent_flows))
-        missing_columns = sorted(
-            set(persistent_columns) - set(goodput.columns)
-        )
-        if missing_columns:
-            # CSV-R omits a declared vector when removeRepeats suppresses every
-            # zero sample. These configured persistent endpoints therefore
-            # contribute zero throughout the recorded recovery window.
-            print(
-                f"Treating empty goodput vectors as zero for "
-                f"{case.config_name}: {missing_columns}"
-            )
-        persistent_goodput = goodput.reindex(columns=persistent_columns)
-        goodput_window = periodic_metric_window(
-            persistent_goodput,
-            reconnect,
-            goodput_end,
-            FLOW_ISOLATION_GOODPUT_INTERVAL_S,
-        ).sum(axis=1)
-        if goodput_window.empty:
-            raise RuntimeError(
-                f"Incomplete flow-isolation window for {case.config_name}"
-            )
-        rows.append(
-            {
-                "variant": case.variant.key,
-                "variant_label": case.variant.label,
-                "transient_flows": case.workload.transient_flows,
-                "run": case.run,
-                "peak_total_flow_count": peak_total_count,
-                "peak_initial_flow_count": peak_initial_count,
-                "flow_count_source": count_source,
-                "post_event_normalized_persistent_goodput": float(
-                    goodput_window.mean()
-                    / (float(state["bandwidth_mbps"]) * 1_000_000)
-                ),
-            }
-        )
-    return pd.DataFrame(rows)
-
-
-def line_with_ci(axis, data, x: str, variant, *, scale: float = 1.0) -> None:
-    color = VARIANT_COLORS[variant.key]
-    axis.errorbar(
-        data[x],
-        data["mean"] * scale,
-        yerr=data.ci95 * scale,
-        color=color,
-        marker=VARIANT_MARKERS[variant.key],
-        linewidth=1.45,
-        markersize=4.5,
-        capsize=2.5,
-        label=variant.label,
-    )
-
-
-def plot_flow_isolation_panel(axis, summary, metric, ylabel, scale=1.0) -> None:
-    for variant in FLOW_ISOLATION_VARIANTS:
-        data = summary[summary.variant == variant.key]
-        line_with_ci(axis, data, "transient_flows", variant, scale=scale)
-    axis.set_xlabel("One-packet transient flows")
-    axis.set_ylabel(ylabel)
-    axis.set_xticks((0, 32, 128))
-    style_axis(axis)
-
-
-def plot_flow_isolation() -> None:
-    run_metrics = collect_flow_isolation_metrics()
-    summaries = {
-        metric: summarize(
-            run_metrics,
-            ["variant", "variant_label", "transient_flows"],
-            metric,
-        )
-        for metric in (
-            "peak_total_flow_count",
-            "peak_initial_flow_count",
-            "post_event_normalized_persistent_goodput",
-        )
-    }
-    panel_specs = (
-        (
-            "peak_total_flow_count",
-            "Total flow estimate",
-            1.0,
-            "figure2a_total_flow_count.pdf",
-        ),
-        (
-            "peak_initial_flow_count",
-            "Initial flow estimate",
-            1.0,
-            "figure2b_initial_flow_count.pdf",
-        ),
-        (
-            "post_event_normalized_persistent_goodput",
-            "Goodput (% capacity)",
-            100.0,
-            "figure2c_persistent_goodput.pdf",
-        ),
-    )
-    export_plot_dataframe(
-        "figure2_flow_count_isolation_run_metrics.csv",
-        run_metrics,
-        base_dir=PLOT_DATA_ROOT,
-        metadata={
-            "persistent_flows": 32,
-            "transient_payload": "one MSS per transient TCP connection",
-            "count_window": "first 10 RTTs after the 60-second reconnection",
-            "goodput_window": "first 5 RTTs after reconnection",
-        },
-    )
-    point_frames = []
-    for metric, summary in summaries.items():
-        copy = summary.copy()
-        copy["metric"] = metric
-        point_frames.append(copy)
-    export_plot_dataframe(
-        "figure2_flow_count_isolation_points.csv",
-        pd.concat(point_frames, ignore_index=True),
-        base_dir=PLOT_DATA_ROOT,
-    )
-
-    handles = [
-        Line2D(
-            [],
-            [],
-            color=VARIANT_COLORS[variant.key],
-            marker=VARIANT_MARKERS[variant.key],
-            label=COMPACT_VARIANT_LABELS[variant.key],
-        )
-        for variant in FLOW_ISOLATION_VARIANTS
-    ]
-    labels = [
-        COMPACT_VARIANT_LABELS[variant.key]
-        for variant in FLOW_ISOLATION_VARIANTS
-    ]
-
-    for metric, ylabel, scale, filename in panel_specs:
-        figure, axis = plt.subplots(figsize=PANEL_FIGSIZE)
-        plot_flow_isolation_panel(
-            axis, summaries[metric], metric, ylabel, scale
-        )
-        add_top_axis_legend(
-            axis, handles, labels, columns=2
-        )
-        save_figure(figure, filename)
-
-    figure, axes = plt.subplots(1, 3, figsize=COMBINED_FIGSIZE)
-    for axis, (metric, ylabel, scale, _filename) in zip(
-        axes, panel_specs, strict=True
-    ):
-        plot_flow_isolation_panel(
-            axis, summaries[metric], metric, ylabel, scale
-        )
-    figure.subplots_adjust(wspace=0.5)
-    add_top_figure_legend(
-        figure, handles, labels, columns=len(handles)
-    )
-    save_figure(figure, "figure2_flow_count_isolation.pdf")
-
-
 def event_binned_values(
     times: np.ndarray,
     values: np.ndarray,
@@ -791,6 +482,142 @@ def event_binned_values(
             ["bin", "rtts_after_reconnect", "metric"], as_index=False
         ).value.mean()
     )
+
+
+def collect_feedback_probability_series() -> pd.DataFrame:
+    rows = []
+    for case in feedback_analysis_cases():
+        trace = load_trace(case.run)
+        goodput = restore_remove_repeats(
+            load_per_flow_metric(case, "goodput")
+        )
+        expected_flows = set(range(case.workload.persistent_flows))
+        missing_flows = sorted(expected_flows - set(goodput.columns))
+        if missing_flows:
+            raise RuntimeError(
+                f"Missing persistent-flow goodput vectors for "
+                f"{case.config_name}: {missing_flows}"
+            )
+
+        aggregate_goodput = goodput.reindex(
+            columns=sorted(expected_flows)
+        ).sum(axis=1)
+        frame = event_binned_values(
+            aggregate_goodput.index.to_numpy(dtype=float),
+            aggregate_goodput.to_numpy(dtype=float),
+            trace,
+            "normalized_goodput_percent",
+            normalize_goodput=True,
+        )
+        frame["variant"] = case.variant.key
+        frame["variant_label"] = case.variant.label
+        frame["feedback_probability"] = case.variant.feedback_probability
+        frame["run"] = case.run
+        rows.append(frame)
+    return pd.concat(rows, ignore_index=True)
+
+
+def remove_obsolete_figure2_outputs() -> None:
+    old_figures = (
+        "figure2a_total_flow_count.pdf",
+        "figure2b_initial_flow_count.pdf",
+        "figure2c_persistent_goodput.pdf",
+        "figure2_flow_count_isolation.pdf",
+    )
+    old_data = (
+        "figure2_flow_count_isolation_run_metrics.csv",
+        "figure2_flow_count_isolation_points.csv",
+    )
+    for filename in old_figures:
+        (PAPER_PLOT_ROOT / filename).unlink(missing_ok=True)
+    for filename in old_data:
+        path = PLOT_DATA_ROOT / filename
+        path.unlink(missing_ok=True)
+        path.with_suffix(path.suffix + ".metadata.json").unlink(
+            missing_ok=True
+        )
+
+
+def plot_feedback_probability() -> None:
+    remove_obsolete_figure2_outputs()
+    run_series = collect_feedback_probability_series()
+    run_metrics = (
+        run_series.groupby(
+            [
+                "variant",
+                "variant_label",
+                "feedback_probability",
+                "run",
+            ],
+            as_index=False,
+        ).value.mean()
+        .rename(columns={"value": "post_handover_goodput_percent"})
+    )
+    summary = summarize(
+        run_metrics,
+        ["variant", "variant_label", "feedback_probability"],
+        "post_handover_goodput_percent",
+    )
+
+    export_plot_dataframe(
+        "figure2_feedback_probability_run_series.csv",
+        run_series,
+        base_dir=PLOT_DATA_ROOT,
+        metadata={
+            "workload": "64 persistent flows",
+            "feedback_probabilities": [
+                variant.feedback_probability for variant in FEEDBACK_VARIANTS
+            ],
+            "event_window": "first 10 RTTs after path reconnection",
+            "aggregation": (
+                "normalized-time bins are averaged across handovers within "
+                "each run; confidence intervals are calculated across ten "
+                "matched runs"
+            ),
+        },
+    )
+    export_plot_dataframe(
+        "figure2_feedback_probability_run_metrics.csv",
+        run_metrics,
+        base_dir=PLOT_DATA_ROOT,
+    )
+    export_plot_dataframe(
+        "figure2_feedback_probability_points.csv",
+        summary,
+        base_dir=PLOT_DATA_ROOT,
+    )
+
+    ordered = summary.set_index("variant").loc[
+        [variant.key for variant in FEEDBACK_VARIANTS]
+    ].reset_index()
+    x_values = np.arange(len(FEEDBACK_VARIANTS))
+    figure, axis = plt.subplots(figsize=PANEL_FIGSIZE)
+    color = PROTOCOL_COLORS["orbtcp_pint"]
+    axis.errorbar(
+        x_values,
+        ordered["mean"],
+        yerr=ordered.ci95,
+        color=color,
+        marker="o",
+        linewidth=1.55,
+        markersize=4.5,
+        capsize=2.5,
+    )
+    axis.set_xticks(x_values)
+    axis.set_xticklabels(
+        [
+            "1"
+            if np.isclose(variant.feedback_probability, 1.0)
+            else f"1/{round(1 / variant.feedback_probability)}"
+            for variant in FEEDBACK_VARIANTS
+        ]
+    )
+    axis.set_xlabel("Feedback probability, p")
+    axis.set_ylabel("Post-handover goodput\n(% capacity)")
+    upper_bound = float((ordered["mean"] + ordered.ci95).max())
+    axis.set_ylim(0, max(105, math.ceil(upper_bound / 5) * 5))
+    style_axis(axis)
+    save_figure(figure, "figure2_feedback_probability.pdf")
 
 
 def collect_handover_series() -> pd.DataFrame:
@@ -1166,7 +993,7 @@ def write_manifest() -> None:
         "experiment": EXPERIMENT,
         "figures": {
             "figure1": "representation accuracy: Linear Counting, N/S encoding, U encoding",
-            "figure2": "real transient-flow isolation of Linear Counting and N/S encoding",
+            "figure2": "post-handover goodput sensitivity to feedback probability",
             "figure3": "event-aligned handover decomposition",
             "figure4": "Exact PINT versus final OrbCC validation",
         },
@@ -1184,7 +1011,7 @@ def main() -> None:
     PLOT_ROOT.mkdir(parents=True, exist_ok=True)
     PAPER_PLOT_ROOT.mkdir(parents=True, exist_ok=True)
     plot_representation_accuracy()
-    plot_flow_isolation()
+    plot_feedback_probability()
     plot_handover_response()
     plot_final_validation()
     write_manifest()

@@ -14,7 +14,6 @@ from experimentSensitivityAnalysisSupport import (
     LARGE_NON_BOTTLENECK_QUEUE_PACKETS,
     MSS_BYTES,
     PERSISTENT_SEND_BYTES,
-    PINT_FEEDBACK_PROBABILITY,
     PINT_MAX_CONCURRENT_FLOWS,
     PINT_MAX_FLOW_COUNT,
     PINT_MAX_UTILIZATION,
@@ -196,6 +195,9 @@ def write_recording_settings(output, case: SimulationCase, trace: dict) -> None:
         enable_vector(output, "numOfFlowsInInitialPhase")
         enable_vector(output, "pintLocalUtilization", remove_repeats=False)
         enable_vector(output, "pintDecodedUtilization", remove_repeats=False)
+    elif case.workload.experiment_key == "feedback":
+        # Figure 2 only needs event-aligned aggregate goodput.
+        pass
     else:
         enable_vector(output, "retransmissionRate")
 
@@ -258,7 +260,8 @@ def write_transport_settings(output, case: SimulationCase) -> None:
     w(output, "**.tcp.pintUseInitialPhaseFlowCount = true")
     w(
         output,
-        f"**.tcp.pintFeedbackProbability = {PINT_FEEDBACK_PROBABILITY:g}",
+        "**.tcp.pintFeedbackProbability = "
+        f"{case.variant.feedback_probability:.12g}",
     )
 
 
@@ -315,7 +318,7 @@ def main() -> None:
             write_config(output, case)
     print(
         f"Generated {expected_simulation_count()} configs in {path}: "
-        "flow isolation, handover decomposition, and final validation."
+        "feedback probability, handover decomposition, and final validation."
     )
 
 

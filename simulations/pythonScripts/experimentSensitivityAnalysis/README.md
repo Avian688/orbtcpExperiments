@@ -1,8 +1,8 @@
 # OrbCC Sensitivity Analysis
 
 `experimentSensitivityAnalysis` replaces the broad workload-averaged dynamic
-tuning figures with a causal evaluation of Linear Counting and fixed-size PINT
-encoding.
+tuning figures with a causal evaluation of Linear Counting, fixed-size PINT
+encoding, and feedback frequency.
 
 ## Common network setup
 
@@ -26,9 +26,13 @@ the matched packet-loss realization seen by Exact PINT and OrbCC.
 1. Representation accuracy uses generated flow IDs with the production hash,
    Linear Counting estimator, N/S mapping, and stochastic U mapping. Bitmap
    occupancy is never filled directly.
-2. Flow isolation uses 32 persistent flows and 0, 32, or 128 one-MSS transient
-   TCP connections after the 60-second reconnection. Its 2x2 design separates
-   Linear Counting from N/S encoding while U remains exact.
+2. Feedback sensitivity uses the final OrbCC representation with 64 persistent
+   flows and sweeps `p=1/256`, `1/64`, `1/16`, `1/4`, and `1`. Figure 2 reports
+   aggregate goodput as a percentage of current capacity over the first ten
+   RTTs after reconnection, averaging handovers within each matched run and
+   reporting 95% confidence intervals across ten runs. The `p=1` point reuses
+   the exactly matched final-OrbCC handover case from Figure 3, so only the 40
+   reduced-probability configurations require additional simulations.
 3. Handover response uses 64 persistent flows to separate flow-count
    approximation, U encoding, and their combined behavior over the first ten
    RTTs after every reconnection.
@@ -71,7 +75,7 @@ simulations/plots/experimentSensitivityAnalysis/paperPlots/
 simulations/plots/experimentSensitivityAnalysis/paperPlots/plot_data/
 ```
 
-`figure1` covers representation accuracy, `figure2` covers flow-count
-isolation, `figure3` covers handover response, and `figure4` covers final
+`figure1` covers representation accuracy, `figure2` covers feedback
+probability, `figure3` covers handover response, and `figure4` covers final
 closed-loop validation. Individual panels and combined multi-panel PDFs are
 both generated.

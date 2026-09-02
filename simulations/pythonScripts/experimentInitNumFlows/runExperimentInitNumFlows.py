@@ -12,6 +12,7 @@ import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 import os
+import shutil
 import subprocess
 import time
 import re
@@ -66,13 +67,14 @@ def merge_pdfs_in_folders(root_folder):
 if __name__ == "__main__":
     
     startStep = int(os.environ.get("START_STEP", "1"))
-    endStep = int(os.environ.get("END_STEP", "7"))
+    endStep = int(os.environ.get("END_STEP", "8"))
     currStep = 1
     cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
     congControlList = ["orbtcp_pint_no_initial_phase", "orbtcp_pint"]
     experiment = "experimentInitNumFlows"
     buffersizes = ["mediumbuffer"]
     clientsRtts = [100] #OF AVERAGE BDP
+    numClients = 65
     runs = 5
     runList = list(range(1,runs+1))
 
@@ -160,6 +162,8 @@ if __name__ == "__main__":
         print("Extracting CSV data!!\n")
         print("------------ Extracting CSV Files for experiment InitNumFlows ------------")
         processListStr = []
+        extractionFailures = []
+        missingExportFiles = []
         for protocol in congControlList:
             for buf in buffersizes:
                 for rtt in clientsRtts:
@@ -170,6 +174,14 @@ if __name__ == "__main__":
                         if os.path.exists(filePath):
                              print("Extracting CSV file for " + experiment + " " + protocolUpper + " " + buf + " " + str(rtt) + " " + str(run))
                              processListStr.append("python3 extractSingleCsvFile.py " + filePath + " " + experiment + " " + protocolUpper + " " + buf + " " + str(rtt) + " " + str(run))
+                        else:
+                             missingExportFiles.append(filePath)
+
+        if missingExportFiles:
+            raise FileNotFoundError(
+                "Missing exported result CSV files; run export step 2 first: "
+                + ", ".join(missingExportFiles)
+            )
         
         currentProc = 0
         time.sleep(10)
@@ -180,40 +192,88 @@ if __name__ == "__main__":
             currentProc += 1
             if(currentProc >= cores):
                 for proc in processList:
-                    proc.wait(timeout=2000)
+                    if proc.wait(timeout=2000) != 0:
+                        extractionFailures.append(str(proc.args))
                 currentProc = 0
                 print("Csv Extraction batch complete!\n")
                 print("Extracting next batch!\n")
-                processList.clear()               
+                processList.clear()
+
+        # The number of configurations is often lower than the core limit.
+        # Always wait for that final partial batch before plotting starts.
+        for proc in processList:
+            if proc.wait(timeout=2000) != 0:
+                extractionFailures.append(str(proc.args))
+        processList.clear()
+        currentProc = 0
+        if extractionFailures:
+            raise RuntimeError(
+                "Experiment InitNumFlows CSV extraction failed: "
+                + ", ".join(extractionFailures)
+            )
+
+        missingExtractedFiles = []
+        for protocol in congControlList:
+            protocolUpper = protocol_config_prefix(protocol)
+            for buf in buffersizes:
+                for rtt in clientsRtts:
+                    for run in runList:
+                        runCsvDir = Path(
+                            '../../paperExperiments/experimentInitNumFlows/csvs'
+                        ) / protocolUpper / buf / f"{rtt}ms" / f"run{run}"
+                        for client in range(numClients):
+                            requiredFiles = (
+                                runCsvDir
+                                / f"singledumbbell.client[{client}].tcp.conn"
+                                / "rtt.csv",
+                                runCsvDir
+                                / f"singledumbbell.server[{client}].app[0]"
+                                / "goodput.csv",
+                            )
+                            missingExtractedFiles.extend(
+                                str(path) for path in requiredFiles if not path.is_file()
+                            )
+        if missingExtractedFiles:
+            preview = ", ".join(missingExtractedFiles[:10])
+            remainder = len(missingExtractedFiles) - 10
+            if remainder > 0:
+                preview += f", and {remainder} more"
+            raise RuntimeError(
+                "CSV extraction completed without all required RTT/goodput "
+                f"vectors: {preview}"
+            )
     currStep += 1
     
     if(currStep <= endStep and currStep >= startStep): #STEP 4
-        subprocess.Popen("mkdir ../../plots/experimentInitNumFlows", shell=True).communicate(timeout=10) 
-        subprocess.Popen("rm -r *", shell=True, cwd='../../plots/experimentInitNumFlows').communicate(timeout=200) 
+        plotRoot = Path('../../plots/experimentInitNumFlows')
+        plotRoot.mkdir(parents=True, exist_ok=True)
+        for child in plotRoot.iterdir():
+            if child.is_dir():
+                shutil.rmtree(child)
+            else:
+                child.unlink()
         
         print("\n-----Making plot diretories for " + experiment + "-----\n")
-        subprocess.Popen("mkdir " + experiment, shell=True, cwd='../../plots/').communicate(timeout=10)
         for cc in congControlList:
             print("\n-----Making plot directories for " + cc + "-----\n")
-            subprocess.Popen("mkdir " + cc, shell=True, cwd='../../plots/' + experiment + '/').communicate(timeout=10)
-            
-            # for buf in buffersizes:
-            #     for rtt in clientsRtts:
-            #         for run in runList:
-            #             subprocess.Popen("mkdir " + str(buf), shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' ).communicate(timeout=10)
-            #             subprocess.Popen("mkdir " + str(rtt) + 'ms', shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf).communicate(timeout=10)
-            #             subprocess.Popen("mkdir run" + str(run), shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms').communicate(timeout=10)
-                        
-            #             subprocess.Popen("mkdir client1", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-            #             subprocess.Popen("mkdir client2", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-            #             subprocess.Popen("mkdir router", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
-            #             subprocess.Popen("mkdir aggPlots", shell=True, cwd='../../plots/' + experiment + '/' + cc + '/' + buf + '/' + str(rtt) + 'ms/run' + str(run)).communicate(timeout=10)
+            for buf in buffersizes:
+                for rtt in clientsRtts:
+                    for run in runList:
+                        runPlotDir = (
+                            plotRoot / cc / buf / f"{rtt}ms" / f"run{run}"
+                        )
+                        for moduleDir in ("client1", "client2", "router", "aggPlots"):
+                            (runPlotDir / moduleDir).mkdir(
+                                parents=True, exist_ok=True
+                            )
     currStep += 1
     
 
     if(currStep <= endStep and currStep >= startStep): #STEP 5
         print("Plotting Goodput Evolution Merged!\n")
-        subprocess.Popen("mkdir cumulative", shell=True, cwd='../../plots/experimentInitNumFlows/').communicate(timeout=10)
+        Path('../../plots/experimentInitNumFlows/cumulative').mkdir(
+            parents=True, exist_ok=True
+        )
         time.sleep(3)
         p = subprocess.Popen("python3 ../../../pythonScripts/experimentInitNumFlows/plotGoodputEvolutionMerged.py", shell=True, cwd='../../plots/experimentInitNumFlows/cumulative')
         p.wait(timeout=3600)
@@ -222,22 +282,31 @@ if __name__ == "__main__":
 
     if(currStep <= endStep and currStep >= startStep): #STEP 6
         print("Printing RTT!\n")
-        subprocess.Popen("mkdir cumulative", shell=True, cwd='../../plots/experimentInitNumFlows/').communicate(timeout=10)
+        Path('../../plots/experimentInitNumFlows/cumulative').mkdir(
+            parents=True, exist_ok=True
+        )
         time.sleep(3)
         p = subprocess.Popen("python3 ../../../pythonScripts/experimentInitNumFlows/printRTT.py", shell=True, cwd='../../plots/experimentInitNumFlows/cumulative')
         p.wait(timeout=3600)
         time.sleep(1)
     currStep += 1
 
-    if(currStep <= endStep and currStep >= startStep): #STEP 6
+    if(currStep <= endStep and currStep >= startStep): #STEP 7
         print("\nPlotting!")
+        currentProc = 0
+        processList.clear()
         processListStr = []
+        plotFailures = []
         for protocol in congControlList:
             for buf in buffersizes:
                 for rtt in clientsRtts:
                     for run in runList:
                         #print("\nCurrently on Run#" + str(run) + " \n")
                         dirPath = '../../plots/experimentInitNumFlows/' + protocol + '/' + buf + '/' + str(rtt) + 'ms' + '/run' + str(run) + '/'
+                        for moduleDir in ("client1", "client2", "router", "aggPlots"):
+                            (Path(dirPath) / moduleDir).mkdir(
+                                parents=True, exist_ok=True
+                            )
                         
                         runTitle = "run"
                         fileBeg = 'paperExperiments/'+ experiment + '/csvs/'+ protocol_config_prefix(protocol) + '/' + buf + '/' + str(rtt) + 'ms/'+ runTitle + str(run)
@@ -339,15 +408,27 @@ if __name__ == "__main__":
             currentProc += 1
             if(currentProc >= cores):
                 for proc in processList:
-                    proc.wait(timeout=500)
+                    if proc.wait(timeout=500) != 0:
+                        plotFailures.append(str(proc.args))
                 currentProc = 0
                 print("Plot batch complete!\n")
                 print("Plotting next batch!\n")
                 processList.clear()
+
+        for proc in processList:
+            if proc.wait(timeout=500) != 0:
+                plotFailures.append(str(proc.args))
+        processList.clear()
+        currentProc = 0
+        if plotFailures:
+            raise RuntimeError(
+                "Experiment InitNumFlows plotting failed: "
+                + ", ".join(plotFailures)
+            )
     currStep += 1
     
 
-    if(currStep <= endStep and currStep >= startStep): #STEP 7
+    if(currStep <= endStep and currStep >= startStep): #STEP 8
         print("\n Attempting to merge PDFs!\n")
         merge_pdfs_in_folders("../../plots/experimentInitNumFlows")
 
