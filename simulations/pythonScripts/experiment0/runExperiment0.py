@@ -8,6 +8,9 @@ import sys
 import time
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from raynetExperimentSupport import select_experiment_protocols
+
 
 EXPERIMENT = "experiment0"
 INI_FILE = "experiment0_bbr3.ini"
@@ -49,10 +52,14 @@ LIBRARY_DEPENDENCIES = (
     ("bbr", "tcpPaced"),
     ("orbtcpExperiments", "INET"),
 )
+PROTOCOL_CONFIGS = {
+    "bbr3": "Bbr3",
+    "cubic": "Cubic",
+    "bbr": "Bbr",
+}
+SELECTED_PROTOCOLS = select_experiment_protocols(PROTOCOL_CONFIGS)
 PROTOCOLS = [
-    ("bbr3", "Bbr3"),
-    ("cubic", "Cubic"),
-    ("bbr", "Bbr"),
+    (protocol, PROTOCOL_CONFIGS[protocol]) for protocol in SELECTED_PROTOCOLS
 ]
 VARIANTS = [
     ("no_updated_sack_no_pacing_no_rack", "NoUpdatedSackNoPacingNoRack"),

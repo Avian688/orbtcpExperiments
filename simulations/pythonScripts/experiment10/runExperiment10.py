@@ -14,7 +14,7 @@ import re
 from PyPDF2 import PdfMerger
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import SimulationConfig, protocol_config_prefix, run_simulation_configs, with_experiment_protocols
+from raynetExperimentSupport import SimulationConfig, protocol_config_prefix, run_simulation_configs, select_experiment_protocols
 
 DEFAULT_LEO_SIMULATION_CORES = 15
 
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     simulationCores = max(1, int(os.environ.get("LEO_SIMULATION_CORES", str(DEFAULT_LEO_SIMULATION_CORES))))
     currentProc = 0
     processList = []
-    congControlList = with_experiment_protocols(["orbtcp", "cubic", "bbr", "bbr3", "satcp", "leocc"])
+    congControlList = select_experiment_protocols(["orbtcp", "cubic", "bbr", "bbr3", "satcp", "leocc"])
     experiment = "experiment10"
     runs = 5
     runList = list(range(1,runs+1))

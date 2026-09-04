@@ -14,7 +14,7 @@ import re
 from PyPDF2 import PdfMerger
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import collect_simulation_configs, protocol_config_prefix, run_simulation_configs, with_experiment_protocols
+from raynetExperimentSupport import collect_simulation_configs, protocol_config_prefix, run_simulation_configs, select_experiment_protocols
 
 def merge_pdfs_in_folders(root_folder):
     for protocol in os.listdir(root_folder):
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     cores = int(os.environ.get("EXPERIMENT_CORES", "1"))
     currentProc = 0
     processList = []
-    congControlList = with_experiment_protocols(["bbr3", "bbr", "orbtcp", "cubic", "satcp", "leocc"])
+    congControlList = select_experiment_protocols(["bbr3", "bbr", "orbtcp", "cubic", "satcp", "leocc"])
     experiment = "experiment5"
     buffersizes = ["mediumbuffer"]#["smallbuffer", "mediumbuffer", "largebuffer"]
     clientsRtts = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200] #OF AVERAGE BDP

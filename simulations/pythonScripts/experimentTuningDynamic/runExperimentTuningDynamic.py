@@ -28,11 +28,17 @@ from experimentTuningDynamicSupport import (  # noqa: E402
 from raynetExperimentSupport import (  # noqa: E402
     collect_simulation_configs,
     run_simulation_configs,
+    select_experiment_protocols,
 )
 
 
 EXPERIMENT_DIR = (SCRIPT_DIR / "../../paperExperiments" / EXPERIMENT).resolve()
 COMBINED_ONLY_ENV = "TUNING_DYNAMIC_COMBINED_ONLY"
+PROTOCOLS = tuple(select_experiment_protocols(("orbtcp", "orbtcp_pint")))
+
+
+def variant_protocol(variant):
+    return "orbtcp_pint" if variant.is_pint else "orbtcp"
 
 
 def combined_only_enabled() -> bool:
@@ -74,6 +80,8 @@ def batched(commands: list[tuple[str, list[str]]], cwd: Path, cores: int) -> Non
 
 def named_cases():
     for variant, flow_count, condition, run in cases():
+        if variant_protocol(variant) not in PROTOCOLS:
+            continue
         if combined_only_enabled() and variant != COMBINED_PINT:
             continue
         yield (
@@ -97,10 +105,10 @@ def generate_inputs() -> None:
 
 
 def simulation_configs():
-    groups = (
+    groups = tuple(group for group in (
         ("orbtcp", ini_name(False), (FULL_ORBCC,)),
         ("orbtcp_pint", ini_name(True), PINT_VARIANTS),
-    )
+    ) if group[0] in PROTOCOLS)
     all_configs = []
     for protocol, ini_file, variants in groups:
         configs = collect_simulation_configs(
@@ -122,9 +130,13 @@ def simulation_configs():
                 f"missing={missing}, unexpected={unexpected}"
             )
         all_configs.extend(configs)
-    if len(all_configs) != expected_simulation_count():
+    expected_group_count = sum(
+        len(variants) * len(FLOW_COUNTS) * len(CONDITIONS) * len(RUNS)
+        for _protocol, _ini_file, variants in groups
+    )
+    if len(all_configs) != expected_group_count:
         raise RuntimeError(
-            f"Expected {expected_simulation_count()} configs, found {len(all_configs)}"
+            f"Expected {expected_group_count} selected configs, found {len(all_configs)}"
         )
     if combined_only_enabled():
         combined_names = {
@@ -217,16 +229,17 @@ def main() -> int:
     cores = max(1, int(os.environ.get("EXPERIMENT_CORES", "1")))
     start_step = int(os.environ.get("START_STEP", "1"))
     end_step = int(os.environ.get("END_STEP", "5"))
+    selected_count = sum(1 for _case in named_cases())
+    print(f"Protocols: {list(PROTOCOLS)}")
     if combined_only_enabled():
         print(
             f"{EXPERIMENT}: combined 8/8/p=1 extension only = "
-            f"{expected_combined_simulation_count()} simulations"
+            f"{selected_count} simulations"
         )
     else:
         print(
-            f"{EXPERIMENT}: {len(VARIANTS)} implementations x "
-            f"{len(FLOW_COUNTS)} flow loads x {len(CONDITIONS)} conditions x "
-            f"{len(RUNS)} runs = {expected_simulation_count()} simulations"
+            f"{EXPERIMENT}: {selected_count}/{expected_simulation_count()} "
+            "selected simulations"
         )
     steps = [
         ("generate matched dynamic scenarios and INIs", generate_inputs),

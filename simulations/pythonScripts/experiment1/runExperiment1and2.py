@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupport import build_simulation_command, with_experiment_protocols
+from raynetExperimentSupport import build_simulation_command, select_experiment_protocols
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -26,6 +26,7 @@ SIM_ROOT = SCRIPT_DIR.parent.parent
 PAPER_ROOT = SIM_ROOT / "paperExperiments"
 PLOTS_ROOT = SIM_ROOT / "plots"
 LOG_ROOT = SIM_ROOT / "logs" / "experiment1and2"
+DEFAULT_PROTOCOLS = ["orbtcp", "bbr", "cubic", "bbr3", "satcp", "leocc"]
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--start-step", type=int, default=int(os.environ.get("START_STEP", "1")))
     parser.add_argument("--end-step", type=int, default=int(os.environ.get("END_STEP", "10")))
     parser.add_argument("--runs", type=int, default=int(os.environ.get("EXPERIMENT_RUNS", "50")))
+    parser.add_argument(
+        "--protocols",
+        nargs="+",
+        default=None,
+        help=(
+            "Run only the listed result-key protocols (for example, "
+            "--protocols orbtcp_pint). The default runs the complete protocol set."
+        ),
+    )
     parser.add_argument(
         "--resume",
         action="store_true",
@@ -499,7 +509,7 @@ def main() -> int:
     os.chdir(SCRIPT_DIR)
 
     experiments = ["experiment1", "experiment2"]
-    protocols = with_experiment_protocols(["orbtcp", "bbr", "cubic", "bbr3", "satcp", "leocc"])
+    protocols = select_experiment_protocols(DEFAULT_PROTOCOLS, args.protocols)
     run_list = list(range(1, args.runs + 1))
     print(f"Protocols: {protocols}")
     print(f"Runs: 1-{args.runs}")

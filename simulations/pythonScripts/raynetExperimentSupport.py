@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
@@ -13,6 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 RAYNET_PROTOCOLS = []
+EXPERIMENT_PROTOCOLS_ENV = "EXPERIMENT_PROTOCOLS"
 
 RAYNET_ALG_FLAVOUR = {
     "orca": ("OrcaTcp", "Orca"),
@@ -177,6 +179,51 @@ def with_experiment_protocols(protocols):
         if protocol.lower() == "orbtcp" and "orbtcp_pint" not in result:
             result.append("orbtcp_pint")
     return with_raynet_protocols(result)
+
+
+def _split_protocol_names(values):
+    if isinstance(values, str):
+        values = [values]
+    protocols = []
+    for value in values:
+        for protocol in re.split(r"[\s,]+", value.strip()):
+            if protocol and protocol not in protocols:
+                protocols.append(protocol)
+    return protocols
+
+
+def _command_line_protocols():
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--protocols", nargs="+")
+    args, _unknown = parser.parse_known_args()
+    return args.protocols
+
+
+def select_experiment_protocols(default_protocols, requested_protocols=None):
+    """Return an exact requested protocol list or the expanded defaults."""
+    available = with_experiment_protocols(default_protocols)
+    requested = requested_protocols
+    if requested is None:
+        requested = _command_line_protocols()
+    if requested is None:
+        configured = os.environ.get(EXPERIMENT_PROTOCOLS_ENV, "").strip()
+        requested = configured or None
+
+    if requested is None:
+        return available
+
+    selected = _split_protocol_names(requested)
+    if not selected:
+        raise ValueError("At least one protocol must be selected")
+    unknown = [protocol for protocol in selected if protocol not in available]
+    if unknown:
+        raise ValueError(
+            "Protocol(s) not available for this experiment: "
+            + ", ".join(unknown)
+            + "; available: "
+            + ", ".join(available)
+        )
+    return selected
 
 
 def protocol_config_prefix(protocol: str) -> str:

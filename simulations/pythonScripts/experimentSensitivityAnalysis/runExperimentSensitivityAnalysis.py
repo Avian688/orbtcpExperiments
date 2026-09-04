@@ -22,11 +22,13 @@ from experimentSensitivityAnalysisSupport import (  # noqa: E402
 from raynetExperimentSupport import (  # noqa: E402
     collect_simulation_configs,
     run_simulation_configs,
+    select_experiment_protocols,
 )
 
 
 EXPERIMENT_DIR = (SCRIPT_DIR / "../../paperExperiments" / EXPERIMENT).resolve()
 CONFIG_FILTER_ENV = "SENSITIVITY_CONFIG_FILTER"
+PROTOCOLS = tuple(select_experiment_protocols(("orbtcp_pint",)))
 
 
 def run_checked(command: list[str], cwd: Path) -> None:
@@ -85,7 +87,7 @@ def selected_cases():
 
 def simulation_configs():
     configs = collect_simulation_configs(
-        "orbtcp_pint", INI_FILE, RUNS, EXPERIMENT_DIR
+        PROTOCOLS[0], INI_FILE, RUNS, EXPERIMENT_DIR
     )
     expected = {case.config_name for case in cases()}
     found = {config.config_name for config in configs}
@@ -179,6 +181,7 @@ def main() -> int:
     start_step = int(os.environ.get("START_STEP", "1"))
     end_step = int(os.environ.get("END_STEP", "5"))
     selected_count = len(selected_cases())
+    print(f"Protocols: {list(PROTOCOLS)}")
     print(
         f"{EXPERIMENT}: {selected_count}/{expected_simulation_count()} "
         f"matched simulations; "

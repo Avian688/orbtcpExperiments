@@ -14,7 +14,10 @@ Usage:
   ./runAllExperiment.sh 0 1 3 5 9
   ./runAllExperiment.sh --plots all
   ./runAllExperiment.sh --plots 1 3 8
+  ./runAllExperiment.sh --protocols orbtcp_pint 1 3 4 5 6
+  ./runAllExperiment.sh --protocols orbtcp_pint,cubic 3 4 5 6
   EXPERIMENT_CORES=30 ./runAllExperiment.sh all
+  EXPERIMENT_PROTOCOLS=orbtcp_pint EXPERIMENT_CORES=30 ./runAllExperiment.sh 1 3 4 5 6
   EXPERIMENT_CORES=30 LEO_SIMULATION_CORES=20 ./runAllExperiment.sh 8 9 10
 
 Notes:
@@ -26,6 +29,8 @@ Notes:
   EXPERIMENT_CORES still controls their CSV export, extraction, and plotting workers.
   Experiment 3+ simulation attempts time out after 9000 seconds and retry three times by default.
   Override with EXPERIMENT_SIM_TIMEOUT_SECONDS, EXPERIMENT_RETRIES, or EXPERIMENT_RESUME=1.
+  --protocols accepts one comma-separated protocol list and applies it to every selected runner.
+  Protocol selection is exact: orbtcp_pint does not also run legacy full-INT orbtcp.
   If no arguments are supplied, the script falls back to the interactive menu.
 EOF
 }
@@ -95,6 +100,9 @@ run_experiment() {
   fi
   if [[ -n "${EXPERIMENT_CORES:-}" ]]; then
     echo "EXPERIMENT_CORES=$EXPERIMENT_CORES"
+  fi
+  if [[ -n "${EXPERIMENT_PROTOCOLS:-}" ]]; then
+    echo "EXPERIMENT_PROTOCOLS=$EXPERIMENT_PROTOCOLS"
   fi
   if [[ "$i" =~ ^(8|9|10)$ ]]; then
     echo "LEO_SIMULATION_CORES=$LEO_SIMULATION_CORES"
@@ -181,10 +189,33 @@ collect_interactive_selection() {
 }
 
 plot_only=0
-if [[ "${1:-}" == "--plots" ]]; then
-  plot_only=1
-  shift
-fi
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --plots)
+      plot_only=1
+      shift
+      ;;
+    --protocols)
+      if [[ "$#" -lt 2 || -z "$2" ]]; then
+        echo "--protocols requires a comma-separated protocol list." >&2
+        exit 1
+      fi
+      export EXPERIMENT_PROTOCOLS="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
 
 experiments=()
 all_selected=0

@@ -19,10 +19,19 @@ from experiment13Support import (
     config_name,
     ini_name,
 )
-from raynetExperimentSupport import collect_simulation_configs, run_simulation_configs
+from raynetExperimentSupport import (
+    collect_simulation_configs,
+    run_simulation_configs,
+    select_experiment_protocols,
+)
 
 
 EXPERIMENT_DIR = (SCRIPT_DIR / "../../paperExperiments/experiment13").resolve()
+PROTOCOLS = tuple(select_experiment_protocols(("orbtcp", "orbtcp_pint")))
+
+
+def selected_variants():
+    return tuple(variant for variant in VARIANTS if variant.protocol in PROTOCOLS)
 
 
 def run_checked(command: list[str], cwd: Path) -> None:
@@ -54,7 +63,7 @@ def batched(commands: list[tuple[str, list[str]]], cwd: Path, cores: int) -> Non
 
 
 def cases():
-    for variant in VARIANTS:
+    for variant in selected_variants():
         for workload in WORKLOADS:
             for run in RUNS:
                 yield variant, workload, run, config_name(variant, workload, run)
@@ -66,10 +75,10 @@ def generate_inputs() -> None:
 
 
 def simulation_configs():
-    groups = (
+    groups = tuple(group for group in (
         (FULL_ORBCC.protocol, ini_name(FULL_ORBCC), (FULL_ORBCC,)),
         (PINT_VARIANTS[0].protocol, ini_name(PINT_VARIANTS[0]), PINT_VARIANTS),
-    )
+    ) if group[0] in PROTOCOLS)
     all_configs = []
     for protocol, ini_file, variants in groups:
         configs = collect_simulation_configs(protocol, ini_file, RUNS, EXPERIMENT_DIR)
@@ -158,6 +167,7 @@ def main() -> int:
     cores = max(1, int(os.environ.get("EXPERIMENT_CORES", "1")))
     start_step = int(os.environ.get("START_STEP", "1"))
     end_step = int(os.environ.get("END_STEP", "5"))
+    print(f"Protocols: {list(PROTOCOLS)}")
     steps = [
         ("generate scenarios and ini files", generate_inputs),
         ("run simulations", lambda: run_simulations(cores)),
