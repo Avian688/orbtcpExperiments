@@ -70,6 +70,7 @@ for protocol in protocols:
         continue
 
     color = protocol_colors[protocol]
+    line_zorder = 3 if protocol == "OrbtcpPintNoInitialPhase" else 2
 
     # 2) Merge & plot first 50 flows as mean only (bolder, dashed, lower zorder)
     merged = {}
@@ -96,7 +97,7 @@ for protocol in protocols:
              linewidth=AGG_WIDTH,
              linestyle='--',       # dashed on the axes
              color=color,
-             zorder=1)
+             zorder=line_zorder)
 
     # 3) Plot each of the remaining 15 flows individually with shading (solid, higher zorder)
     for i in range(50, num_servers):
@@ -128,11 +129,11 @@ for protocol in protocols:
                  color=color,
                  alpha=0.6,
                  linestyle='-',
-                 zorder=2)
+                 zorder=line_zorder + 0.2)
         plt.fill_between(times, mins, maxs,
                          color=color,
                          alpha=0.1,
-                         zorder=2)
+                         zorder=1)
 
 # Finalize axes
 ax = plt.gca()

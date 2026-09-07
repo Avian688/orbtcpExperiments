@@ -41,7 +41,7 @@ protocol_labels = {
     "orbtcp_pint_without_avg_rtt":  "OrbCC without AvgRTT",
 }
 
-def plot_points_rtt(ax, df, data_col, err_col, marker, label, color):
+def plot_points_rtt(ax, df, data_col, err_col, marker, label, color, zorder):
     """Plot errorbar points for RTT vs. goodput ratio."""
     if df.empty:
         return
@@ -57,7 +57,8 @@ def plot_points_rtt(ax, df, data_col, err_col, marker, label, color):
         elinewidth=ELINEWIDTH,
         capsize=CAPSIZE,
         capthick=CAPTHICK,
-        label=label
+        label=label,
+        zorder=zorder,
     )
     for bar in bars:
         bar.set_alpha(0.5)
@@ -149,7 +150,8 @@ for protocol, marker in zip(PROTOCOLS, ['x', '.']):
         ax, dfp,
         'goodput_ratio_mean',
         'goodput_ratio_std',
-        marker, label, color
+        marker, label, color,
+        zorder=3 if protocol == "orbtcp_pint_without_avg_rtt" else 2,
     )
 
 # Axis labels & formatting
