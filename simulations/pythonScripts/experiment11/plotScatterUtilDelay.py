@@ -273,7 +273,7 @@ def plot_exp11_scatter_norm_util_vs_norm_delay(df):
     fig.legend(
         proxy_lines, proto_labels,
         loc='upper center',
-        bbox_to_anchor=(0.56, 0.91),
+        bbox_to_anchor=(0.56, 0.90),
         **protocol_legend_kwargs,
     )
 
