@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+
+# Generates scenario XML files for experiment 2.
+# Same as experiment 1:
+# - Hard handover every 15s: disconnect+crash, then reconnect after random 45-120ms.
+# - Only the bottleneck link (router1<->router2, pppg$o[1]) changes RTT+BW.
+# - Client/router and router/server links are fixed: 0ms delay, 10Gbps.
+# PLUS experiment 2:
+# - Applies a random PER on the bottleneck link (router1->router2 direction) using set-channel-param / connect params.
+# Keeps loss-rate RNG draw to keep random sequence consistent.
+
+import json
+import random
+from pathlib import Path
+
+
+def main() -> None:
+    minBw = 50   # Mbps
+    maxBw = 100  # Mbps
+    minRtt = 1   # ms
+    maxRtt = 100 # ms
+
+    numOfRuns = 50
+    simLength = 300     # seconds
+    simSeed = 1
+
+    handoverEvery = 15      # seconds
+    minHandoverMs = 45      # ms
+    maxHandoverMs = 120     # ms
+
+    fixed_access_bw = "10Gbps"
+    fixed_access_delay = "0ms"
+
+    folderScenario = Path("../../paperExperiments/scenarios/experiment2FrontTail/")
+    folderBaseRtts = Path("../../paperExperiments/baseRtts/experiment2FrontTail/")
+    folderBws = Path("../../paperExperiments/bandwidths/experiment2FrontTail/")
+    folderScenario.mkdir(parents=True, exist_ok=True)
+    folderBaseRtts.mkdir(parents=True, exist_ok=True)
+    folderBws.mkdir(parents=True, exist_ok=True)
+
+    for run_idx in range(numOfRuns):
+        rng = random.Random(simSeed + run_idx)
+
+        baseRttDict = {}
+        bwDict = {}
+
+        fileName = f"run{run_idx + 1}"
+        xml_path = folderScenario / f"{fileName}.xml"
+
+        with xml_path.open("w", encoding="utf-8") as f:
+            def w(line: str = "") -> None:
+                f.write(line + "\n")
+
+            def block(lines) -> None:
+                for line in lines:
+                    w(line)
+
+            w("<scenario>")
+
+            # ---- Initial conditions at t=0 ----
+            currentBw = rng.randint(minBw, maxBw)      # Mbps
+            currentRtt = rng.randint(minRtt, maxRtt)   # ms
+            currentPer = round(rng.uniform(0, 0.01), 4)  # PER (applied on bottleneck)
+
+            # RTT applied ONLY on bottleneck link: RTT = 2 * one_way_delay
+            bottleneckDelay = (currentRtt / 2.0)
+
+            w('    <at t="0">')
+            block([
+                # Fix access links to 0ms, 10Gbps
+                f'        <set-channel-param src-module="client[0]" src-gate="pppg$o[0]" par="delay" value="{fixed_access_delay}"/>',
+                f'        <set-channel-param src-module="router1"   src-gate="pppg$o[0]" par="delay" value="{fixed_access_delay}"/>',
+                f'        <set-channel-param src-module="server[0]" src-gate="pppg$o[0]" par="delay" value="{fixed_access_delay}"/>',
+                f'        <set-channel-param src-module="router2"   src-gate="pppg$o[0]" par="delay" value="{fixed_access_delay}"/>',
+                "",
+                f'        <set-channel-param src-module="client[0]" src-gate="pppg$o[0]" par="datarate" value="{fixed_access_bw}"/>',
+                f'        <set-channel-param src-module="router1"   src-gate="pppg$o[0]" par="datarate" value="{fixed_access_bw}"/>',
+                f'        <set-channel-param src-module="server[0]" src-gate="pppg$o[0]" par="datarate" value="{fixed_access_bw}"/>',
+                f'        <set-channel-param src-module="router2"   src-gate="pppg$o[0]" par="datarate" value="{fixed_access_bw}"/>',
+                "",
+                # Bottleneck BW + delay (one-way) at t=0
+                f'        <set-channel-param src-module="router1" src-gate="pppg$o[1]" par="datarate" value="{currentBw}Mbps"/>',
+                f'        <set-channel-param src-module="router2" src-gate="pppg$o[1]" par="datarate" value="{currentBw}Mbps"/>',
+                f'        <set-channel-param src-module="router1" src-gate="pppg$o[1]" par="delay" value="{bottleneckDelay}ms"/>',
+                f'        <set-channel-param src-module="router2" src-gate="pppg$o[1]" par="delay" value="{bottleneckDelay}ms"/>',
+                "",
+                # Loss only on bottleneck (matching your old script: router1 side)
+                f'        <set-channel-param src-module="router1" src-gate="pppg$o[1]" par="per" value="{currentPer}"/>',
+            ])
+            w("    </at>")
+
+            baseRttDict["0"] = currentRtt
+            bwDict["0"] = currentBw
+
+            # ---- Handover loop: every 15 seconds ----
+            t = handoverEvery
+            while t <= simLength:
+                dur_ms = rng.randint(minHandoverMs, maxHandoverMs)
+                dur_s = dur_ms / 1000.0
+                reconnect_t = t + dur_s
+
+                # Start hard handover: disconnect + crash bottleneck PPPs
+                w(f'    <at t="{t}">')
+                block([
+                    '        <disconnect src-module="router1" src-gate="pppg$o[1]"/>',
+                    '        <disconnect src-module="router2" src-gate="pppg$o[1]"/>',
+                    '        <crash module="router1.ppp[1]"/>',
+                    '        <crash module="router2.ppp[1]"/>',
+                ])
+                w("    </at>")
+
+                # New conditions apply AFTER handover
+                currentBw = rng.randint(minBw, maxBw)
+                currentRtt = rng.randint(minRtt, maxRtt)
+                currentPer = round(rng.uniform(0, 0.01), 4)
+
+                bottleneckDelay = (currentRtt / 2.0)
+
+                # Reconnect bottleneck with new BW + delay in connect params
+                w(f'    <at t="{reconnect_t}">')
+                block([
+                    '        <connect src-module="router1" src-gate="pppg$o[1]"',
+                    '                 dest-module="router2" dest-gate="pppg$i[1]"',
+                    '                 channel-type="ned.DatarateChannel">',
+                    f'                 <param name="datarate" value="{currentBw}Mbps" />',
+                    f'                 <param name="delay" value="{bottleneckDelay}ms" />',
+                    f'                 <param name="per" value="{currentPer}" />',
+                    "        </connect>",
+                    '        <connect src-module="router2" src-gate="pppg$o[1]"',
+                    '                 dest-module="router1" dest-gate="pppg$i[1]"',
+                    '                 channel-type="ned.DatarateChannel">',
+                    f'                 <param name="datarate" value="{currentBw}Mbps" />',
+                    f'                 <param name="delay" value="{bottleneckDelay}ms" />',
+                    "        </connect>",
+                    '        <start module="router1.ppp[1]"/>',
+                    '        <start module="router2.ppp[1]"/>',
+                    '        <update module="configurator" />',
+                ])
+                w("    </at>")
+
+                baseRttDict[f"{reconnect_t}"] = currentRtt
+                bwDict[f"{reconnect_t}"] = currentBw
+
+                t += handoverEvery
+
+            w("</scenario>")
+
+        (folderBaseRtts / f"{fileName}.json").write_text(json.dumps(baseRttDict, indent=2), encoding="utf-8")
+        (folderBws / f"{fileName}.json").write_text(json.dumps(bwDict, indent=2), encoding="utf-8")
+
+
+if __name__ == "__main__":
+    main()
