@@ -19,7 +19,7 @@ ALG_FLAVOUR = {
     "bbr": ("Bbr", "BbrFlavour"),
     "bbr3": ("Bbr", "Bbr3Flavour"),
     "orbtcp": ("Orbtcp", "OrbtcpFlavour"),
-    "leocc": ("Leocc", "LeoccFlavour"),        # like BBR, but with LeoccQueue everywhere
+    "leocc": ("Leocc", "LeoccFlavour"),        # like BBR, but with LeoccFrontTailQueue everywhere
 }
 
 
@@ -168,7 +168,7 @@ def main() -> None:
                     w()
 
                 elif alg == "leocc":
-                    w('**.ppp[*].queue.typename = "LeoccQueue"')
+                    w('**.ppp[*].queue.typename = "LeoccFrontTailQueue"')
                     w()
                     w(f"**.tcp.initialSsthresh = {4000 * 1448}")
                     w()

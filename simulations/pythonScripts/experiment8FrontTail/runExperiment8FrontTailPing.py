@@ -144,8 +144,7 @@ def generate_ping_ini():
         write_line(f, "*.*.forwarding = true")
         write_line(f)
 
-        write_line(f, '**.ppp[*].ppp.queue.typename = "DropHeadQueue"')
-        write_line(f, "**.ppp[*].ppp.queue.packetCapacity = 300")
+        write_line(f, '**.ppp[*].queue.dropperClass = "inet::queueing::PacketAtCollectionBeginDropper"')
         write_line(f)
 
         write_line(f, "**.satellite[*].NoradModule.satIndex = parentIndex()")

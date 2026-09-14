@@ -233,7 +233,7 @@ if __name__ == "__main__":
                     write_common_tcp(f, "Leocc", "LeoccFlavour")
                     write_dumbbell_apps(f, 2)
                     write_leocc_pings(f)
-                    f.write('\n' + '**.ppp[*].queue.typename = "LeoccQueue"\n')
+                    f.write('\n' + '**.ppp[*].queue.typename = "LeoccFrontTailQueue"\n')
                     f.write('\n' + '**.tcp.initialSsthresh = ' + str(4000*1448) + '\n')
                 else:
                     f.write('\n' + '**.tcp.typename = "Orbtcp"')

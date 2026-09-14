@@ -140,8 +140,7 @@ if __name__ == "__main__":
             f.write('\n' + '*.configurator.optimizeRoutes = false')
             f.write('\n' + '*.*.forwarding = true\n')
             
-            f.write('\n' + '**.ppp[*].ppp.queue.typename = "DropHeadQueue"')
-            f.write('\n' + '**.ppp[*].ppp.queue.packetCapacity = 300\n')
+            f.write('\n' + '**.ppp[*].queue.dropperClass = "inet::queueing::PacketAtCollectionBeginDropper"')
             
             f.write('\n' + '**.satellite[*].NoradModule.satIndex = parentIndex()')
             f.write('\n' + '**.satellite[*].NoradModule.satName = "Starlink Satellite"')
@@ -275,8 +274,8 @@ if __name__ == "__main__":
                 f.write('\n' + '**.tcp.stopOperationTimeout = 4000s')
                 f.write('\n' + '**.tcp.mss = 1448')
                 f.write('\n' + '**.tcp.sackSupport = true')
-                f.write('\n' + '**.interfaceType = "leocc.linklayer.ppp.LeoccInterface"')
-                f.write('\n' + '**.**.ppp[*].queue.typename = "LeoccQueue"\n')
+                f.write('\n' + '**.interfaceType = "leocc.linklayer.ppp.LeoccFrontTailInterface"')
+                f.write('\n' + '**.**.ppp[*].queue.typename = "LeoccFrontTailQueue"\n')
                 f.write('\n' + '**.**.queue.typename = "DropHeadQueue"\n')
                 f.write('\n' + '**.additiveIncreasePercent = 0.05')
                 f.write('\n' + '**.eta = 0.95\n')

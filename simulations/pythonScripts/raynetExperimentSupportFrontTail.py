@@ -415,9 +415,9 @@ def _has_complete_results(config: SimulationConfig, cwd: Path) -> bool:
 def _clean_result_files(config: SimulationConfig, cwd: Path) -> None:
     results_dir = cwd / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
-    for stale_file in results_dir.glob(config.config_name + "*"):
-        if stale_file.is_file():
-            stale_file.unlink(missing_ok=True)
+    # Run1 must never delete Run10, Run11, ... while other workers use them.
+    for suffix in ("-#0.vec", "-#0.vci", "-#0.sca", "-#0.complete.json", ".csv"):
+        (results_dir / (config.config_name + suffix)).unlink(missing_ok=True)
 
 
 def _register_process(process: subprocess.Popen) -> None:
@@ -606,21 +606,63 @@ def _finish_simulation(
     return complete
 
 
-def run_simulation_configs(configs, cwd, cores: int, runtime_file=None) -> None:
+def _check_protocol_build_freshness(configs, protocol, label, header_directories, samples_root=None) -> None:
+    if not any(config.protocol == protocol for config in configs):
+        return
+    root = Path(samples_root) if samples_root is not None else Path(__file__).resolve().parents[3]
+    suffix = ".dylib" if sys.platform == "darwin" else ".so"
+    library = root / protocol / "src" / ("lib" + protocol + suffix)
+    if not library.is_file():
+        raise RuntimeError(f"{label} library is missing: {library}. Build {protocol} before running.")
+    # A timestamp check cannot prove ABI compatibility, but catches an old
+    # derived-class library paired with newer base-class layouts.
+    headers = []
+    for project, directory in header_directories:
+        headers.extend((root / project / "src" / directory).rglob("*.h"))
+    newer = [path for path in headers if path.stat().st_mtime > library.stat().st_mtime]
+    if newer:
+        newest = max(newer, key=lambda path: path.stat().st_mtime)
+        raise RuntimeError(
+            f"Possibly stale {label} build: {library} is older than {newest}. "
+            f"Clean-rebuild {protocol} against its current dependency headers before running. "
+            "Rebuild the dependencies first if they are also stale; copying source alone is insufficient."
+        )
+
+
+def check_leocc_build_freshness(configs, samples_root=None) -> None:
+    _check_protocol_build_freshness(configs, "leocc", "LeoCC", (
+        ("tcpPaced", "transportlayer/tcp"), ("inet4.5", "inet/transportlayer/tcp"),
+        ("leocc", "transportlayer/leocc")), samples_root)
+
+
+def check_satcp_build_freshness(configs, samples_root=None) -> None:
+    _check_protocol_build_freshness(configs, "satcp", "SaTCP", (
+        ("tcpPaced", "transportlayer/tcp"), ("inet4.5", "inet/transportlayer/tcp"),
+        ("cubic", "transportlayer/tcp"), ("satcp", "transportlayer/satcp"),
+        ("leosatellites", "common")), samples_root)
+
+
+def run_simulation_configs(configs, cwd, cores: int, runtime_file=None, *, retries=None, resume=None) -> None:
+    configs = list(configs)
+    check_leocc_build_freshness(configs)
+    check_satcp_build_freshness(configs)
     previous_handlers = _install_shutdown_signal_handlers()
     try:
-        _run_simulation_configs(configs, cwd, cores, runtime_file)
+        _run_simulation_configs(configs, cwd, cores, runtime_file, retries=retries, resume=resume)
     finally:
         _terminate_active_process_groups()
         _restore_signal_handlers(previous_handlers)
 
 
-def _run_simulation_configs(configs, cwd, cores: int, runtime_file=None) -> None:
+def _run_simulation_configs(configs, cwd, cores: int, runtime_file=None, *, retries=None, resume=None) -> None:
     cwd = Path(cwd).resolve()
     timeout_seconds = _env_float("EXPERIMENT_SIM_TIMEOUT_SECONDS", 2.5 * 60 * 60)
-    retries = _env_int("EXPERIMENT_RETRIES", 3)
+    retries = _env_int("EXPERIMENT_RETRIES", 3) if retries is None else retries
+    if retries < 0:
+        raise ValueError("retries must not be negative")
     retry_delay_seconds = _env_float("EXPERIMENT_RETRY_DELAY_SECONDS", 1)
-    resume = os.environ.get("EXPERIMENT_RESUME", "").lower() in {"1", "true", "yes", "on"}
+    if resume is None:
+        resume = os.environ.get("EXPERIMENT_RESUME", "").lower() in {"1", "true", "yes", "on"}
     cores = max(1, int(cores))
     pending = [config for config in configs if not (resume and _has_complete_results(config, cwd))]
     skipped = len(configs) - len(pending)

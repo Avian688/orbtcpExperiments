@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from raynetExperimentSupportFrontTail import build_simulation_command, select_experiment_protocols
+from raynetExperimentSupportFrontTail import SimulationConfig, run_simulation_configs, select_experiment_protocols
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -63,7 +63,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--resume",
         action="store_true",
-        help="Skip simulations whose expected vector file already exists.",
+        default=os.environ.get("EXPERIMENT_RESUME", "").lower() in {"1", "true", "yes", "on"},
+        help="Skip simulations with verified successful completion markers, not partial vectors.",
     )
     return parser.parse_args()
 
@@ -166,61 +167,16 @@ def log_status(log_path: Path | None) -> str:
     )
 
 
-def run_single_simulation(
-    entry: ConfigEntry, attempt: int, resume: bool
-) -> tuple[ConfigEntry, bool, int, Path | None]:
-    result_dir(entry).mkdir(parents=True, exist_ok=True)
-    if resume and matching_vec_files(entry):
-        return entry, True, 0, None
-
-    clean_result_files(entry)
-    log_dir = LOG_ROOT / entry.experiment / entry.protocol / "simulations"
-    log_path = retry_log_path(log_dir, entry.config_name, attempt)
-    command = build_simulation_command(entry.protocol, entry.ini_name, entry.config_name)
-    result = run_with_retry_logging(
-        command, PAPER_ROOT / entry.experiment, log_path
-    )
-
-    ok = result.returncode == 0 and bool(matching_vec_files(entry))
-    return entry, ok, result.returncode, log_path
-
-
 def run_simulations(entries: list[ConfigEntry], args: argparse.Namespace) -> None:
-    pending = list(entries)
-    total_attempts = args.retries + 1
-
-    for attempt in range(1, total_attempts + 1):
-        if not pending:
-            return
-
-        print(
-            f"\nRunning {len(pending)} simulation config(s), attempt {attempt}/{total_attempts}, "
-            f"using {args.cores} core(s).\n"
-        )
-        failed: list[ConfigEntry] = []
-
-        with ThreadPoolExecutor(max_workers=args.cores) as executor:
-            futures = {
-                executor.submit(run_single_simulation, entry, attempt, args.resume and attempt == 1): entry
-                for entry in pending
-            }
-            for future in as_completed(futures):
-                entry, ok, return_code, log_path = future.result()
-                if ok:
-                    print(f"  complete: {entry.config_name}")
-                else:
-                    failed.append(entry)
-                    print(
-                        f"  failed/missing vec: {entry.config_name} "
-                        f"(exit {return_code}, {log_status(log_path)})"
-                    )
-
-        pending = failed
-        if pending and attempt < total_attempts:
-            print(f"\nRetrying {len(pending)} missing/failed config(s).\n")
-
-    missing = "\n".join(f"  {entry.experiment}: {entry.config_name}" for entry in pending)
-    raise RuntimeError(f"Simulation outputs are still missing after retries:\n{missing}")
+    experiments = sorted({entry.experiment for entry in entries})
+    for experiment in experiments:
+        configs = [SimulationConfig(entry.protocol, entry.ini_name, entry.config_name)
+                   for entry in entries if entry.experiment == experiment]
+        with (SCRIPT_DIR / f"{experiment}runTimes.txt").open("a", encoding="utf-8") as runtime_file:
+            run_simulation_configs(
+                configs, PAPER_ROOT / experiment, args.cores, runtime_file,
+                retries=args.retries, resume=args.resume,
+            )
 
 
 def csv_name_for_vec(vec_file: Path) -> str:

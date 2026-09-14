@@ -3,7 +3,7 @@
 # Generates INI files for experiment 2 for each congestion control algorithm.
 # Same style as the updated experiment 1/7 generators:
 # - Adds satcp + leocc
-# - Leocc: PingApp on clients + LeoccQueue everywhere
+# - Leocc: PingApp on clients + LeoccFrontTailQueue everywhere
 # - Satcp: **.tcp.scenario points at the same xmldoc as scenarioManager.script
 # - Uses correct app indices (no app[*])
 
@@ -163,7 +163,7 @@ def main() -> None:
                 w()
 
             elif alg == "leocc":
-                w('**.ppp[*].queue.typename = "LeoccQueue"')
+                w('**.ppp[*].queue.typename = "LeoccFrontTailQueue"')
                 w()
                 w(f"**.tcp.initialSsthresh = {4000 * 1448}")
                 w()

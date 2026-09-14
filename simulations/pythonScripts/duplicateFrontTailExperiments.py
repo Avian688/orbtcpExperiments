@@ -30,6 +30,8 @@ REPLACEMENTS.update({
     "PintQueue": "PintFrontTailQueue",
     "IntInterface": "IntFrontTailInterface",
     "PintInterface": "PintFrontTailInterface",
+    "LeoccQueue": "LeoccFrontTailQueue",
+    "LeoccInterface": "LeoccFrontTailInterface",
     "PacketAtCollectionEndDropper": "PacketAtCollectionBeginDropper",
 })
 PATTERN = re.compile("|".join(re.escape(key) for key in sorted(
@@ -43,6 +45,11 @@ def transform(text):
 
 def transform_source(source):
     text = transform(source.read_text())
+    if source.name in {"runExperiment8Ping.py", *(f"generateExperiment{n}IniFile.py" for n in (8, 9, 10))}:
+        text = text.replace('**.ppp[*].ppp.queue.typename = "DropHeadQueue"',
+                            '**.ppp[*].queue.dropperClass = "inet::queueing::PacketAtCollectionBeginDropper"')
+        text = "\n".join(line for line in text.split("\n")
+                         if "**.ppp[*].ppp.queue.packetCapacity" not in line)
     # Routing snapshots describe topology, not queue admission. Reuse the
     # original corpus for loading only; keep all simulation outputs isolated.
     text = text.replace('configLocation = "../experiment8FrontTail/"',
@@ -116,6 +123,9 @@ def main():
     for name in ("IntInterface", "PintInterface"):
         source = orb_root / (name + ".ned")
         outputs[orb_root / (REPLACEMENTS[name] + ".ned")] = transform(source.read_text())
+    leo_root = PROJECT_ROOT.parent / "leocc/src/linklayer/ppp"
+    source = leo_root / "LeoccInterface.ned"
+    outputs[leo_root / "LeoccFrontTailInterface.ned"] = transform(source.read_text())
 
     conflicts = [path for path, text in outputs.items()
                  if path.exists() and path.read_text() != text]

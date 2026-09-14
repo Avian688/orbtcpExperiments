@@ -37,8 +37,35 @@ provided for the generators' intermediate INT configurations. A front-drop
 bandwidth-recording queue also preserves experiment-specific signals. Push,
 pull, disconnect flushing, telemetry and capacity logic remain inherited.
 
+LeoCC uses `LeoccFrontTailQueue` and, where required, `LeoccFrontTailInterface`
+from **leocc**. TCP data uses front-drop; the separate priority ICMP queue keeps
+LeoCC's existing ping handling. Earlier FrontTail generators inadvertently left
+LeoCC using its tail-drop queue. Regenerate inputs and rerun LeoCC results from
+those generators; they are not a front-drop comparison.
+
 Push the new NED files in **orbtcp** as well as the experiment files. No new C++
 implementation is required. The originals' NED types and scripts are unchanged.
+
+Experiment 1/2 now uses the shared rolling simulation runner, with a per-attempt
+`EXPERIMENT_SIM_TIMEOUT_SECONDS` limit (default 9000 seconds), process-group
+cleanup on timeout/interruption, and `EXPERIMENT_RETRIES` retries (default 3).
+The first attempt is quiet; retry logs are under
+`simulations/logs/experiment1FrontTail/simulations/` or `experiment2FrontTail`.
+`--resume` requires successful completion markers, not merely existing vectors.
+Old runs without markers are rerun. Do not resume data produced by stale binaries.
+
+Before running LeoCC, the shared runner checks that its library is not older
+than the local LeoCC/INET/tcpPaced TCP headers. This timestamp guard detects
+obvious stale builds, not all ABI incompatibilities. Clean-rebuild dependent
+protocol libraries after changing base-class layouts. In particular, an old
+LeoCC library must not be paired with a newly built tcpPaced library.
+
+SaTCP also has a stale-header check, including its Cubic and handover-oracle
+dependencies. Experiments 8-10 explicitly set `ppp[*].queue.dropperClass` so
+the dynamically created, fixed-type mutable PPP queues use front-drop for
+Cubic, BBRv3 and SaTCP too. Earlier generators used a nonexistent nested
+`ppp[*].ppp.queue` path; regenerate and rerun those comparisons. Queue sizes
+remain controlled by the existing bandwidth/BDP configuration.
 
 LEO runs load the existing routing corpus from `../experiment8/`; topology
 snapshots do not need regeneration merely for a queue-policy comparison.

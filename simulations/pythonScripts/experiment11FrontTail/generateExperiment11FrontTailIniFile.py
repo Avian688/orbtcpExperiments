@@ -159,7 +159,7 @@ def main() -> None:
                 w()
 
             elif alg == "leocc":
-                w('**.ppp[*].queue.typename = "LeoccQueue"')
+                w('**.ppp[*].queue.typename = "LeoccFrontTailQueue"')
                 w()
                 w(f"**.tcp.initialSsthresh = {4000 * MSS_BYTES}")
                 w()
